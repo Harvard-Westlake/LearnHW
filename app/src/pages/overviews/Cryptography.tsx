@@ -501,7 +501,10 @@ export default function Cryptography() {
             <>Private key: an exponent <code>d</code> only computable if you know <em>p</em> and <em>q</em>.</>,
             <>Real RSA uses ~1200-digit n — factoring would take longer than the universe has existed.</>,
           ]}
-          links={[{ to: '/code/rsa-encryption', label: 'RSA Encryption Demo' }]}
+          links={[
+            { to: '/code/rsa-encryption', label: 'RSA Encryption Demo' },
+            { to: '/code/rsa-cracker', label: 'Cracking RSA: Period Finding' },
+          ]}
           hero={<RsaHero />}
           watermark={<RsaWatermark />}
           accent="red"

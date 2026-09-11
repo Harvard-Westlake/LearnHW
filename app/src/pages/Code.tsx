@@ -49,6 +49,14 @@ export default function Code() {
             <span className="button">Open</span>
           </Link>
 
+          <Link className="widget-card" to="/code/rsa-cracker">
+            <div className="title-row">
+              <h3>Cracking RSA — Period Finding &amp; Quantum Interference</h3>
+            </div>
+            <p>Native React component. Build a toy RSA lock, watch the powers of a random number loop back to 1, split the period to expose the primes, then see a quantum computer read the same period off an interference pattern.</p>
+            <span className="button">Open</span>
+          </Link>
+
           {['rsa-encryption', 'shamir'].map(slug => {
             const w = CODE_WIDGETS[slug as keyof typeof CODE_WIDGETS]
             return (
