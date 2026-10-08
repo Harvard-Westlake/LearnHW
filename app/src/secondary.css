@@ -22,6 +22,7 @@
      - Memory grid + bit tile patterns (.mem-*, .bit-*)
      - Quadratic explorer              (.qe-*)
      - RSA cracker explorer            (.rc-*)
+     - Index → Tree visualizer         (.it-*)
    ============================================================================ */
 
 /* ================================================================
@@ -3815,4 +3816,123 @@ code:not(pre code) {
 @media (max-width: 720px) {
   .rc-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rc-viz-panel { padding: .75rem; }
+}
+
+
+/* ================================================================
+   INDEX → TREE VISUALIZER  (pages/IndexTreeVisualizer.tsx)
+   Two-column WidgetShell: example picker + conversion steps left,
+   index input / working list / tree view / tree-file outputs right.
+   Blob = gold tint, tree = blue tint, pending directory = dashed khaki.
+   ================================================================ */
+
+.it-page {
+  padding-block: 1rem 1.5rem;
+  background: var(--hw-wolverine), #f2f0ec;
+  --it-gold-20: rgb(237 163 0 / 20%);
+  --it-gold-40: rgb(237 163 0 / 40%);
+}
+
+.it-hero { background: transparent; padding: .75rem; }
+.it-hero__title { margin-bottom: .4rem; text-align: left; }
+.it-hero__lead { max-width: 54rem; margin-bottom: 0; color: var(--hw-secondary-black); }
+
+.it-main { display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
+
+.it-panel-head {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: .4rem .75rem; padding-bottom: .5rem;
+}
+.it-btn-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+
+.it-examples { display: flex; width: 100%; }
+.it-examples .segment { flex: 1; }
+
+/* Conversion steps */
+.it-steps { display: flex; flex-direction: column; gap: .6rem; }
+.it-step {
+  border: 1px solid var(--hw-border); border-left: 3px solid var(--hw-border);
+  background: #fff; padding: .6rem .7rem; transition: background .2s ease, border-color .2s ease;
+}
+.it-step--active { border-left-color: var(--hw-gold); background: #fffbec; }
+.it-step__title { display: flex; align-items: center; gap: .45rem; font-weight: 700; font-size: var(--step--1); }
+.it-step__num {
+  flex: none; display: inline-grid; place-items: center; width: 1.35rem; height: 1.35rem; border-radius: 999px;
+  background: var(--hw-black); color: #fff; font-size: .72rem; font-weight: 700;
+}
+.it-step--active .it-step__num { background: var(--hw-gold); color: #000; }
+.it-step .helper-text { margin: .2rem 0 .5rem; }
+
+/* Index input */
+.it-textarea {
+  min-height: 0; font-family: 'SF Mono','Fira Code','Consolas','Courier New', monospace;
+  font-size: .82rem; line-height: 1.5; white-space: pre; overflow: auto;
+}
+.it-textarea--drop { outline: 2px dashed var(--hw-gold); background: #fffbec; }
+.it-errors { margin-top: .5rem; }
+
+/* Code outputs: shared .code-block, kept unwrapped so hash lines stay on one line */
+.it-code { padding: .6rem .8rem; font-size: .8rem; white-space: pre; max-height: 240px; overflow: auto; color: #f2f0ec; }
+.it-code--tall { max-height: 320px; }
+.it-mark { background: var(--it-gold-40); color: inherit; outline: 1px solid var(--hw-gold); padding: 0 .15rem; }
+.it-out-label {
+  font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--hw-secondary-black-50); margin: 0 0 .25rem;
+}
+.it-out-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+
+/* Tree view + selected-node inspector */
+.it-tree-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: .75rem; align-items: start; }
+.it-treeview {
+  border: 1px solid var(--hw-border); background: #fff; padding: .6rem .7rem;
+  max-height: 420px; overflow: auto;
+}
+.it-inspector { min-width: 0; }
+.it-inspector .it-out-grid { grid-template-columns: 1fr; gap: .5rem; }
+
+.it-tree { list-style: none; margin: 0; padding-left: 1.1rem; position: relative; }
+.it-tree::before { content: ""; position: absolute; left: .35rem; top: 0; bottom: 0; border-left: 1px solid var(--hw-secondary-black-20); }
+.it-tree li { position: relative; margin: .25rem 0; padding-left: .8rem; }
+.it-tree li::before { content: ""; position: absolute; left: .35rem; top: 1em; width: .6rem; border-top: 1px solid var(--hw-secondary-black-20); }
+.it-tree--root { padding-left: 0; }
+.it-tree--root::before, .it-tree--root > li::before { display: none; }
+.it-tree--root > li { padding-left: 0; }
+
+.it-node {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .15rem .5rem; border: 1px solid var(--hw-border); background: #fff; color: var(--hw-black);
+  font-family: 'SF Mono','Fira Code','Consolas','Courier New', monospace; font-size: .82rem;
+  white-space: nowrap; cursor: pointer; transition: box-shadow .2s ease, border-color .15s ease;
+}
+.it-node:hover, .it-node--inspected { border-color: var(--hw-black); }
+.it-node:focus-visible { outline: none; box-shadow: var(--hw-focus-ring); }
+.it-node--blob { background: var(--it-gold-20); }
+.it-node--tree { background: var(--hw-secondary-blue-20); }
+.it-node--pending { background: var(--hw-secondary-khaki-20); border-style: dashed; }
+.it-node__name--dir { font-weight: 700; }
+.it-node__meta { color: var(--hw-secondary-black-50); font-size: .85em; }
+.it-node--new { outline: 2px solid var(--hw-gold); animation: it-pulse 1400ms ease 1; }
+
+.it-dot--blob { background: var(--it-gold-20); border: 1px solid var(--hw-gold); }
+.it-dot--tree { background: var(--hw-secondary-blue-20); border: 1px solid var(--hw-secondary-blue); }
+.it-dot--pending { background: var(--hw-secondary-khaki-20); border: 1px dashed var(--hw-secondary-black-50); }
+
+.it-flash { animation: it-flash .9s ease 1; }
+
+@keyframes it-pulse {
+  0%   { box-shadow: 0 0 0 0 rgb(237 163 0 / 60%); }
+  70%  { box-shadow: 0 0 0 10px rgb(237 163 0 / 0%); }
+  100% { box-shadow: 0 0 0 0 rgb(237 163 0 / 0%); }
+}
+@keyframes it-flash {
+  0%   { box-shadow: 0 0 0 0 rgb(237 163 0 / 70%); }
+  60%  { box-shadow: 0 0 0 6px rgb(237 163 0 / 0%); }
+  100% { box-shadow: 0 0 0 0 rgb(237 163 0 / 0%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .it-node--new, .it-flash { animation: none; }
+}
+
+@media (max-width: 900px) {
+  .it-tree-grid, .it-out-grid { grid-template-columns: 1fr; }
 }

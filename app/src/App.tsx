@@ -39,6 +39,7 @@ const BinaryExplorer = lazy(() => import('./pages/BinaryExplorer.tsx'))
 const QuadraticExplorer = lazy(() => import('./pages/QuadraticExplorer.tsx'))
 const Sha1FlowExplorer = lazy(() => import('./pages/Sha1FlowExplorer.tsx'))
 const RsaCrackerExplorer = lazy(() => import('./pages/RsaCrackerExplorer.tsx'))
+const IndexTreeVisualizer = lazy(() => import('./pages/IndexTreeVisualizer.tsx'))
 const Cryptography = lazy(() => import('./pages/overviews/Cryptography.tsx'))
 
 function DeckLoading() {
@@ -139,6 +140,7 @@ export default function App() {
         <Route path="code/binary-explorer" element={lazyRoute(<BinaryExplorer />)} />
         <Route path="code/sha1-flow-explorer" element={lazyRoute(<Sha1FlowExplorer />)} />
         <Route path="code/rsa-cracker" element={lazyRoute(<RsaCrackerExplorer />)} />
+        <Route path="code/index-tree" element={lazyRoute(<IndexTreeVisualizer />)} />
         <Route path="code/htcs-lessons" element={<RedirectWithSearch to="/teaching-resources/lessons/computer-science" />} />
         <Route path="code/htcs-lessons/day4-react" element={<RedirectWithSearch to="/teaching-resources/lessons/computer-science/day4-react" />} />
         <Route path="code/htcs-lessons/day5-react" element={<RedirectWithSearch to="/teaching-resources/lessons/computer-science/day5-react" />} />

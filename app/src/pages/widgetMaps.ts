@@ -37,7 +37,6 @@ export const HTCS_LESSON_WIDGETS: Record<string, WidgetInfo> = {
 
 export const CODE_WIDGETS: Record<string, WidgetInfo> = {
   'blob-creation': { title: 'Blob Creation (Git-style)', src: '/static/code/widgets/blob-creation/blob-creation.html' },
-  'index-tree': { title: 'Index → Tree (SHA-1 String)', src: '/static/code/widgets/index-tree/index-tree.html' },
   'objects-static': { title: 'Java Objects & Static Methods — Visual Memory', src: '/static/code/widgets/objects-static/objects-static.html' },
   'rsa-encryption': { title: 'RSA Encryption (Demo)', src: '/static/code/widgets/rsa-encrpytion/rsa-encryption.html' },
   'shamir': { title: "Shamir's Secret Sharing", src: '/static/code/widgets/shamir/shamir.html' },

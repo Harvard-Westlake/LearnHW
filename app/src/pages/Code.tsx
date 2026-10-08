@@ -73,7 +73,7 @@ export default function Code() {
 
         <h2 className="h5 eyebrow" style={{ marginTop: '2rem' }}>Git Internals</h2>
         <div className="widgets-grid">
-          {['blob-creation', 'index-tree'].map(slug => {
+          {['blob-creation'].map(slug => {
             const w = CODE_WIDGETS[slug as keyof typeof CODE_WIDGETS]
             return (
               <Link key={slug} className="widget-card" to={`/code/${slug}`}>
@@ -85,6 +85,14 @@ export default function Code() {
               </Link>
             )
           })}
+
+          <Link className="widget-card" to="/code/index-tree">
+            <div className="title-row">
+              <h3>Index → Tree Files</h3>
+            </div>
+            <p>Native React component. Turn a flat Git index into tree files bottom-up, one directory at a time, and watch the working list collapse to the root tree.</p>
+            <span className="button">Open</span>
+          </Link>
         </div>
 
         <h2 className="h5 eyebrow" style={{ marginTop: '2rem' }}>Blockchain &amp; Smart Contracts</h2>
