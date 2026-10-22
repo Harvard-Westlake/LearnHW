@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multivariable Integration Visualizer</title>
+    <link rel="stylesheet" href="../shared/styles.css">
+    <link rel="stylesheet" href="integration.css">
+    <!-- External libraries (UMD for file:// compatibility) -->
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.11.0/lib/browser/math.min.js"></script>
+    <!-- Firebase (optional, for Firestore sync) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js" defer></script>
+    <script src="firebase-config.js" defer></script>
+</head>
+<body>
+    <div class="app" data-drawer="closed">
+        <aside class="sidebar" id="sidebarPanel" role="dialog" aria-label="Controls" aria-modal="true">
+            <div class="brand">
+                <h1>Integration Visualizer</h1>
+                <p class="subtitle">Aligned with visualize guidelines (<a href="https://learnhw.web.app/admin" target="_blank" rel="noopener">link</a>)</p>
+            </div>
+
+            <section class="panel">
+                <div class="panel-title">Step 1: Method</div>
+                <label for="methodSelect">Select integration method</label>
+                <select id="methodSelect">
+                    <option value="double_cartesian">∬ over R (Cartesian)</option>
+                    <option value="double_polar">∬ over R (Polar)</option>
+                    <option value="triple_cylindrical">∭ (Cylindrical)</option>
+                    <option value="triple_spherical">∭ (Spherical)</option>
+                </select>
+            </section>
+
+            <section class="panel">
+                <div class="panel-title">Step 2: Preset (optional)</div>
+                <label for="presetSelect">Stock shapes</label>
+                <select id="presetSelect">
+                    <option value="none">None</option>
+                    <option value="cone">Right circular cone</option>
+                    <option value="sphere">Sphere</option>
+                    <option value="cylinder">Cylinder</option>
+                    <option value="paraboloid">Paraboloid</option>
+                </select>
+            </section>
+
+            <section class="panel" id="equationPanel">
+                <label for="equationInput">Surface z = f(x, y)</label>
+                <input id="equationInput" type="text" value="sin(x)*cos(y)">
+                <small>Used for double integrals (height of Riemann columns)</small>
+                <div id="equationError" class="error-text" style="display:none"></div>
+            </section>
+
+            <section class="panel" id="boundsCartesian">
+                <div class="panel-title">Bounds (Cartesian)</div>
+                <div class="grid-2">
+                    <div>
+                        <label for="xMin">x min</label>
+                        <input id="xMin" type="number" value="-3" step="0.5">
+                    </div>
+                    <div>
+                        <label for="xMax">x max</label>
+                        <input id="xMax" type="number" value="3" step="0.5">
+                    </div>
+                    <div>
+                        <label for="yMin">y min</label>
+                        <input id="yMin" type="number" value="-3" step="0.5">
+                    </div>
+                    <div>
+                        <label for="yMax">y max</label>
+                        <input id="yMax" type="number" value="3" step="0.5">
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" id="boundsPolar" hidden>
+                <div class="panel-title">Bounds (Polar)</div>
+                <div class="grid-2">
+                    <div>
+                        <label for="rMin">r min</label>
+                        <input id="rMin" type="number" value="0" step="0.5">
+                    </div>
+                    <div>
+                        <label for="rMax">r max</label>
+                        <input id="rMax" type="number" value="3" step="0.5">
+                    </div>
+                    <div>
+                        <label for="thetaMin">θ min (deg)</label>
+                        <input id="thetaMin" type="number" value="0" step="5">
+                    </div>
+                    <div>
+                        <label for="thetaMax">θ max (deg)</label>
+                        <input id="thetaMax" type="number" value="360" step="5">
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" id="boundsCylindrical" hidden>
+                <div class="panel-title">Bounds (Cylindrical)</div>
+                <div class="grid-2">
+                    <div>
+                        <label for="rcMin">r min</label>
+                        <input id="rcMin" type="number" value="0" step="0.5">
+                    </div>
+                    <div>
+                        <label for="rcMax">r max</label>
+                        <input id="rcMax" type="number" value="2" step="0.5">
+                    </div>
+                    <div>
+                        <label for="thetacMin">θ min (deg)</label>
+                        <input id="thetacMin" type="number" value="0" step="5">
+                    </div>
+                    <div>
+                        <label for="thetacMax">θ max (deg)</label>
+                        <input id="thetacMax" type="number" value="360" step="5">
+                    </div>
+                    <div>
+                        <label for="zMin">z min</label>
+                        <input id="zMin" type="number" value="0" step="0.5">
+                    </div>
+                    <div>
+                        <label for="zMax">z max</label>
+                        <input id="zMax" type="number" value="4" step="0.5">
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" id="boundsSpherical" hidden>
+                <div class="panel-title">Bounds (Spherical)</div>
+                <div class="grid-2">
+                    <div>
+                        <label for="rhoMin">ρ min</label>
+                        <input id="rhoMin" type="number" value="0" step="0.5">
+                    </div>
+                    <div>
+                        <label for="rhoMax">ρ max</label>
+                        <input id="rhoMax" type="number" value="2.5" step="0.5">
+                    </div>
+                    <div>
+                        <label for="phiMin">φ min (deg)</label>
+                        <input id="phiMin" type="number" value="0" step="5">
+                    </div>
+                    <div>
+                        <label for="phiMax">φ max (deg)</label>
+                        <input id="phiMax" type="number" value="180" step="5">
+                    </div>
+                    <div>
+                        <label for="thetasMin">θ min (deg)</label>
+                        <input id="thetasMin" type="number" value="0" step="5">
+                    </div>
+                    <div>
+                        <label for="thetasMax">θ max (deg)</label>
+                        <input id="thetasMax" type="number" value="360" step="5">
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-title">Partitions</div>
+                <div class="grid-3">
+                    <div>
+                        <label for="nx">N x/r/ρ</label>
+                        <input id="nx" type="number" value="8" min="2" step="1" title="Number of partitions along x (Cartesian), r (Polar/Cylindrical), or ρ (Spherical)">
+                    </div>
+                    <div>
+                        <label for="ny">N y/θ/φ</label>
+                        <input id="ny" type="number" value="8" min="2" step="1" title="Number of partitions along y (Cartesian), θ (Polar/Cylindrical/Spherical), or φ (Spherical)">
+                    </div>
+                    <div>
+                        <label for="nz">N z</label>
+                        <input id="nz" type="number" value="6" min="1" step="1" title="Number of partitions along z (Triple integrals)">
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-title">Step 3: Display & Density</div>
+                <div class="checks">
+                    <label title="Show the surface (double integrals) or volume mesh (triple)"><input id="showSurface" type="checkbox" checked> Surface/Volume</label>
+                    <label title="Show the Riemann columns/voxels that approximate the integral"><input id="showColumns" type="checkbox"> Riemann elements</label>
+                    <label title="Show the base region (projection onto the plane)"><input id="showRegion" type="checkbox" checked> Base region (projection)</label>
+                    <label title="Show one representative differential element dA/dV as a wedge/box"><input id="showWedge" type="checkbox" checked> Representative dA / dV</label>
+                    <label title="Hide grid and axes for a cleaner view"><input id="declutterView" type="checkbox"> Declutter view</label>
+                </div>
+                <div class="density">
+                    <label for="densitySlider">Riemann density</label>
+                    <input id="densitySlider" type="range" min="0" max="3" step="1" value="1" list="densityTicks" title="Adjusts the number of Riemann elements">
+                    <datalist id="densityTicks">
+                        <option value="0" label="Off"></option>
+                        <option value="1" label="Light"></option>
+                        <option value="2" label="Medium"></option>
+                        <option value="3" label="Heavy"></option>
+                    </datalist>
+                    <small id="densityLabel">Light</small>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-title">Examples</div>
+                <div class="actions">
+                    <button id="exSphereVoxels" class="btn" title="Show a sphere with voxels">Sphere (voxels)</button>
+                    <button id="exCylinderVoxels" class="btn" title="Show a cylinder with voxels">Cylinder (voxels)</button>
+                </div>
+            </section>
+
+            <section class="panel actions">
+                <button id="renderBtn" class="btn">Render</button>
+                <button id="resetCameraBtn" class="btn btn--outline">Reset camera</button>
+            </section>
+
+            <section class="panel info">
+                <div id="jacobianText">dA = dx dy</div>
+                <div id="integralEstimate">Approx ∬ f dA = …</div>
+                <div id="captionText" class="caption">
+                    You are viewing an approximation of an integral. “Riemann elements” show the summed pieces; the wedge is a single dA/dV sample; the region shows the base.
+                </div>
+            </section>
+        </aside>
+
+        <main class="viewport">
+            <button id="controlsToggle" class="controls-toggle" aria-expanded="false" aria-controls="sidebarPanel">Controls</button>
+            <div id="canvas3d"></div>
+            <div class="legend">
+                <span class="chip chip-surface">Surface/Volume</span>
+                <span class="chip chip-columns">Riemann elements</span>
+                <span class="chip chip-region">Region</span>
+                <span class="chip chip-wedge">dA/dV</span>
+            </div>
+            <button id="helpButton" class="help-button" aria-label="Show help" title="Show quick start">?</button>
+            <div id="onboardingOverlay" class="onboarding" hidden>
+                <div class="onboarding-card">
+                    <div class="onboarding-header">
+                        <h2>Start here</h2>
+                    </div>
+                    <ol class="onboarding-steps">
+                        <li><strong>Step 1:</strong> Choose a method (double/triple; Cartesian/Polar/Cylindrical/Spherical).</li>
+                        <li><strong>Step 2:</strong> Set a preset shape or enter bounds. For double integrals, enter z = f(x, y).</li>
+                        <li><strong>Step 3:</strong> Use Display & Density to turn on the surface/volume, region, a single dA/dV, and optionally Riemann elements.</li>
+                    </ol>
+                    <div class="onboarding-actions">
+                        <label class="onboarding-checkbox"><input id="onboardingDontShow" type="checkbox"> Don’t show again</label>
+                        <div class="spacer"></div>
+                        <button id="onboardingClose" class="btn">Got it</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
+    </div>
+
+    <script src="integration.js"></script>
+</body>
+<script>
+// Prevent pinch-zoom from interfering with orbit controls on iOS
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+</script>
+</html>
+
