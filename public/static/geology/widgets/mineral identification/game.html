@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mineral Identification Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Harvard‑Westlake brand tokens (subset) */
+      --hw-black: #231f20;
+      --hw-red: #c8102e;      /* Pantone 186C approx */
+      --hw-gold: #f0b323;     /* Pantone 124C approx */
+      --hw-gray-900: #1f2937;
+      --hw-gray-800: #374151;
+      --hw-gray-700: #4b5563;
+      --hw-gray-600: #6b7280;
+      --hw-gray-500: #9ca3af;
+      --hw-gray-400: #cbd5e1;
+      --hw-gray-300: #e5e7eb;
+      --hw-gray-200: #edf0f3;
+      --hw-gray-100: #f4f6f8;
+
+      --bg: #f2f0ec;
+      --panel: #ffffff;
+      --panel-2: #ffffff;
+      --muted: var(--hw-gray-600);
+      --text: #000000;
+      --accent: var(--hw-red);
+      --success: #198754;
+      --warn: var(--hw-gold);
+      --danger: #b42318;
+      --border: var(--hw-gray-300);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Source Sans Pro", Arial, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", sans-serif;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 16px;
+    }
+
+    header {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .title .badge {
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 0;
+    }
+
+    .scoreboard {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      border-radius: 0;
+      font-size: 14px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 14px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 0 0 8px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .tool-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    button, select, input[type="text"] {
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    button { cursor: pointer; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #ffffff; }
+    button.primary:hover { filter: brightness(0.95); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .log {
+      max-height: 420px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .log-item {
+      background: #f8f9fa;
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 10px;
+      font-size: 14px;
+      line-height: 1.35;
+      display: flex;
+      align-items: start;
+      gap: 8px;
+    }
+    .log-item .delete-observation {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+    .log-item .delete-note {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+    .log-item.hardness { border-left: 3px solid var(--accent); }
+    .log-item.magnetism { border-left: 3px solid var(--hw-black); }
+    .log-item.acid { border-left: 3px solid var(--warn); }
+    .log-item.note { border-left: 3px solid var(--hw-gray-600); }
+    .log-item.luster { border-left: 3px solid var(--hw-gray-600); }
+    .log-item.cleavage { border-left: 3px solid var(--hw-gray-600); }
+    .log-time { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .grow { flex: 1; }
+
+    .feedback { font-size: 14px; }
+    .feedback.good { color: var(--success); }
+    .feedback.bad { color: var(--danger); }
+    .feedback.info { color: var(--muted); }
+
+    .footer {
+      max-width: 1100px;
+      margin: 8px auto 24px;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 0 16px;
+    }
+
+    @media (max-width: 900px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    /* Specimen viewer */
+    .specimen {
+      position: relative;
+      height: 160px;
+      border-radius: 0;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: var(--hw-gray-900);
+    }
+    .specimen-color {
+      position: absolute;
+      inset: 0;
+      border-radius: 0;
+    }
+    .specimen-luster {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: 0;
+      background: radial-gradient(120px 60px at 20% 20%, rgba(255,255,255,0.35), rgba(255,255,255,0.05) 60%, transparent 70%),
+                  radial-gradient(180px 90px at 80% 70%, rgba(255,255,255,0.15), transparent 70%);
+      mix-blend-mode: screen;
+    }
+    .specimen-cleavage {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: 0;
+      opacity: 0.75;
+    }
+    .specimen-scratch {
+      position: absolute;
+      inset: 0;
+      border-radius: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .specimen-scratch .scratch-lines,
+    .specimen-scratch .scratch-spark {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transform: scale(0.92);
+      will-change: opacity, transform;
+    }
+    .specimen-scratch .scratch-lines {
+      background-image:
+        repeating-linear-gradient(var(--scratch-angle, 58deg), rgba(255,255,255,0.58) 0 3px, rgba(255,255,255,0) 3px 9px),
+        repeating-linear-gradient(calc(var(--scratch-angle, 58deg) + 180deg), rgba(0,0,0,0.45) 0 2px, rgba(0,0,0,0) 2px 10px);
+      mix-blend-mode: screen, multiply;
+      filter: saturate(0.9) contrast(1.2);
+    }
+    .specimen-scratch .scratch-lines.animate {
+      animation: specimenScratchLines 1.6s ease-out forwards;
+    }
+    .specimen-scratch .scratch-spark {
+      background-image:
+        radial-gradient(circle at var(--spark-main-x, 50%) var(--spark-main-y, 45%), rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.65) 24%, rgba(255,255,255,0) 70%),
+        radial-gradient(circle at var(--spark-glint-a-x, 30%) var(--spark-glint-a-y, 70%), rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 50%),
+        radial-gradient(circle at var(--spark-glint-b-x, 74%) var(--spark-glint-b-y, 66%), rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 40%);
+      mix-blend-mode: screen;
+    }
+    .specimen-scratch .scratch-spark.bright {
+      filter: saturate(1.2) brightness(1.15);
+    }
+    .specimen-scratch .scratch-spark.soft {
+      filter: saturate(0.85) brightness(0.9);
+    }
+    .specimen-scratch .scratch-spark.animate {
+      animation: specimenScratchSpark 1.2s ease-out forwards;
+    }
+    @keyframes specimenScratchLines {
+      0% { opacity: 0; transform: scale(0.94); }
+      18% { opacity: 0.85; transform: scale(0.97); }
+      45% { opacity: 0.65; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.05); }
+    }
+    @keyframes specimenScratchSpark {
+      0% { opacity: 0; transform: scale(0.6); }
+      20% { opacity: 1; transform: scale(1); }
+      65% { opacity: 0.65; transform: scale(1.1); }
+      100% { opacity: 0; transform: scale(1.2); }
+    }
+    .specimen-luster-label {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.68);
+      color: #ffffff;
+      font-size: 13px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(8px) scale(0.96);
+      transition: opacity 0.28s ease, transform 0.28s ease;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    }
+    .specimen-luster-label.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .specimen.showing-luster {
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.08) inset, 0 12px 28px rgba(0,0,0,0.28);
+    }
+    .specimen-luster {
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .specimen-luster.visible {
+      transform: scale(1.02);
+    }
+    .specimen-luster.reveal {
+      animation: specimenLusterReveal 1.1s ease-out;
+    }
+    @keyframes specimenLusterReveal {
+      0% { filter: brightness(0.85); }
+      45% { filter: brightness(1.15); }
+      100% { filter: brightness(1); }
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+    .modal[hidden] { display: none; }
+    .modal-content {
+      max-width: 720px;
+      width: calc(100% - 32px);
+      max-height: 70vh;
+      overflow: auto;
+    }
+    .hardness-table {
+      border: 1px solid var(--border);
+      border-radius: 0;
+      overflow: hidden;
+    }
+    .hardness-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .hardness-table th, .hardness-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      font-size: 14px;
+    }
+    .hardness-table tr:nth-child(odd) td { background: #ffffff; }
+    .hardness-table tr:nth-child(even) td { background: #fcfcfc; }
+
+      /* Notebook modal + FAB */
+      #notebookModal .modal-content {
+        max-width: 980px;
+        width: calc(100% - 32px);
+        max-height: 85vh;
+      }
+      /* Tutorial positioning */
+      #tutorialModal {
+        align-items: flex-start;
+        justify-content: flex-start;
+        background: transparent;
+      }
+      #tutorialModal .modal-content {
+        max-width: 360px;
+        width: 320px;
+        position: absolute;
+        z-index: 2;
+      }
+      #tutorialModal .tutorial-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+      }
+      #tutorialModal .tutorial-dim {
+        position: absolute;
+        background: rgba(0,0,0,0.6);
+      }
+      #tutorialModal .tutorial-highlight {
+        position: absolute;
+        border-radius: 0;
+        box-shadow: 0 0 0 2px var(--hw-gold), 0 0 0 8px rgba(240, 179, 35, 0.35), 0 12px 32px rgba(0,0,0,0.45);
+        pointer-events: none;
+        opacity: 0;
+        transition: left 0.15s ease, top 0.15s ease, width 0.15s ease, height 0.15s ease, opacity 0.15s ease;
+        z-index: 1;
+      }
+      .notebook-frame {
+        width: 100%;
+        height: 75vh;
+        border: 1px solid var(--border);
+      }
+      .floating-notebook-btn {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        background: var(--accent);
+        border: 1px solid var(--accent);
+        color: #ffffff;
+        border-radius: 0;
+        padding: 10px 14px;
+        font-size: 14px;
+        font-weight: 700;
+        z-index: 60;
+        cursor: pointer;
+      }
+      .floating-notebook-btn:hover { filter: brightness(0.95); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <div style="font-size:18px">Mineral Identification Game</div>
+      <span class="badge">Beta</span>
+    </div>
+    <div class="scoreboard">
+      <div class="chip">Score: <span id="score">0</span></div>
+      <div class="chip">Round: <span id="round">1</span></div>
+      <div class="chip">Remaining: <span id="remaining">0</span></div>
+      <div class="chip">Attempts: <span id="attemptsHeader">5</span></div>
+      <button id="openTutorial">Tutorial</button>
+      <button id="resetGame" class="primary">Reset Game</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="panel" id="inspectionPanel">
+      <h3 class="section-title">Specimen</h3>
+      <div id="specimen" class="specimen" aria-label="Specimen color and features">
+        <div id="specimenColor" class="specimen-color"></div>
+        <div id="specimenLuster" class="specimen-luster" hidden></div>
+        <div id="specimenCleavage" class="specimen-cleavage" hidden></div>
+        <div id="specimenScratch" class="specimen-scratch" aria-hidden="true"></div>
+        <div id="specimenLusterLabel" class="specimen-luster-label" aria-live="polite" aria-hidden="true"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button id="inspectLuster">Inspect luster</button>
+        <button id="inspectCleavage">Inspect cleavage</button>
+      </div>
+    </div>
+    <div class="panel" id="testsPanel">
+      <h3 class="section-title">Tests</h3>
+      <div class="controls">
+        <div>
+          <div style="margin-bottom:6px; font-weight:600">Hardness (scratch test)</div>
+          <div class="tool-row">
+            <button data-tool="fingernail">Fingernail (≈2.5)</button>
+            <button data-tool="copper">Copper coin (≈3.0)</button>
+            <button data-tool="glass">Glass plate (≈5.5)</button>
+            <button data-tool="steel">Steel nail (≈6.5)</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="grow">
+            <div style="margin-bottom:6px; font-weight:600">Magnetism</div>
+            <button id="testMagnetism">Test magnetism</button>
+          </div>
+          <div class="grow">
+            <div style="margin-bottom:6px; font-weight:600">Acid Reactivity</div>
+            <button id="testAcid">Apply acid (HCl)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="observationsPanel">
+      <h3 class="section-title">Observations</h3>
+      <div class="row" style="margin-bottom:6px">
+        <div class="grow"></div>
+        <button id="clearObservations">Clear</button>
+      </div>
+      <div id="log" class="log" aria-live="polite" aria-atomic="false"></div>
+
+      <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border)">
+        <div style="margin-bottom:6px; font-weight:600">Make a Guess</div>
+        <div class="row">
+          <select id="guessSelect" class="grow"></select>
+          <button id="submitGuess" class="primary">Submit Guess</button>
+          <button id="giveUp" title="Reveal answer and move on">Give up</button>
+          <button id="nextMineral" disabled>Next mineral</button>
+        </div>
+        <div id="feedback" class="feedback info" style="margin-top:8px; min-height: 22px;"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="notesPanel">
+      <h3 class="section-title">Notes</h3>
+      <div class="controls">
+        <div class="row">
+          <input id="noteInput" type="text" placeholder="Add your note..." class="grow" />
+          <button id="addNote">Add note</button>
+          <button id="clearNotes" title="Clear notes">Clear</button>
+        </div>
+        <div id="notesLog" class="log" aria-live="polite" aria-atomic="false"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tutorialModal" class="modal" hidden>
+    <div class="modal-content panel">
+      <div class="row" style="margin-bottom:8px">
+        <div style="font-weight:600">Quick Tutorial</div>
+        <button id="skipTutorial" style="margin-left:auto">Skip</button>
+      </div>
+      <div id="tutorialBody" style="min-height:100px"></div>
+      <div class="row" style="margin-top:8px">
+        <button id="prevTutorial">Back</button>
+        <button id="nextTutorial" class="primary" style="margin-left:auto">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="notebookModal" class="modal" hidden>
+    <div class="modal-content panel">
+      <div class="row" style="margin-bottom:8px">
+        <div style="font-weight:600">Mineral Properties Notebook</div>
+        <button id="closeNotebook" style="margin-left:auto">Close</button>
+      </div>
+      <iframe id="notebookFrame" class="notebook-frame" src="notebook.html" title="Mineral Properties Notebook"></iframe>
+    </div>
+  </div>
+
+  <button id="openNotebook" class="floating-notebook-btn" title="Open Mineral Properties Notebook">Notebook</button>
+
+  <script>
+    (function() {
+      "use strict";
+
+      /**
+       * Simple mineral dataset with properties relevant to this game.
+       * hardness: approximate Mohs hardness (single representative value)
+       * magnetism: 'none' | 'weak' | 'strong'
+       * acid: 'none' | 'weak' | 'strong' (weak → powder fizzes)
+       */
+      const MINERALS = [
+        { id: "pyrite", name: "Pyrite", hardness: 6.0, luster: "metallic", cleavagePlanes: 0, color: "#caa11a", colorName: "brassy yellow", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "magnetite", name: "Magnetite", hardness: 6.0, luster: "submetallic", cleavagePlanes: 0, color: "#222629", colorName: "black", lamellae: false, magnetism: "strong", acid: "none" },
+        { id: "hematite", name: "Hematite", hardness: 6.0, luster: "metallic", cleavagePlanes: 0, color: "#6b3b2a", colorName: "reddish-brown", lamellae: false, magnetism: "weak", acid: "none" },
+        { id: "galena", name: "Galena", hardness: 2.5, luster: "metallic", cleavagePlanes: 3, color: "#6f7c8a", colorName: "lead gray", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "graphite", name: "Graphite", hardness: 1.5, luster: "submetallic", cleavagePlanes: 1, color: "#54595f", colorName: "steel gray", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "malachite", name: "Malachite", hardness: 3.5, luster: "earthy", cleavagePlanes: 1, color: "#189a62", colorName: "green", lamellae: false, magnetism: "none", acid: "strong" },
+        { id: "plagioclase", name: "Plagioclase Feldspar", hardness: 6.0, luster: "vitreous", cleavagePlanes: 2, color: "#cfd4da", colorName: "white/gray", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "kfeldspar", name: "Potassium Feldspar", hardness: 6.0, luster: "vitreous", cleavagePlanes: 2, color: "#f3a398", colorName: "pink/orange", lamellae: true, magnetism: "none", acid: "none" },
+        { id: "quartz", name: "Quartz", hardness: 7.0, luster: "vitreous", cleavagePlanes: 0, color: "#e9eef2", colorName: "colorless/white", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "olivine", name: "Olivine", hardness: 7.0, luster: "vitreous", cleavagePlanes: 0, color: "#6a8e29", colorName: "olive green", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "halite", name: "Halite", hardness: 2.5, luster: "vitreous", cleavagePlanes: 3, color: "#eef4fb", colorName: "colorless", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "calcite", name: "Calcite", hardness: 3.0, luster: "vitreous", cleavagePlanes: 3, color: "#f3f6f8", colorName: "colorless/white", lamellae: false, magnetism: "none", acid: "strong" },
+        { id: "gypsum", name: "Gypsum", hardness: 2.0, luster: "pearly", cleavagePlanes: 1, color: "#f1f5f9", colorName: "white", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "kernite", name: "Kernite", hardness: 3.0, luster: "pearly", cleavagePlanes: 1, color: "#e7ecef", colorName: "white", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "fluorite", name: "Fluorite", hardness: 4.0, luster: "vitreous", cleavagePlanes: 4, color: "#8273c7", colorName: "purple", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "muscovite", name: "Muscovite Mica", hardness: 2.5, luster: "pearly", cleavagePlanes: 1, color: "#e2e2da", colorName: "silvery", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "biotite", name: "Biotite Mica", hardness: 2.5, luster: "pearly", cleavagePlanes: 1, color: "#2b2a28", colorName: "black/brown", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "sulfur", name: "Sulfur", hardness: 2.0, luster: "resinous", cleavagePlanes: 2, color: "#ffee33", colorName: "yellow", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "talc", name: "Talc", hardness: 1.0, luster: "pearly", cleavagePlanes: 1, color: "#dfe7e1", colorName: "white/green", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "clay", name: "Clay", hardness: 2.0, luster: "earthy", cleavagePlanes: 0, color: "#a07b5b", colorName: "brown", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "azurite", name: "Azurite", hardness: 3.5, luster: "vitreous", cleavagePlanes: 2, color: "#2e63c5", colorName: "blue", lamellae: false, magnetism: "none", acid: "strong" },
+        { id: "augite", name: "Augite", hardness: 6.0, luster: "vitreous", cleavagePlanes: 2, color: "#1d2328", colorName: "dark green/black", lamellae: false, magnetism: "none", acid: "none" },
+        { id: "hornblende", name: "Hornblende", hardness: 6.0, luster: "vitreous", cleavagePlanes: 2, color: "#141a1f", colorName: "dark green/black", lamellae: false, magnetism: "none", acid: "none" }
+      ];
+      // Expose to notebook (same-origin iframe) as a safe fallback source
+      window.MINERALS_DATA = MINERALS.slice();
+
+      const HARDNESS_TOOLS = {
+        fingernail: { name: "Fingernail", hardness: 2.5 },
+        copper: { name: "Copper coin", hardness: 3.0 },
+        glass: { name: "Glass plate", hardness: 5.5 },
+        steel: { name: "Steel nail", hardness: 6.5 }
+      };
+
+      const MAX_WRONG_GUESSES = 5;
+      const GUESS_POINTS = [10, 6, 4, 2, 1]; // by attempt index (0-based)
+
+      // State
+      let totalScore = 0;
+      let roundIndex = 0; // 0-based
+      let remainingOrder = [];
+      let currentMineral = null;
+      let currentDisplayColor = null;
+      let currentDisplayColorName = null;
+      let testsUsedCount = 0;
+      let wrongGuessCount = 0;
+      let roundActive = true;
+      let lusterRevealed = false;
+      let cleavageRevealed = false;
+      let guessedWrongIds = new Set();
+
+      // DOM elements
+      const scoreEl = document.getElementById("score");
+      const roundEl = document.getElementById("round");
+      const remainingEl = document.getElementById("remaining");
+      const logEl = document.getElementById("log");
+      const notesLogEl = document.getElementById("notesLog");
+      const feedbackEl = document.getElementById("feedback");
+      const guessSelect = document.getElementById("guessSelect");
+      const submitGuessBtn = document.getElementById("submitGuess");
+      const nextMineralBtn = document.getElementById("nextMineral");
+      const giveUpBtn = document.getElementById("giveUp");
+      const resetGameBtn = document.getElementById("resetGame");
+      const openTutorialBtn = document.getElementById("openTutorial");
+      const noteInput = document.getElementById("noteInput");
+      const addNoteBtn = document.getElementById("addNote");
+      const clearNotesBtn = document.getElementById("clearNotes");
+      const specimenEl = document.getElementById("specimen");
+      const specimenColorEl = document.getElementById("specimenColor");
+      const specimenLusterEl = document.getElementById("specimenLuster");
+      const specimenCleavageEl = document.getElementById("specimenCleavage");
+      const specimenScratchEl = document.getElementById("specimenScratch");
+      const specimenLusterLabelEl = document.getElementById("specimenLusterLabel");
+      const inspectLusterBtn = document.getElementById("inspectLuster");
+      const inspectCleavageBtn = document.getElementById("inspectCleavage");
+      const attemptsHeaderEl = document.getElementById("attemptsHeader");
+      const notebookModal = document.getElementById("notebookModal");
+      const openNotebookBtn = document.getElementById("openNotebook");
+      const closeNotebookBtn = document.getElementById("closeNotebook");
+      const tutorialModal = document.getElementById("tutorialModal");
+      const tutorialBody = document.getElementById("tutorialBody");
+      const nextTutorialBtn = document.getElementById("nextTutorial");
+      const prevTutorialBtn = document.getElementById("prevTutorial");
+      const skipTutorialBtn = document.getElementById("skipTutorial");
+
+      // Utility
+      function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function formatTime(date) {
+        return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      }
+
+      function capitalize(text) {
+        if (!text) return "";
+        return text.charAt(0).toUpperCase() + text.slice(1);
+      }
+
+      function randomBetween(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      function setControlsEnabled(enabled) {
+        document.querySelectorAll("button[data-tool]").forEach(b => b.disabled = !enabled);
+        document.getElementById("testMagnetism").disabled = !enabled;
+        document.getElementById("testAcid").disabled = !enabled;
+        addNoteBtn.disabled = !enabled;
+        submitGuessBtn.disabled = !enabled;
+        guessSelect.disabled = !enabled;
+        giveUpBtn.disabled = !enabled;
+      }
+
+      function addLogItem(text, kind) {
+        const item = document.createElement("div");
+        item.className = `log-item ${kind}`;
+        const label = document.createElement("div");
+        label.textContent = text;
+        const time = document.createElement("div");
+        time.className = "log-time";
+        time.textContent = formatTime(new Date());
+        const del = document.createElement("button");
+        del.className = "delete-observation";
+        del.type = "button";
+        del.title = "Delete observation";
+        del.textContent = "Delete";
+        item.appendChild(label);
+        item.appendChild(time);
+        item.appendChild(del);
+        logEl.appendChild(item);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      // For tests: if the same result is logged consecutively, increment a trailing xN instead of adding a new row
+      function addTestLogItem(text, kind) {
+        const last = logEl.lastElementChild;
+        if (last && last.classList && last.classList.contains("log-item") && last.classList.contains(kind)) {
+          const labelEl = last.firstElementChild;
+          if (labelEl) {
+            const prev = labelEl.textContent || "";
+            const basePrev = prev.replace(/ x(\d+)$/, "");
+            if (basePrev === text) {
+              const m = prev.match(/ x(\d+)$/);
+              const nextCount = m ? Math.max(2, parseInt(m[1], 10) + 1) : 2;
+              labelEl.textContent = `${text} x${nextCount}`;
+              logEl.scrollTop = logEl.scrollHeight;
+              return;
+            }
+          }
+        }
+        addLogItem(text, kind);
+      }
+
+      function addNoteItem(text) {
+        const item = document.createElement("div");
+        item.className = "log-item note";
+        const label = document.createElement("div");
+        label.textContent = text;
+        const time = document.createElement("div");
+        time.className = "log-time";
+        time.textContent = formatTime(new Date());
+        const del = document.createElement("button");
+        del.className = "delete-note";
+        del.type = "button";
+        del.title = "Delete note";
+        del.textContent = "Delete";
+        item.appendChild(label);
+        item.appendChild(time);
+        item.appendChild(del);
+        notesLogEl.appendChild(item);
+        notesLogEl.scrollTop = notesLogEl.scrollHeight;
+      }
+
+      function clearLog() {
+        logEl.innerHTML = "";
+      }
+
+      function updateScoreboard() {
+        scoreEl.textContent = String(totalScore);
+        roundEl.textContent = String(roundIndex + 1);
+        remainingEl.textContent = String(remainingOrder.length - roundIndex - 1);
+        attemptsHeaderEl.textContent = String(Math.max(0, MAX_WRONG_GUESSES - wrongGuessCount));
+      }
+
+      function populateGuessOptions() {
+        guessSelect.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Select a mineral";
+        guessSelect.appendChild(placeholder);
+        MINERALS
+          .slice()
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .forEach(m => {
+            if (guessedWrongIds && guessedWrongIds.has(m.id)) return;
+            const opt = document.createElement("option");
+            opt.value = m.id;
+            opt.textContent = m.name;
+            guessSelect.appendChild(opt);
+          });
+      }
+
+      function startNewGame() {
+        totalScore = Number(localStorage.getItem("mineral_game_score") || 0);
+        roundIndex = -1;
+        remainingOrder = shuffle(Array.from({ length: MINERALS.length }, (_, i) => i));
+        updateScoreboard();
+        nextRound();
+      }
+
+      function endRound(success, revealed = false) {
+        roundActive = false;
+        setControlsEnabled(false);
+        nextMineralBtn.disabled = false;
+        giveUpBtn.disabled = true;
+        if (success) {
+          const attemptIndex = wrongGuessCount; // 0-based
+          const roundPoints = attemptIndex < GUESS_POINTS.length ? GUESS_POINTS[attemptIndex] : 0;
+          totalScore += roundPoints;
+          localStorage.setItem("mineral_game_score", String(totalScore));
+          feedbackEl.className = "feedback good";
+          feedbackEl.textContent = `Correct! +${roundPoints} points. It was ${currentMineral.name}.`;
+        } else if (revealed) {
+          feedbackEl.className = "feedback bad";
+          feedbackEl.textContent = `Revealed: ${currentMineral.name}. No points awarded.`;
+        }
+        updateScoreboard();
+      }
+
+      function nextRound() {
+        roundIndex += 1;
+        if (roundIndex >= remainingOrder.length) {
+          feedbackEl.className = "feedback good";
+          feedbackEl.textContent = "Game complete! Reset to play again.";
+          setControlsEnabled(false);
+          nextMineralBtn.disabled = true;
+          giveUpBtn.disabled = true;
+          submitGuessBtn.disabled = true;
+          guessSelect.disabled = true;
+          return;
+        }
+
+        const newMineral = MINERALS[remainingOrder[roundIndex]];
+        currentMineral = newMineral;
+        const variant = pickDisplayVariant(currentMineral);
+        currentDisplayColor = variant.color;
+        currentDisplayColorName = variant.name;
+        testsUsedCount = 0;
+        wrongGuessCount = 0;
+        roundActive = true;
+        lusterRevealed = false;
+        cleavageRevealed = false;
+        guessedWrongIds = new Set();
+
+        resetSpecimenVisuals();
+        clearLog();
+        addLogItem("New mineral received. Begin your tests.", "note");
+        feedbackEl.className = "feedback info";
+        feedbackEl.textContent = "Use the tests and make a guess.";
+        setControlsEnabled(true);
+        nextMineralBtn.disabled = true;
+        populateGuessOptions();
+        guessSelect.value = "";
+        updateScoreboard();
+        updateSpecimenView();
+      }
+
+      // Tests
+      function testHardness(toolKey) {
+        if (!roundActive) return;
+        const tool = HARDNESS_TOOLS[toolKey];
+        testsUsedCount += 1;
+        const scratchesTool = currentMineral.hardness >= tool.hardness;
+        const result = scratchesTool ? "scratches" : "does not scratch";
+        const difference = currentMineral.hardness - tool.hardness;
+        const mineralScratched = difference < -0.15;
+        const toolScratched = difference > 0.15;
+        const description = mineralScratched
+          ? "You see a fresh scratch along the specimen's surface."
+          : toolScratched
+            ? "The tool skids with bright sparks while the specimen looks untouched."
+            : "Only a faint scuff appears with no clear scratch.";
+        addTestLogItem(`Hardness: Mineral ${result} the ${tool.name} (tool ≈ ${tool.hardness}). ${description}`, "hardness");
+        triggerScratchVisual({ mineralScratched, toolScratched });
+      }
+
+      function testMagnetism() {
+        if (!roundActive) return;
+        testsUsedCount += 1;
+        let text = "Magnetism: ";
+        if (currentMineral.magnetism === "strong") text += "Strongly magnetic.";
+        else if (currentMineral.magnetism === "weak") text += "Weakly magnetic (inconsistent).";
+        else text += "No noticeable magnetism.";
+        addTestLogItem(text, "magnetism");
+      }
+
+      function testAcid() {
+        if (!roundActive) return;
+        testsUsedCount += 1;
+        let text = "Acid: ";
+        if (currentMineral.acid === "strong") text += "Strong fizz in cold dilute HCl.";
+        else if (currentMineral.acid === "weak") text += "Weak fizz on powdered sample.";
+        else text += "No reaction.";
+        addTestLogItem(text, "acid");
+      }
+
+      // Visual inspections
+      function inspectLuster() {
+        if (!roundActive) return false;
+        const firstReveal = !lusterRevealed;
+        lusterRevealed = true;
+        specimenLusterEl.hidden = false;
+        if (firstReveal) {
+          addTestLogItem(`Luster: ${currentMineral.luster}.`, "luster");
+        }
+        animateLusterReveal();
+        return true;
+      }
+      function inspectCleavage() {
+        if (!roundActive) return;
+        cleavageRevealed = true;
+        specimenCleavageEl.hidden = false;
+        addTestLogItem(`Cleavage: ${currentMineral.cleavagePlanes} plane(s).`, "cleavage");
+      }
+
+      function updateSpecimenView() {
+        if (!currentMineral) return;
+        specimenColorEl.style.background = currentDisplayColor || currentMineral.color;
+        specimenLusterEl.hidden = !lusterRevealed;
+        specimenLusterEl.classList.toggle("visible", lusterRevealed);
+        specimenCleavageEl.hidden = !cleavageRevealed;
+        specimenCleavageEl.style.backgroundImage = cleavageBackgroundFor(currentMineral.cleavagePlanes);
+        specimenLusterEl.style.background = lusterBackgroundFor(currentMineral.luster);
+        specimenLusterEl.style.mixBlendMode = lusterBlendModeFor(currentMineral.luster);
+        specimenLusterEl.style.opacity = lusterOpacityFor(currentMineral.luster);
+        if (specimenLusterLabelEl) {
+          if (lusterRevealed) {
+            specimenLusterLabelEl.textContent = `${capitalize(currentMineral.luster)} luster`;
+            specimenLusterLabelEl.classList.add("visible");
+            specimenLusterLabelEl.setAttribute("aria-hidden", "false");
+          } else {
+            specimenLusterLabelEl.textContent = "";
+            specimenLusterLabelEl.classList.remove("visible");
+            specimenLusterLabelEl.setAttribute("aria-hidden", "true");
+          }
+        }
+        if (specimenEl) {
+          specimenEl.classList.toggle("showing-luster", lusterRevealed);
+        }
+      }
+
+      function resetSpecimenVisuals() {
+        if (specimenScratchEl) {
+          specimenScratchEl.innerHTML = "";
+        }
+        if (specimenLusterEl) {
+          specimenLusterEl.classList.remove("reveal");
+          specimenLusterEl.classList.remove("visible");
+        }
+        if (specimenEl) {
+          specimenEl.classList.remove("showing-luster");
+        }
+        if (specimenLusterLabelEl) {
+          specimenLusterLabelEl.textContent = "";
+          specimenLusterLabelEl.classList.remove("visible");
+          specimenLusterLabelEl.setAttribute("aria-hidden", "true");
+        }
+      }
+
+      function triggerScratchVisual({ mineralScratched, toolScratched }) {
+        if (!specimenScratchEl) return;
+        specimenScratchEl.innerHTML = "";
+        const stalemate = !mineralScratched && !toolScratched;
+        const effect = document.createElement("div");
+        if (mineralScratched) {
+          effect.className = "scratch-lines";
+          const angle = Math.round(randomBetween(25, 75));
+          effect.style.setProperty("--scratch-angle", `${angle}deg`);
+          effect.style.animationDuration = "1.6s";
+        } else {
+          effect.className = stalemate ? "scratch-spark soft" : "scratch-spark bright";
+          effect.style.animationDuration = stalemate ? "0.9s" : "1.2s";
+          effect.style.setProperty("--spark-main-x", `${Math.round(randomBetween(40, 60))}%`);
+          effect.style.setProperty("--spark-main-y", `${Math.round(randomBetween(35, 55))}%`);
+          effect.style.setProperty("--spark-glint-a-x", `${Math.round(randomBetween(20, 40))}%`);
+          effect.style.setProperty("--spark-glint-a-y", `${Math.round(randomBetween(60, 80))}%`);
+          effect.style.setProperty("--spark-glint-b-x", `${Math.round(randomBetween(60, 80))}%`);
+          effect.style.setProperty("--spark-glint-b-y", `${Math.round(randomBetween(40, 70))}%`);
+        }
+        specimenScratchEl.appendChild(effect);
+        requestAnimationFrame(() => {
+          effect.classList.add("animate");
+        });
+        const lifespan = mineralScratched ? 1700 : (stalemate ? 1000 : 1300);
+        window.setTimeout(() => {
+          if (effect.parentElement === specimenScratchEl) {
+            effect.remove();
+          }
+        }, lifespan);
+      }
+
+      function animateLusterReveal() {
+        if (!specimenLusterEl) return;
+        specimenLusterEl.classList.remove("reveal");
+        // Force reflow to restart animation
+        void specimenLusterEl.offsetWidth;
+        specimenLusterEl.classList.add("reveal");
+      }
+
+      function cleavageBackgroundFor(planes) {
+        const line = (angle) => `repeating-linear-gradient(${angle}deg, rgba(255,255,255,0.35) 0 2px, transparent 2px 12px)`;
+        if (!planes || planes <= 0) return "none";
+        if (planes === 1) return line(0);
+        if (planes === 2) return `${line(0)}, ${line(90)}`;
+        if (planes === 3) return `${line(0)}, ${line(90)}, ${line(45)}`;
+        return `${line(0)}, ${line(90)}, ${line(45)}, ${line(135)}`; // 4 or more
+      }
+
+      function lusterOpacityFor(luster) {
+        switch (luster) {
+          case "metallic": return "1";
+          case "submetallic": return "0.88";
+          case "vitreous": return "0.9";
+          case "pearly": return "0.68";
+          case "resinous": return "0.72";
+          case "earthy": return "0.35";
+          default: return "0.62";
+        }
+      }
+
+      function lusterBackgroundFor(luster) {
+        if (!luster) return "none";
+        const lower = String(luster).toLowerCase();
+        if (lower === "vitreous") {
+          // Few glass-like bright stripes at a single angle (no blobs)
+          return [
+            "linear-gradient(135deg, transparent 0 12%, rgba(255,255,255,0.34) 12% 18%, transparent 18% 100%)",
+            "linear-gradient(135deg, transparent 0 38%, rgba(255,255,255,0.22) 38% 45%, transparent 45% 100%)",
+            "linear-gradient(135deg, transparent 0 68%, rgba(255,255,255,0.16) 68% 73%, transparent 73% 100%)"
+          ].join(", ");
+        }
+        if (lower === "metallic") {
+          // Metallic: vertical, softly blended bands with faint horizontal brushing
+          return [
+            // broad blended vertical highlights/shadows (no harsh edges)
+            "linear-gradient(90deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.22) 12%, rgba(255,255,255,0.06) 24%, rgba(0,0,0,0.14) 38%, rgba(255,255,255,0.12) 52%, rgba(0,0,0,0.18) 68%, rgba(255,255,255,0.08) 82%, rgba(255,255,255,0.03) 100%)",
+            // subtle center bloom
+            "radial-gradient(60% 100% at 50% 50%, rgba(255,255,255,0.12), transparent 70%)",
+            // fine horizontal lines for brushed effect
+            "repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0 1px, rgba(0,0,0,0.04) 1px 2px)"
+          ].join(", ");
+        }
+        if (lower === "submetallic") {
+          return [
+            "linear-gradient(100deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.04) 30%, rgba(0,0,0,0.22) 95%)",
+            "radial-gradient(80% 100% at 60% 40%, rgba(255,255,255,0.14), transparent 70%)",
+            "repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0 1px, rgba(0,0,0,0.08) 1px 3px)"
+          ].join(", ");
+        }
+        if (lower === "pearly") {
+          return [
+            "radial-gradient(120px 60px at 20% 20%, rgba(255,255,255,0.35), rgba(255,255,255,0.05) 60%, transparent 70%)",
+            "radial-gradient(180px 90px at 80% 70%, rgba(255,255,255,0.15), transparent 70%)"
+          ].join(", ");
+        }
+        if (lower === "resinous") {
+          return [
+            "radial-gradient(60% 110% at 50% 30%, rgba(255,212,128,0.5), rgba(255,212,128,0) 70%)",
+            "radial-gradient(40% 90% at 20% 80%, rgba(255,176,64,0.35), rgba(255,176,64,0) 70%)",
+            "linear-gradient(135deg, rgba(255,255,255,0.14) 0 18%, transparent 18% 100%)"
+          ].join(", ");
+        }
+        if (lower === "earthy" || lower === "dull") {
+          return [
+            "linear-gradient(45deg, rgba(88,58,28,0.28) 0%, rgba(88,58,28,0.1) 40%, rgba(255,255,255,0) 100%)",
+            "radial-gradient(120% 120% at 0% 100%, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 70%)",
+            "repeating-linear-gradient(75deg, rgba(0,0,0,0.08) 0 3px, rgba(0,0,0,0) 3px 12px)"
+          ].join(", ");
+        }
+        return [
+          "radial-gradient(120px 60px at 20% 20%, rgba(255,255,255,0.28), rgba(255,255,255,0.05) 60%, transparent 70%)",
+          "radial-gradient(180px 90px at 80% 70%, rgba(255,255,255,0.12), transparent 70%)"
+        ].join(", ");
+      }
+
+      function lusterBlendModeFor(luster) {
+        const lower = String(luster || "").toLowerCase();
+        if (lower === "metallic") return "overlay";
+        if (lower === "submetallic") return "soft-light";
+        return "screen";
+      }
+
+      function openNotebookModal() {
+        notebookModal.hidden = false;
+      }
+      function closeNotebookModal() {
+        notebookModal.hidden = true;
+      }
+
+      // Specimen color variants (display-only)
+      function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+      function hexToRgb(hex) {
+        const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        if (!m) return { r: 255, g: 255, b: 255 };
+        return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
+      }
+      function rgbToHex(r, g, b) {
+        const toHex = (x) => x.toString(16).padStart(2, "0");
+        return `#${toHex(Math.round(r))}${toHex(Math.round(g))}${toHex(Math.round(b))}`;
+      }
+      function rgbToHsl(r, g, b) {
+        r /= 255; g /= 255; b /= 255;
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
+        if (max === min) { h = s = 0; }
+        else {
+          const d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+          switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+          }
+          h /= 6;
+        }
+        return { h, s, l };
+      }
+      function hslToRgb(h, s, l) {
+        let r, g, b;
+        if (s === 0) { r = g = b = l; }
+        else {
+          function hue2rgb(p, q, t) {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1/6) return p + (q - p) * 6 * t;
+            if (t < 1/2) return q;
+            if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+          }
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 2 * l - q;
+          r = hue2rgb(p, q, h + 1/3);
+          g = hue2rgb(p, q, h);
+          b = hue2rgb(p, q, h - 1/3);
+        }
+        return { r: r * 255, g: g * 255, b: b * 255 };
+      }
+      function jitterHexColor(hex, jitter) {
+        const { r, g, b } = hexToRgb(hex);
+        let { h, s, l } = rgbToHsl(r, g, b);
+        const j = jitter || { h: 0.01, s: 0.04, l: 0.05 };
+        h = (h + (Math.random() * 2 - 1) * j.h + 1) % 1;
+        s = clamp01(s + (Math.random() * 2 - 1) * j.s);
+        l = clamp01(l + (Math.random() * 2 - 1) * j.l);
+        const rgb = hslToRgb(h, s, l);
+        return rgbToHex(rgb.r, rgb.g, rgb.b);
+      }
+      function weightedPick(items) {
+        if (!items || !items.length) return null;
+        const total = items.reduce((a, it) => a + (it.weight || 1), 0);
+        let r = Math.random() * total;
+        for (const it of items) {
+          r -= (it.weight || 1);
+          if (r <= 0) return it;
+        }
+        return items[items.length - 1];
+      }
+      const COLOR_VARIANTS = {
+        quartz: [
+          { color: "#f9fbfd", name: "colorless/white", weight: 0.45 },
+          { color: "#e9eef2", name: "white", weight: 0.25 },
+          { color: "#f6c2cf", name: "pink (rose)", weight: 0.18 },
+          { color: "#a4a7ab", name: "smoky gray", weight: 0.12 }
+        ],
+        hematite: [
+          { color: "#6b3b2a", name: "reddish-brown", weight: 0.5 },
+          { color: "#2a2a2a", name: "black", weight: 0.3 },
+          { color: "#5a5a5a", name: "steel gray", weight: 0.2 }
+        ],
+        magnetite: [
+          { color: "#222629", name: "black", weight: 0.7 },
+          { color: "#2b2f33", name: "dark gray", weight: 0.3 }
+        ],
+        pyrite: [
+          { color: "#caa11a", name: "brassy yellow", weight: 0.7 },
+          { color: "#b9960f", name: "pale brass", weight: 0.2 },
+          { color: "#b58f18", name: "bronzy yellow", weight: 0.1 }
+        ],
+        galena: [
+          { color: "#6f7c8a", name: "lead gray", weight: 0.6 },
+          { color: "#9aa3ad", name: "silvery gray", weight: 0.25 },
+          { color: "#5f6c7a", name: "bluish gray", weight: 0.15 }
+        ],
+        graphite: [
+          { color: "#54595f", name: "steel gray", weight: 0.6 },
+          { color: "#2f3338", name: "black", weight: 0.25 },
+          { color: "#6b6f74", name: "gray", weight: 0.15 }
+        ],
+        malachite: [
+          { color: "#189a62", name: "green", weight: 0.6 },
+          { color: "#147a4d", name: "dark green", weight: 0.25 },
+          { color: "#28b377", name: "bright green", weight: 0.15 }
+        ],
+        plagioclase: [
+          { color: "#cfd4da", name: "white/gray", weight: 0.6 },
+          { color: "#b9c0c7", name: "gray", weight: 0.25 },
+          { color: "#e3e7ea", name: "nearly white", weight: 0.15 }
+        ],
+        kfeldspar: [
+          { color: "#f3a398", name: "pink/orange", weight: 0.6 },
+          { color: "#ee8e7d", name: "salmon", weight: 0.25 },
+          { color: "#f5b1a0", name: "peach", weight: 0.15 }
+        ],
+        halite: [
+          { color: "#eef4fb", name: "colorless", weight: 0.75 },
+          { color: "#f8fbff", name: "white", weight: 0.2 },
+          { color: "#ffeef0", name: "pink tint", weight: 0.05 }
+        ],
+        calcite: [
+          { color: "#f3f6f8", name: "colorless/white", weight: 0.7 },
+          { color: "#f8e6c8", name: "pale amber", weight: 0.15 },
+          { color: "#f8d8df", name: "light pink", weight: 0.15 }
+        ],
+        gypsum: [
+          { color: "#f1f5f9", name: "white", weight: 0.7 },
+          { color: "#ede9e5", name: "off-white", weight: 0.2 },
+          { color: "#fafcfe", name: "translucent white", weight: 0.1 }
+        ],
+        kernite: [
+          { color: "#e7ecef", name: "white", weight: 0.7 },
+          { color: "#dce2e6", name: "light gray", weight: 0.2 },
+          { color: "#f5f8fa", name: "translucent white", weight: 0.1 }
+        ],
+        fluorite: [
+          { color: "#8273c7", name: "purple", weight: 0.5 },
+          { color: "#61b88b", name: "green", weight: 0.2 },
+          { color: "#6aa0e0", name: "blue", weight: 0.2 },
+          { color: "#d9c86c", name: "yellow", weight: 0.1 }
+        ],
+        muscovite: [
+          { color: "#e2e2da", name: "silvery", weight: 0.65 },
+          { color: "#d7d1c8", name: "tan", weight: 0.2 },
+          { color: "#cfc9bf", name: "gray", weight: 0.15 }
+        ],
+        biotite: [
+          { color: "#2b2a28", name: "black/brown", weight: 0.65 },
+          { color: "#3a2f27", name: "brown", weight: 0.2 },
+          { color: "#2f2d25", name: "dark olive", weight: 0.15 }
+        ],
+        sulfur: [
+          { color: "#ffee33", name: "yellow", weight: 0.65 },
+          { color: "#f2db2a", name: "deep yellow", weight: 0.2 },
+          { color: "#fff47a", name: "pale yellow", weight: 0.15 }
+        ],
+        talc: [
+          { color: "#dfe7e1", name: "white/green", weight: 0.6 },
+          { color: "#cfe0d7", name: "pale green", weight: 0.25 },
+          { color: "#e7ece8", name: "grayish white", weight: 0.15 }
+        ],
+        clay: [
+          { color: "#a07b5b", name: "brown", weight: 0.6 },
+          { color: "#9a6347", name: "reddish brown", weight: 0.2 },
+          { color: "#b18a6c", name: "tan", weight: 0.15 },
+          { color: "#f2f2f2", name: "white", weight: 0.05 }
+        ],
+        azurite: [
+          { color: "#2e63c5", name: "blue", weight: 0.6 },
+          { color: "#234f9f", name: "dark blue", weight: 0.25 },
+          { color: "#3e73d5", name: "bright blue", weight: 0.15 }
+        ],
+        augite: [
+          { color: "#1d2328", name: "dark green/black", weight: 0.7 },
+          { color: "#22303a", name: "dark green", weight: 0.3 }
+        ],
+        hornblende: [
+          { color: "#141a1f", name: "dark green/black", weight: 0.7 },
+          { color: "#1a242a", name: "dark olive", weight: 0.3 }
+        ],
+        olivine: [
+          { color: "#6a8e29", name: "olive green", weight: 0.6 },
+          { color: "#8aa63a", name: "yellow-green", weight: 0.25 },
+          { color: "#57781f", name: "deep olive", weight: 0.15 }
+        ]
+      };
+      function pickDisplayVariant(mineral) {
+        const variants = COLOR_VARIANTS[mineral.id] || [{ color: mineral.color, name: mineral.colorName, weight: 1 }];
+        const chosen = weightedPick(variants) || variants[0];
+        const color = jitterHexColor(chosen.color, { h: 0.01, s: 0.04, l: 0.05 });
+        return { color, name: chosen.name || mineral.colorName };
+      }
+
+      // Tutorial
+      const tutorialSteps = [
+        { title: "Testing panel", body: "Use hardness, magnetism, and acid tests to gather evidence." },
+        { title: "Inspection panel", body: "Inspect luster and cleavage to reveal visual properties." },
+        { title: "Notes", body: "Record your own observations. Notes are kept separate from the main log." },
+        { title: "Notebook", body: "Open the Notebook for a searchable reference of minerals and properties." },
+        { title: "Observations", body: "Review all test results, system messages, and guesses here." }
+      ];
+      let tutorialIndex = 0;
+      const tutorialContentEl = document.querySelector("#tutorialModal .modal-content");
+      const tutorialOverlayEl = (() => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "tutorial-overlay";
+        const top = document.createElement("div");
+        const right = document.createElement("div");
+        const bottom = document.createElement("div");
+        const left = document.createElement("div");
+        top.className = "tutorial-dim tutorial-dim-top";
+        right.className = "tutorial-dim tutorial-dim-right";
+        bottom.className = "tutorial-dim tutorial-dim-bottom";
+        left.className = "tutorial-dim tutorial-dim-left";
+        wrapper.appendChild(top);
+        wrapper.appendChild(right);
+        wrapper.appendChild(bottom);
+        wrapper.appendChild(left);
+        tutorialModal.appendChild(wrapper);
+        return wrapper;
+      })();
+      const tutorialHighlightEl = (() => {
+        const el = document.createElement("div");
+        el.className = "tutorial-highlight";
+        tutorialModal.appendChild(el);
+        return el;
+      })();
+      function targetElementForStep(index) {
+        switch (index) {
+          case 0: return document.getElementById("testsPanel");
+          case 1: return document.getElementById("inspectionPanel");
+          case 2: return document.getElementById("notesPanel");
+          case 3: return document.getElementById("openNotebook");
+          case 4: return document.getElementById("observationsPanel");
+          default: return null;
+        }
+      }
+      function positionTutorialBox() {
+        if (!tutorialContentEl) return;
+        const target = targetElementForStep(tutorialIndex);
+        const padding = 12;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const contentRect = tutorialContentEl.getBoundingClientRect();
+        const contentW = contentRect.width || 320;
+        const contentH = contentRect.height || 140;
+        let left = 16;
+        let top = 16;
+        if (target) {
+          const r = target.getBoundingClientRect();
+          // Prefer right of target
+          if (r.right + padding + contentW <= vw) {
+            left = r.right + padding;
+            top = Math.max(16, Math.min(vh - contentH - 16, r.top));
+          // Else try left of target
+          } else if (r.left - padding - contentW >= 0) {
+            left = Math.max(16, r.left - padding - contentW);
+            top = Math.max(16, Math.min(vh - contentH - 16, r.top));
+          // Else try below target
+          } else if (r.bottom + padding + contentH <= vh) {
+            left = Math.max(16, Math.min(vw - contentW - 16, r.left));
+            top = r.bottom + padding;
+          // Else try above target
+          } else if (r.top - padding - contentH >= 0) {
+            left = Math.max(16, Math.min(vw - contentW - 16, r.left));
+            top = Math.max(16, r.top - padding - contentH);
+          } else {
+            // Fallback: place near target but avoid overlap as much as possible
+            left = Math.max(16, Math.min(vw - contentW - 16, r.right + padding));
+            top = Math.max(16, Math.min(vh - contentH - 16, r.bottom + padding));
+          }
+
+          // Update highlight around the target
+          const margin = 6;
+          const hlLeft = Math.max(8, r.left - margin);
+          const hlTop = Math.max(8, r.top - margin);
+          const hlWidth = Math.min(vw - 16, r.width + margin * 2);
+          const hlHeight = Math.min(vh - 16, r.height + margin * 2);
+          tutorialHighlightEl.style.left = `${hlLeft}px`;
+          tutorialHighlightEl.style.top = `${hlTop}px`;
+          tutorialHighlightEl.style.width = `${hlWidth}px`;
+          tutorialHighlightEl.style.height = `${hlHeight}px`;
+          tutorialHighlightEl.style.opacity = "1";
+
+          // Update dim layers to create a hole around the target
+          const dims = {
+            top: tutorialOverlayEl.querySelector(".tutorial-dim-top"),
+            right: tutorialOverlayEl.querySelector(".tutorial-dim-right"),
+            bottom: tutorialOverlayEl.querySelector(".tutorial-dim-bottom"),
+            left: tutorialOverlayEl.querySelector(".tutorial-dim-left")
+          };
+          if (dims.top && dims.right && dims.bottom && dims.left) {
+            dims.top.style.left = "0px";
+            dims.top.style.top = "0px";
+            dims.top.style.width = "100%";
+            dims.top.style.height = `${Math.max(0, r.top)}px`;
+
+            dims.bottom.style.left = "0px";
+            dims.bottom.style.top = `${Math.max(0, r.bottom)}px`;
+            dims.bottom.style.width = "100%";
+            dims.bottom.style.height = `${Math.max(0, vh - r.bottom)}px`;
+
+            dims.left.style.left = "0px";
+            dims.left.style.top = `${Math.max(0, r.top)}px`;
+            dims.left.style.width = `${Math.max(0, r.left)}px`;
+            dims.left.style.height = `${Math.max(0, r.height)}px`;
+
+            dims.right.style.left = `${Math.max(0, r.right)}px`;
+            dims.right.style.top = `${Math.max(0, r.top)}px`;
+            dims.right.style.width = `${Math.max(0, vw - r.right)}px`;
+            dims.right.style.height = `${Math.max(0, r.height)}px`;
+          }
+        } else {
+          tutorialHighlightEl.style.opacity = "0";
+          // Cover entire screen when no target
+          const dims = tutorialOverlayEl.querySelectorAll(".tutorial-dim");
+          dims.forEach(d => {
+            d.style.left = "0px";
+            d.style.top = "0px";
+            d.style.width = "100%";
+            d.style.height = "100%";
+          });
+        }
+        tutorialContentEl.style.left = `${left}px`;
+        tutorialContentEl.style.top = `${top}px`;
+      }
+      function renderTutorial() {
+        const step = tutorialSteps[tutorialIndex];
+        tutorialBody.innerHTML = "";
+        const h = document.createElement("div");
+        h.style.fontWeight = "600";
+        h.style.marginBottom = "6px";
+        h.textContent = step.title;
+        const p = document.createElement("div");
+        p.textContent = step.body;
+        tutorialBody.appendChild(h);
+        tutorialBody.appendChild(p);
+        prevTutorialBtn.disabled = tutorialIndex === 0;
+        nextTutorialBtn.textContent = tutorialIndex === tutorialSteps.length - 1 ? "Done" : "Next";
+        const target = targetElementForStep(tutorialIndex);
+        if (target) {
+          try { target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" }); } catch (_e) {}
+        }
+        requestAnimationFrame(positionTutorialBox);
+      }
+      function openTutorialModal() {
+        tutorialIndex = 0;
+        renderTutorial();
+        tutorialModal.hidden = false;
+        positionTutorialBox();
+      }
+      function closeTutorialModal() {
+        tutorialModal.hidden = true;
+        localStorage.setItem("mineral_game_tutorial_shown", "1");
+        tutorialHighlightEl.style.opacity = "0";
+      }
+
+      function partialFeedback(guess, target) {
+        const correct = [];
+        const wrong = [];
+        if (Math.round(guess.hardness * 10) === Math.round(target.hardness * 10)) correct.push(`hardness correct at ${target.hardness}`); else wrong.push("hardness");
+        if (guess.luster === target.luster) correct.push(`luster correct (${target.luster})`); else wrong.push("luster");
+        if (guess.cleavagePlanes === target.cleavagePlanes) correct.push(`${target.cleavagePlanes} cleavage plane(s) correct`); else wrong.push("cleavage planes");
+        if (guess.colorName === target.colorName) correct.push("color correct"); else wrong.push("color");
+        let msg = "";
+        if (correct.length) msg += correct.join(", ");
+        if (wrong.length) msg += (correct.length ? ", but " : "") + wrong.join(" and ") + " were incorrect.";
+        if (!msg) msg = "No matching properties.";
+        return msg;
+      }
+
+      // Guessing
+      function submitGuess() {
+        if (!roundActive) return;
+        const choice = guessSelect.value;
+        if (!choice) {
+          feedbackEl.className = "feedback info";
+          feedbackEl.textContent = "Select a mineral before submitting.";
+          return;
+        }
+        // Prevent re-guessing the same wrong mineral
+        if (guessedWrongIds && guessedWrongIds.has(choice)) {
+          const guessedAgain = MINERALS.find(m => m.id === choice);
+          feedbackEl.className = "feedback info";
+          feedbackEl.textContent = `You've already tried ${guessedAgain ? guessedAgain.name : "that mineral"}. Choose a different mineral.`;
+          return;
+        }
+        if (choice === currentMineral.id) {
+          const mineralName = MINERALS.find(m => m.id === choice).name;
+          const attemptIndex = wrongGuessCount;
+          const roundPoints = attemptIndex < GUESS_POINTS.length ? GUESS_POINTS[attemptIndex] : 0;
+          addLogItem(`Guess result: Correct — You guessed: ${mineralName}. +${roundPoints} points.`, "note");
+          endRound(true);
+        } else {
+          const guessed = MINERALS.find(m => m.id === choice);
+          wrongGuessCount += 1;
+          const attemptsLeft = Math.max(0, MAX_WRONG_GUESSES - wrongGuessCount);
+          const details = partialFeedback(guessed, currentMineral);
+          feedbackEl.className = "feedback bad";
+          feedbackEl.textContent = `Incorrect. Attempts left: ${attemptsLeft}. ${details}`;
+          addLogItem(`Guess result: Incorrect — You guessed: ${guessed.name}. Attempts left: ${attemptsLeft}. ${details}`, "note");
+          // Mark this mineral as tried and remove from options
+          if (guessed && guessed.id) {
+            if (!guessedWrongIds) guessedWrongIds = new Set();
+            guessedWrongIds.add(guessed.id);
+            const opt = guessSelect.querySelector(`option[value="${guessed.id}"]`);
+            if (opt && opt.parentElement) opt.parentElement.removeChild(opt);
+            guessSelect.value = "";
+          }
+          updateScoreboard();
+          if (wrongGuessCount >= MAX_WRONG_GUESSES) {
+            addLogItem("Out of guesses. Revealing the answer...", "note");
+            endRound(false, true);
+            addLogItem(`Answer: ${currentMineral.name}.`, "note");
+          }
+        }
+      }
+
+      function giveUp() {
+        if (!roundActive) return;
+        addLogItem("Gave up. Revealing the answer...", "note");
+        endRound(false, true);
+        addLogItem(`Answer: ${currentMineral.name}.`, "note");
+      }
+
+      // Wire up UI
+      document.querySelectorAll("button[data-tool]").forEach(btn => {
+        btn.addEventListener("click", () => testHardness(btn.getAttribute("data-tool")));
+      });
+      document.getElementById("testMagnetism").addEventListener("click", testMagnetism);
+      document.getElementById("testAcid").addEventListener("click", testAcid);
+      submitGuessBtn.addEventListener("click", submitGuess);
+      nextMineralBtn.addEventListener("click", nextRound);
+      giveUpBtn.addEventListener("click", giveUp);
+      document.getElementById("clearObservations").addEventListener("click", clearLog);
+      resetGameBtn.addEventListener("click", () => {
+        totalScore = 0;
+        localStorage.setItem("mineral_game_score", "0");
+        startNewGame();
+      });
+      inspectLusterBtn.addEventListener("click", () => { inspectLuster(); updateSpecimenView(); });
+      inspectCleavageBtn.addEventListener("click", () => { inspectCleavage(); updateSpecimenView(); });
+      openNotebookBtn.addEventListener("click", openNotebookModal);
+      closeNotebookBtn.addEventListener("click", closeNotebookModal);
+      notebookModal.addEventListener("click", (e) => { if (e.target === notebookModal) closeNotebookModal(); });
+      addNoteBtn.addEventListener("click", () => {
+        const value = noteInput.value.trim();
+        if (!value) return;
+        addNoteItem(value);
+        noteInput.value = "";
+      });
+      noteInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addNoteBtn.click();
+        }
+      });
+      clearNotesBtn.addEventListener("click", () => { notesLogEl.innerHTML = ""; });
+      // Delete single observations via event delegation
+      logEl.addEventListener("click", (e) => {
+        const btn = e.target && e.target.closest && e.target.closest(".delete-observation");
+        if (!btn) return;
+        const row = btn.closest(".log-item");
+        if (row && logEl.contains(row)) row.remove();
+      });
+      // Delete single notes via event delegation
+      notesLogEl.addEventListener("click", (e) => {
+        const btn = e.target && e.target.closest && e.target.closest(".delete-note");
+        if (!btn) return;
+        const row = btn.closest(".log-item");
+        if (row && notesLogEl.contains(row)) row.remove();
+      });
+      openTutorialBtn.addEventListener("click", openTutorialModal);
+      nextTutorialBtn.addEventListener("click", () => {
+        if (tutorialIndex < tutorialSteps.length - 1) {
+          tutorialIndex += 1;
+          renderTutorial();
+        } else {
+          closeTutorialModal();
+        }
+      });
+      prevTutorialBtn.addEventListener("click", () => {
+        if (tutorialIndex > 0) {
+          tutorialIndex -= 1;
+          renderTutorial();
+        }
+      });
+      skipTutorialBtn.addEventListener("click", closeTutorialModal);
+      tutorialModal.addEventListener("click", (e) => {
+        if (!tutorialContentEl.contains(e.target)) closeTutorialModal();
+      });
+      window.addEventListener("resize", positionTutorialBox);
+      window.addEventListener("scroll", positionTutorialBox, { passive: true });
+
+      // Initialize
+      populateGuessOptions();
+      startNewGame();
+      if (!localStorage.getItem("mineral_game_tutorial_shown")) {
+        openTutorialModal();
+      }
+    })();
+  </script>
+</body>
+</html>

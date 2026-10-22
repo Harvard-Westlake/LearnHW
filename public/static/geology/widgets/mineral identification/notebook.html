@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mineral Properties Notebook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="notebook.css">
+</head>
+<body>
+  <header class="header">
+    <div class="title">
+      <div style="font-size:18px">Mineral Properties Notebook</div>
+      <span class="badge">Reference</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="start" class="panel">
+      <h3 class="section-title">Getting started</h3>
+      <p>
+        Use this notebook while playing the Mineral Identification Game.
+        Start with simple tests (scratch test for hardness, magnetism, acid reactivity),
+        then inspect <strong>luster</strong> and <strong>cleavage</strong>.
+        Use search and filters in the directory to quickly find candidates and compare properties.
+      </p>
+    </section>
+
+    <section id="glossary" class="panel">
+      <h3 class="section-title">Property glossary</h3>
+      <div class="glossary-grid">
+        <div class="glossary-item" id="glossary-hardness">
+          <h4>Hardness (Mohs)</h4>
+          <p>Resistance to scratching. Reference tools: Fingernail ≈2.5, Copper ≈3.0, Glass ≈5.5, Steel ≈6.5.</p>
+        </div>
+        <div class="glossary-item" id="glossary-luster">
+          <h4>Luster</h4>
+          <p>Quality of reflected light. Common types here: metallic, submetallic, vitreous, pearly, resinous, earthy.</p>
+        </div>
+        <div class="glossary-item" id="glossary-cleavage">
+          <h4>Cleavage</h4>
+          <p>Tendency to break along flat planes; shown here as number of visible cleavage planes.</p>
+        </div>
+        <div class="glossary-item" id="glossary-magnetism">
+          <h4>Magnetism</h4>
+          <p>None, weak, or strong attraction to a magnet.</p>
+        </div>
+        <div class="glossary-item" id="glossary-acid">
+          <h4>Acid reactivity</h4>
+          <p>Reaction to cold dilute HCl: strong fizz, weak fizz (powdered), or none.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="directory" class="panel">
+      <h3 class="section-title">Mineral directory</h3>
+      <div class="row" style="margin-bottom:10px">
+        <input id="searchInput" class="grow" type="text" placeholder="Search minerals by name...">
+        <select id="lusterFilter" title="Filter by luster">
+          <option value="">All lusters</option>
+          <option value="metallic">Metallic</option>
+          <option value="submetallic">Submetallic</option>
+          <option value="vitreous">Vitreous</option>
+          <option value="pearly">Pearly</option>
+          <option value="resinous">Resinous</option>
+          <option value="earthy">Earthy</option>
+        </select>
+        <select id="cleavageFilter" title="Filter by cleavage planes">
+          <option value="">All cleavage</option>
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table class="dir-table" aria-label="Mineral directory">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Hardness</th>
+              <th>Luster</th>
+              <th>Cleavage planes</th>
+              <th>Magnetism</th>
+              <th>Acid</th>
+              <th>Color</th>
+            </tr>
+          </thead>
+          <tbody id="directoryTbody">
+            <tr id="mineral-pyrite"><td>Pyrite</td><td>6</td><td>metallic</td><td>0</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#caa11a"></span>brassy yellow</td></tr>
+            <tr id="mineral-magnetite"><td>Magnetite</td><td>6</td><td>submetallic</td><td>0</td><td>strong</td><td>none</td><td><span class="color-swatch" style="background:#222629"></span>black</td></tr>
+            <tr id="mineral-hematite"><td>Hematite</td><td>6</td><td>metallic</td><td>0</td><td>weak</td><td>none</td><td><span class="color-swatch" style="background:#6b3b2a"></span>reddish-brown</td></tr>
+            <tr id="mineral-galena"><td>Galena</td><td>2.5</td><td>metallic</td><td>3</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#6f7c8a"></span>lead gray</td></tr>
+            <tr id="mineral-graphite"><td>Graphite</td><td>1.5</td><td>submetallic</td><td>1</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#54595f"></span>steel gray</td></tr>
+            <tr id="mineral-malachite"><td>Malachite</td><td>3.5</td><td>earthy</td><td>1</td><td>none</td><td>strong</td><td><span class="color-swatch" style="background:#189a62"></span>green</td></tr>
+            <tr id="mineral-plagioclase"><td>Plagioclase Feldspar</td><td>6</td><td>vitreous</td><td>2</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#cfd4da"></span>white/gray</td></tr>
+            <tr id="mineral-kfeldspar"><td>Potassium Feldspar</td><td>6</td><td>vitreous</td><td>2</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#f3a398"></span>pink/orange</td></tr>
+            <tr id="mineral-quartz"><td>Quartz</td><td>7</td><td>vitreous</td><td>0</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#e9eef2"></span>colorless/white</td></tr>
+            <tr id="mineral-olivine"><td>Olivine</td><td>7</td><td>vitreous</td><td>0</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#6a8e29"></span>olive green</td></tr>
+            <tr id="mineral-halite"><td>Halite</td><td>2.5</td><td>vitreous</td><td>3</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#eef4fb"></span>colorless</td></tr>
+            <tr id="mineral-calcite"><td>Calcite</td><td>3</td><td>vitreous</td><td>3</td><td>none</td><td>strong</td><td><span class="color-swatch" style="background:#f3f6f8"></span>colorless/white</td></tr>
+            <tr id="mineral-gypsum"><td>Gypsum</td><td>2</td><td>pearly</td><td>1</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#f1f5f9"></span>white</td></tr>
+            <tr id="mineral-kernite"><td>Kernite</td><td>3</td><td>pearly</td><td>1</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#e7ecef"></span>white</td></tr>
+            <tr id="mineral-fluorite"><td>Fluorite</td><td>4</td><td>vitreous</td><td>4</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#8273c7"></span>purple</td></tr>
+            <tr id="mineral-muscovite"><td>Muscovite Mica</td><td>2.5</td><td>pearly</td><td>1</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#e2e2da"></span>silvery</td></tr>
+            <tr id="mineral-biotite"><td>Biotite Mica</td><td>2.5</td><td>pearly</td><td>1</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#2b2a28"></span>black/brown</td></tr>
+            <tr id="mineral-sulfur"><td>Sulfur</td><td>2</td><td>resinous</td><td>2</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#ffee33"></span>yellow</td></tr>
+            <tr id="mineral-talc"><td>Talc</td><td>1</td><td>pearly</td><td>1</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#dfe7e1"></span>white/green</td></tr>
+            <tr id="mineral-clay"><td>Clay</td><td>2</td><td>earthy</td><td>0</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#a07b5b"></span>brown</td></tr>
+            <tr id="mineral-azurite"><td>Azurite</td><td>3.5</td><td>vitreous</td><td>2</td><td>none</td><td>strong</td><td><span class="color-swatch" style="background:#2e63c5"></span>blue</td></tr>
+            <tr id="mineral-augite"><td>Augite</td><td>6</td><td>vitreous</td><td>2</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#1d2328"></span>dark green/black</td></tr>
+            <tr id="mineral-hornblende"><td>Hornblende</td><td>6</td><td>vitreous</td><td>2</td><td>none</td><td>none</td><td><span class="color-swatch" style="background:#141a1f"></span>dark green/black</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="emptyNotice" class="note" hidden>No minerals match your filters.</div>
+    </section>
+  </main>
+
+  <script id="mineralsData" type="application/json">[
+  { "id": "pyrite", "name": "Pyrite", "hardness": 6.0, "luster": "metallic", "cleavagePlanes": 0, "color": "#caa11a", "colorName": "brassy yellow", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "magnetite", "name": "Magnetite", "hardness": 6.0, "luster": "submetallic", "cleavagePlanes": 0, "color": "#222629", "colorName": "black", "lamellae": false, "magnetism": "strong", "acid": "none" },
+  { "id": "hematite", "name": "Hematite", "hardness": 6.0, "luster": "metallic", "cleavagePlanes": 0, "color": "#6b3b2a", "colorName": "reddish-brown", "lamellae": false, "magnetism": "weak", "acid": "none" },
+  { "id": "galena", "name": "Galena", "hardness": 2.5, "luster": "metallic", "cleavagePlanes": 3, "color": "#6f7c8a", "colorName": "lead gray", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "graphite", "name": "Graphite", "hardness": 1.5, "luster": "submetallic", "cleavagePlanes": 1, "color": "#54595f", "colorName": "steel gray", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "malachite", "name": "Malachite", "hardness": 3.5, "luster": "earthy", "cleavagePlanes": 1, "color": "#189a62", "colorName": "green", "lamellae": false, "magnetism": "none", "acid": "strong" },
+  { "id": "plagioclase", "name": "Plagioclase Feldspar", "hardness": 6.0, "luster": "vitreous", "cleavagePlanes": 2, "color": "#cfd4da", "colorName": "white/gray", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "kfeldspar", "name": "Potassium Feldspar", "hardness": 6.0, "luster": "vitreous", "cleavagePlanes": 2, "color": "#f3a398", "colorName": "pink/orange", "lamellae": true, "magnetism": "none", "acid": "none" },
+  { "id": "quartz", "name": "Quartz", "hardness": 7.0, "luster": "vitreous", "cleavagePlanes": 0, "color": "#e9eef2", "colorName": "colorless/white", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "olivine", "name": "Olivine", "hardness": 7.0, "luster": "vitreous", "cleavagePlanes": 0, "color": "#6a8e29", "colorName": "olive green", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "halite", "name": "Halite", "hardness": 2.5, "luster": "vitreous", "cleavagePlanes": 3, "color": "#eef4fb", "colorName": "colorless", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "calcite", "name": "Calcite", "hardness": 3.0, "luster": "vitreous", "cleavagePlanes": 3, "color": "#f3f6f8", "colorName": "colorless/white", "lamellae": false, "magnetism": "none", "acid": "strong" },
+  { "id": "gypsum", "name": "Gypsum", "hardness": 2.0, "luster": "pearly", "cleavagePlanes": 1, "color": "#f1f5f9", "colorName": "white", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "kernite", "name": "Kernite", "hardness": 3.0, "luster": "pearly", "cleavagePlanes": 1, "color": "#e7ecef", "colorName": "white", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "fluorite", "name": "Fluorite", "hardness": 4.0, "luster": "vitreous", "cleavagePlanes": 4, "color": "#8273c7", "colorName": "purple", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "muscovite", "name": "Muscovite Mica", "hardness": 2.5, "luster": "pearly", "cleavagePlanes": 1, "color": "#e2e2da", "colorName": "silvery", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "biotite", "name": "Biotite Mica", "hardness": 2.5, "luster": "pearly", "cleavagePlanes": 1, "color": "#2b2a28", "colorName": "black/brown", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "sulfur", "name": "Sulfur", "hardness": 2.0, "luster": "resinous", "cleavagePlanes": 2, "color": "#ffee33", "colorName": "yellow", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "talc", "name": "Talc", "hardness": 1.0, "luster": "pearly", "cleavagePlanes": 1, "color": "#dfe7e1", "colorName": "white/green", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "clay", "name": "Clay", "hardness": 2.0, "luster": "earthy", "cleavagePlanes": 0, "color": "#a07b5b", "colorName": "brown", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "azurite", "name": "Azurite", "hardness": 3.5, "luster": "vitreous", "cleavagePlanes": 2, "color": "#2e63c5", "colorName": "blue", "lamellae": false, "magnetism": "none", "acid": "strong" },
+  { "id": "augite", "name": "Augite", "hardness": 6.0, "luster": "vitreous", "cleavagePlanes": 2, "color": "#1d2328", "colorName": "dark green/black", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "hornblende", "name": "Hornblende", "hardness": 6.0, "luster": "vitreous", "cleavagePlanes": 2, "color": "#141a1f", "colorName": "dark green/black", "lamellae": false, "magnetism": "none", "acid": "none" }
+]</script>
+  <script src="notebook.js" defer></script>
+</body>
+</html>
+
+
