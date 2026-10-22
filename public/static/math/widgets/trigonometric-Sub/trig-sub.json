@@ -1,0 +1,59 @@
+{
+  "id": "trig-sub",
+  "title": "Trigonometric Substitution Explorer",
+  "entry": "widgets/trigonometric-Sub/trig-sub.html",
+  "category": "Calculus",
+  "tags": ["calculus", "integration", "trigonometry"],
+  "version": "1.0.0",
+  "description": "Visualize trig substitutions for integrals like √(a²−x²), √(a²+x²), 1/√(a²−x²), and 1/(a²+x²). Adjust parameters, see geometry, and substitution forms.",
+  "defaultState": {
+    "funcId": "sqrt_minus",
+    "a": 2,
+    "L": -2,
+    "R": 2,
+    "showSub": true,
+    "showGeom": false
+  },
+  "functions": [
+    {
+      "id": "sqrt_minus",
+      "label": "sqrt(a^2 - x^2)",
+      "substitution": {
+        "name": "sin",
+        "xTex": "x = a\\,\\sin\\theta",
+        "dxTex": "dx = a\\,\\cos\\theta\\,d\\theta",
+        "yTex": "y = a\\,\\cos\\theta"
+      }
+    },
+    {
+      "id": "sqrt_plus",
+      "label": "sqrt(a^2 + x^2)",
+      "substitution": {
+        "name": "tan",
+        "xTex": "x = a\\,\\tan\\theta",
+        "dxTex": "dx = a\\,\\sec^2\\theta\\,d\\theta",
+        "yTex": "y = a\\,\\sec\\theta"
+      }
+    },
+    {
+      "id": "inv_sqrt_minus",
+      "label": "1/sqrt(a^2 - x^2)",
+      "substitution": {
+        "name": "sin",
+        "xTex": "x = a\\,\\sin\\theta",
+        "dxTex": "dx = a\\,\\cos\\theta\\,d\\theta",
+        "yTex": "y = 1/(a\\,\\cos\\theta)"
+      }
+    },
+    {
+      "id": "inv_plus",
+      "label": "1/(a^2 + x^2)",
+      "substitution": {
+        "name": "tan",
+        "xTex": "x = a\\,\\tan\\theta",
+        "dxTex": "dx = a\\,\\sec^2\\theta\\,d\\theta",
+        "yTex": "y = 1/(a^2\\,\\sec^2\\theta)"
+      }
+    }
+  ]
+}
