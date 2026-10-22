@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DNA Replication (Prokaryotic) – Step-by-Step</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="replication.css" />
+  </head>
+  <body>
+    <main id="replication-demo" class="page">
+      <div class="container container--narrow">
+        <h1 class="h1">Prokaryotic DNA Replication</h1>
+        <p class="lead">Try to click the enzymes in the correct order, and learn the prokaryotic DNA replication process! (Refer to glossary below for enzyme explanations.)</p>
+        <div class="panel stage">
+          <svg id="replication-svg" viewBox="0 0 1200 600" role="img" aria-label="DNA double helix visualization">
+            <desc>Static depiction of a double helix along the x-axis (no replication bubble)</desc>
+            <g id="double-helix"></g>
+          </svg>
+        </div>
+        <div class="panel controls" aria-label="Replication controls">
+          <button id="helicase-start" type="button" class="primary">Helicase + Topoisomerase</button>
+          <button id="primase-start" type="button" class="primary" aria-label="Lay down RNA primers (Primase)">Primase</button>
+          <span id="helicase-status" aria-hidden="true"></span>
+          <span id="primase-status" aria-hidden="true"></span>
+          <button id="pol3-start" type="button" class="primary">DNA Polymerase III</button>
+          <button id="pol1-start" type="button" class="primary" aria-label="Replace RNA primers with DNA (DNA Pol I)">DNA Polymerase I</button>
+          <button id="ligase-start" type="button" class="primary">DNA Ligase</button>
+          <span id="order-notice" role="alert" aria-live="polite" class="alert warning" style="display:none"></span>
+          <button id="helicase-reset" type="button" class="outline" style="display:none">Reset</button>
+        </div>
+      </div>
+    </main>
+    <section id="replication-glossary" class="glossary" aria-labelledby="replication-glossary-title">
+      <h3 id="replication-glossary-title" class="glossary-title">Enzyme Glossary</h3>
+      <dl>
+        <dt>DNA Helicase</dt>
+        <dd>Unwinds the double helix and creates the replication fork.</dd>
+
+        <dt>DNA Ligase</dt>
+        <dd>Seals gaps between DNA fragments by forming phosphodiester bonds.</dd>
+
+        <dt>DNA Polymerase I</dt>
+        <dd>Removes RNA primers and fills the newly created gaps by building new DNA.</dd>
+
+        <dt>DNA Polymerase III</dt>
+        <dd>Builds most of the new DNA by adding complementary nucleotides to the template strand.</dd>
+
+        <dt>Primase</dt>
+        <dd>Synthesizes short RNA primers to initiate DNA synthesis.</dd>
+
+        <dt>Topoisomerase (DNA gyrase)</dt>
+        <dd>Prevents early supercoiling (DNA folding in on itself) ahead of the replication fork.</dd>
+      </dl>
+    </section>
+    <script>
+      (function() {
+        const svg = document.getElementById('replication-svg');
+        const g = document.getElementById('double-helix');
+        if (!svg || !g) return;
+
+        const NS = 'http://www.w3.org/2000/svg';
+        const startX = 80;           // left margin
+        const endX = 1120;           // right margin
+        const centerY = 300;         // axis along x
+        const amplitude = 80;        // helical radius (vertical)
+        const wavelength = 200;      // length of one turn (px)
+        const step = 8;              // sampling resolution (px)
+        const basePairEvery = 20;    // spacing between base pairs (px)
+
+        // Helicase animation settings
+        const helicaseStartX = startX; // begin at the left edge of the helix
+        const helicaseEndX = 1000;
+        const helicaseSpeed = 220;   // px per second
+        const maxForkSpread = 140;   // maximum additional separation of single strands
+        const spreadScale = 140;     // controls how quickly fork opens
+
+        // Primase/primer visualization settings (compressed for clarity)
+        const okazakiSpacingPx = 200;
+        const primerLengthPx = 40;
+        const primerBlockWidth = 28;
+        const primerBlockHeight = 12;
+
+        // Elements
+        const basepairsGroup = document.createElementNS(NS, 'g');
+        basepairsGroup.setAttribute('class', 'basepairs');
+        const backboneAPath = document.createElementNS(NS, 'path');
+        backboneAPath.setAttribute('class', 'backbone backbone-a');
+        const backboneBPath = document.createElementNS(NS, 'path');
+        backboneBPath.setAttribute('class', 'backbone backbone-b');
+        const templateAPath = document.createElementNS(NS, 'path');
+        templateAPath.setAttribute('class', 'template template-a');
+        const templateBPath = document.createElementNS(NS, 'path');
+        templateBPath.setAttribute('class', 'template template-b');
+        // Group for synthesized leading strand (DNA Pol III)
+        const pol3Group = document.createElementNS(NS, 'g');
+        pol3Group.setAttribute('id', 'pol3-leading');
+        // Group for synthesized lagging strand (Okazaki fragments)
+        const pol3LagGroup = document.createElementNS(NS, 'g');
+        pol3LagGroup.setAttribute('id', 'pol3-lagging');
+        // Group for DNA Pol I (primer replacement)
+        const pol1Group = document.createElementNS(NS, 'g');
+        pol1Group.setAttribute('id', 'pol1');
+        // Group for Ligase (enzyme + welds)
+        const ligaseGroup = document.createElementNS(NS, 'g');
+        ligaseGroup.setAttribute('id', 'ligase');
+        // Small connector segments drawn at completion to join unwound strands
+        // to the residual helical tail visually
+        const junctionTopPath = document.createElementNS(NS, 'path');
+        junctionTopPath.setAttribute('class', 'template template-a');
+        const junctionBottomPath = document.createElementNS(NS, 'path');
+        junctionBottomPath.setAttribute('class', 'template template-b');
+
+        // Group for primers (RNA) and labels
+        const primersGroup = document.createElementNS(NS, 'g');
+        primersGroup.setAttribute('id', 'primers');
+
+        const topLabel = document.createElementNS(NS, 'text');
+        topLabel.setAttribute('class', 'label prime');
+        topLabel.textContent = "3'";
+        const bottomLabel = document.createElementNS(NS, 'text');
+        bottomLabel.setAttribute('class', 'label prime');
+        bottomLabel.textContent = "5'";
+
+        const helicase = document.createElementNS(NS, 'polygon');
+        helicase.setAttribute('class', 'helicase');
+        // Helicase triangle geometry (isosceles, pointing right)
+        const helicaseLength = 32; // tip (front) to base distance
+        const helicaseHeight = 32; // base height
+        function setHelicasePoints(forkX) {
+          const xTip = forkX;
+          const xBase = forkX - helicaseLength;
+          const halfH = helicaseHeight / 2;
+          const points = `${xTip},${centerY} ${xBase},${centerY - halfH} ${xBase},${centerY + halfH}`;
+          helicase.setAttribute('points', points);
+        }
+        setHelicasePoints(helicaseStartX);
+
+        // Topoisomerase (vertical bar) ahead of helicase, centered on DNA band
+        const topo = document.createElementNS(NS, 'rect');
+        topo.setAttribute('class', 'topoisomerase');
+        const topoLeadPx = 28; // distance ahead of helicase along x
+        const topoBarWidth = 8;
+        const topoBarHeight = (amplitude * 2) + 20; // span both strands with margin
+        topo.setAttribute('width', String(topoBarWidth));
+        topo.setAttribute('height', String(topoBarHeight));
+        topo.setAttribute('rx', '3');
+        function setTopoisomerasePosition(forkX) {
+          const xAhead = Math.min(helicaseEndX, forkX + topoLeadPx);
+          // Center the bar vertically over the DNA region
+          const xLeft = xAhead - (topoBarWidth / 2);
+          const yTop = centerY - (topoBarHeight / 2);
+          topo.setAttribute('x', String(xLeft));
+          topo.setAttribute('y', String(yTop));
+        }
+
+        // Build initial basepairs and store x on elements
+        for (let x = startX; x <= endX; x += basePairEvery) {
+          const phase = (2 * Math.PI * (x - startX)) / wavelength;
+          const yA = centerY + amplitude * Math.sin(phase);
+          const yB = centerY + amplitude * Math.sin(phase + Math.PI);
+          const tilt = 8 * Math.cos(phase);
+          const ln = document.createElementNS(NS, 'line');
+          ln.setAttribute('x1', x);
+          ln.setAttribute('y1', yA - tilt);
+          ln.setAttribute('x2', x);
+          ln.setAttribute('y2', yB + tilt);
+          ln.dataset.x = String(x);
+          basepairsGroup.appendChild(ln);
+        }
+
+        // Easing for fork spread to avoid a sharp corner at the helicase
+        function forkOffsetLeft(x, forkX) {
+          const dx = forkX - x; // distance behind helicase
+          if (dx <= 0) return 0;
+          const t = 1 - Math.exp(-dx / spreadScale); // 0 -> 1
+          return maxForkSpread * t;
+        }
+
+        function buildPaths(forkX) {
+          let dBackA = '';
+          let dBackB = '';
+          let dTempA = '';
+          let dTempB = '';
+          let startedBackA = false;
+          let startedBackB = false;
+          let startedTempA = false;
+          let startedTempB = false;
+
+          for (let x = startX; x <= endX; x += step) {
+            const phase = (2 * Math.PI * (x - startX)) / wavelength;
+            const yHelixA = centerY + amplitude * Math.sin(phase);
+            const yHelixB = centerY + amplitude * Math.sin(phase + Math.PI);
+
+            if (x < forkX) {
+              // Behind helicase: single strands without sinusoidal shape
+              const off = forkOffsetLeft(x, forkX);
+              const yTop = centerY - off;
+              const yBottom = centerY + off;
+              if (!startedTempA) { dTempA += 'M ' + x + ' ' + yTop; startedTempA = true; }
+              else { dTempA += ' L ' + x + ' ' + yTop; }
+              if (!startedTempB) { dTempB += 'M ' + x + ' ' + yBottom; startedTempB = true; }
+              else { dTempB += ' L ' + x + ' ' + yBottom; }
+            } else {
+              // Ahead of helicase: intact double helix
+              if (!startedBackA) { dBackA += 'M ' + x + ' ' + yHelixA; startedBackA = true; }
+              else { dBackA += ' L ' + x + ' ' + yHelixA; }
+              if (!startedBackB) { dBackB += 'M ' + x + ' ' + yHelixB; startedBackB = true; }
+              else { dBackB += ' L ' + x + ' ' + yHelixB; }
+            }
+          }
+
+          return { dBackA, dBackB, dTempA, dTempB };
+        }
+
+        function updateBasepairs(forkX) {
+          const lines = basepairsGroup.children;
+          for (let i = 0; i < lines.length; i++) {
+            const ln = lines[i];
+            const x = Number(ln.dataset.x || '0');
+            // Show base pairs only ahead of helicase; hide at/behind fork
+            ln.style.display = x > forkX ? '' : 'none';
+          }
+        }
+
+        function makePrimer(x, y, isLeading) {
+          const ln = document.createElementNS(NS, 'line');
+          const half = primerLengthPx / 2;
+          ln.setAttribute('x1', String(x - half));
+          ln.setAttribute('y1', String(y));
+          ln.setAttribute('x2', String(x + half));
+          ln.setAttribute('y2', String(y));
+          ln.setAttribute('class', 'primer ' + (isLeading ? 'primer-leading' : 'primer-lagging'));
+          primersGroup.appendChild(ln);
+          return ln;
+        }
+
+        function makePrimerRect(xCenter, yCenter, isLeading) {
+          const rect = document.createElementNS(NS, 'rect');
+          const w = primerBlockWidth;
+          const h = primerBlockHeight;
+          rect.setAttribute('x', String(xCenter - w / 2));
+          rect.setAttribute('y', String(yCenter - h / 2));
+          rect.setAttribute('width', String(w));
+          rect.setAttribute('height', String(h));
+          rect.setAttribute('rx', '3');
+          rect.setAttribute('class', 'primer-block ' + (isLeading ? 'primer-block-leading' : 'primer-block-lagging'));
+          primersGroup.appendChild(rect);
+          return rect;
+        }
+
+        // Primase enzyme visualization (cyan oval)
+        const primase = document.createElementNS(NS, 'ellipse');
+        primase.setAttribute('class', 'primase');
+        const primaseRx = 14;
+        const primaseRy = 10;
+        function setPrimasePosition(xCenter, yCenter) {
+          primase.setAttribute('cx', String(xCenter));
+          primase.setAttribute('cy', String(yCenter));
+          primase.setAttribute('rx', String(primaseRx));
+          primase.setAttribute('ry', String(primaseRy));
+        }
+        // Primase travel animation helpers (to avoid teleporting between sites)
+        const primaseSpeed = 380; // px per second
+        function getPrimaseXY() {
+          const cxAttr = primase.getAttribute('cx');
+          const cyAttr = primase.getAttribute('cy');
+          const cx = cxAttr == null ? NaN : parseFloat(cxAttr);
+          const cy = cyAttr == null ? NaN : parseFloat(cyAttr);
+          return { x: cx, y: cy, hasPos: Number.isFinite(cx) && Number.isFinite(cy) };
+        }
+        function travelPrimaseTo(xTarget, yTarget, durationMs, onDone) {
+          const { x: xStart, y: yStart } = getPrimaseXY();
+          const t0 = performance.now();
+          function step(now) {
+            const t = Math.min(1, (now - t0) / durationMs);
+            const x = (Number.isFinite(xStart) ? xStart : xTarget) + ((xTarget - (Number.isFinite(xStart) ? xStart : xTarget)) * t);
+            const y = (Number.isFinite(yStart) ? yStart : yTarget) + ((yTarget - (Number.isFinite(yStart) ? yStart : yTarget)) * t);
+            setPrimasePosition(x, y);
+            if (t < 1) {
+              requestAnimationFrame(step);
+            } else {
+              if (onDone) onDone();
+            }
+          }
+          requestAnimationFrame(step);
+        }
+
+        function render(forkX) {
+          const { dBackA, dBackB, dTempA, dTempB } = buildPaths(forkX);
+          backboneAPath.setAttribute('d', dBackA || `M ${startX} ${centerY}`);
+          backboneBPath.setAttribute('d', dBackB || `M ${startX} ${centerY}`);
+          templateAPath.setAttribute('d', dTempA || `M ${forkX} ${centerY}`);
+          templateBPath.setAttribute('d', dTempB || `M ${forkX} ${centerY}`);
+          updateBasepairs(forkX);
+
+          // Update 3'/5' labels at the LEFTMOST end of the open fork
+          const xLeftEdge = startX;
+          const offLeftEdge = forkOffsetLeft(xLeftEdge, forkX);
+          topLabel.setAttribute('x', String(xLeftEdge - 22));
+          topLabel.setAttribute('y', String(centerY - offLeftEdge - 6));
+          bottomLabel.setAttribute('x', String(xLeftEdge - 22));
+          bottomLabel.setAttribute('y', String(centerY + offLeftEdge + 14));
+        }
+
+        // Create smooth connectors that continue the helix into the unwound strands
+        let junctionsAdded = false;
+        function addCompletionJunctions(forkX) {
+          if (junctionsAdded) return;
+          // Compute the exact tip x-position of the unwound strands (last sampled x before fork)
+          const eps = 1e-3;
+          const k = Math.max(0, Math.floor((forkX - startX - eps) / step));
+          const x0 = startX + k * step; // unwound tip
+          const x1 = forkX; // helix boundary
+
+          // Unwound strand positions
+          const y0Top = centerY - forkOffsetLeft(x0, forkX);
+          const y0Bottom = centerY + forkOffsetLeft(x0, forkX);
+
+          // Helix position and slope at the boundary
+          const phase = (2 * Math.PI * (x1 - startX)) / wavelength;
+          const y1Top = centerY + amplitude * Math.sin(phase);
+          const y1Bottom = centerY + amplitude * Math.sin(phase + Math.PI);
+          // Continue the helix pattern until it meets the unwound strands
+          function yHelixTopAt(x) {
+            const ph = (2 * Math.PI * (x - startX)) / wavelength;
+            return centerY + amplitude * Math.sin(ph);
+          }
+          function yHelixBottomAt(x) {
+            const ph = (2 * Math.PI * (x - startX)) / wavelength;
+            return centerY + amplitude * Math.sin(ph + Math.PI);
+          }
+          function yUnwoundTopAt(x) {
+            return centerY - forkOffsetLeft(x, forkX);
+          }
+          function yUnwoundBottomAt(x) {
+            return centerY + forkOffsetLeft(x, forkX);
+          }
+
+          // Find join x for top by searching left from fork for closest intersection
+          const searchWidth = 120;
+          const dx = Math.max(2, Math.min(6, step));
+          let bestTopX = x1, bestTopErr = Infinity, prevX = x1, prevErr = yUnwoundTopAt(x1) - yHelixTopAt(x1);
+          for (let x = x1 - dx; x >= Math.max(startX, x1 - searchWidth); x -= dx) {
+            const err = yUnwoundTopAt(x) - yHelixTopAt(x);
+            if (Math.abs(err) < bestTopErr) { bestTopErr = Math.abs(err); bestTopX = x; }
+            // sign change -> interpolate a tighter crossing estimate
+            if ((prevErr <= 0 && err >= 0) || (prevErr >= 0 && err <= 0)) {
+              const t = prevErr === err ? 0 : prevErr / (prevErr - err);
+              const xCross = prevX + t * (x - prevX);
+              bestTopX = xCross;
+              break;
+            }
+            prevX = x; prevErr = err;
+          }
+          // Build helix polyline from fork to join for top
+          let dTop = `M ${x1} ${y1Top}`;
+          for (let x = x1 - dx; x > bestTopX; x -= dx) {
+            dTop += ` L ${x} ${yHelixTopAt(x)}`;
+          }
+          dTop += ` L ${bestTopX} ${yHelixTopAt(bestTopX)}`;
+
+          // Find join x for bottom similarly
+          let bestBottomX = x1, bestBottomErr = Infinity, prevXB = x1, prevErrB = yUnwoundBottomAt(x1) - yHelixBottomAt(x1);
+          for (let x = x1 - dx; x >= Math.max(startX, x1 - searchWidth); x -= dx) {
+            const err = yUnwoundBottomAt(x) - yHelixBottomAt(x);
+            if (Math.abs(err) < bestBottomErr) { bestBottomErr = Math.abs(err); bestBottomX = x; }
+            if ((prevErrB <= 0 && err >= 0) || (prevErrB >= 0 && err <= 0)) {
+              const t = prevErrB === err ? 0 : prevErrB / (prevErrB - err);
+              const xCross = prevXB + t * (x - prevXB);
+              bestBottomX = xCross;
+              break;
+            }
+            prevXB = x; prevErrB = err;
+          }
+          let dBottom = `M ${x1} ${y1Bottom}`;
+          for (let x = x1 - dx; x > bestBottomX; x -= dx) {
+            dBottom += ` L ${x} ${yHelixBottomAt(x)}`;
+          }
+          dBottom += ` L ${bestBottomX} ${yHelixBottomAt(bestBottomX)}`;
+
+          junctionTopPath.setAttribute('d', dTop);
+          junctionBottomPath.setAttribute('d', dBottom);
+
+          g.appendChild(junctionTopPath);
+          g.appendChild(junctionBottomPath);
+          junctionsAdded = true;
+        }
+
+        // Initial scene: no fork, full helix, helicase parked
+        g.appendChild(basepairsGroup);
+        g.appendChild(backboneAPath);
+        g.appendChild(backboneBPath);
+        g.appendChild(templateAPath);
+        g.appendChild(templateBPath);
+        g.appendChild(pol3Group);
+        g.appendChild(primersGroup);
+        // Place lagging products above primers for visibility
+        g.appendChild(pol3LagGroup);
+        // Place Pol I group above primers and Pol III products
+        g.appendChild(pol1Group);
+        // Place ligase on top of synthesis groups
+        g.appendChild(ligaseGroup);
+        g.appendChild(topLabel);
+        g.appendChild(bottomLabel);
+        // Hide helicase until helicase button is pressed
+        helicase.style.display = 'none';
+        g.appendChild(helicase);
+        topo.style.display = 'none';
+        g.appendChild(topo);
+        primase.style.display = 'none';
+        g.appendChild(primase);
+
+        render(startX - 1); // ensure entire length is double helix initially
+
+        // Animation
+        let animId = null;
+        let helicaseX = helicaseStartX;
+        let lastTs = null;
+        let running = false;
+
+        // Primase state
+        let primaseActive = false;
+        let primaseEnabled = false;
+        let leadingPrimerPlaced = false;
+        let laggingPrimersPlaced = false;
+
+        // Pol III state and controls
+        const pol3Btn = document.getElementById('pol3-start');
+        const pol1Btn = document.getElementById('pol1-start');
+        let helicaseCompleted = false;
+        let pol3Active = false;
+        let pol3Completed = false;
+        let pol3AnimId = null;
+        let pol3LastTs = null;
+        let pol3FrontX = 0;
+        let pol3Enzyme = null; // moving enzyme circle
+
+        // Lagging Pol III state
+        let pol3LagActive = false;
+        let pol3LagCompleted = false;
+        let pol3LagAnimId = null;
+        let pol3LagLastTs = null;
+        let pol3LagFrontX = 0;
+        let pol3LagEnzyme = null; // moving enzyme circle (lagging)
+
+        // Pol I state
+        let pol1Active = false;
+        let pol1Completed = false;
+        let pol1AnimId = null;
+        let pol1LastTs = null;
+        let pol1Enzyme = null; // moving enzyme circle for Pol I
+        // Ligase state
+        let ligaseActive = false;
+        let ligaseCompleted = false;
+        let ligaseEnzyme = null;
+        let ligaseNicks = [];
+
+        // Pol III visual/animation constants
+        const pol3BlockWidth = 20;
+        const pol3BlockHeight = primerBlockHeight;
+        const pol3BlockGap = 6;
+        const pol3Speed = 280; // px per second
+        const pol3Epsilon = 6; // gap from helicase
+        const nucleotideColors = ['#10b981', '#ef4444', '#3b82f6', '#a855f7']; // A, T, C, G
+        const pol3PathOffset = 10; // push final path further below top template
+        const pol3OffsetUnder = 2; // spacing under the template for blocks/enzyme
+        // Pol I visual/animation constants
+        const pol1Speed = 220; // slightly slower than Pol III
+        const pol1LagSpeedFactor = 1.1; // lagging strand runs ~10% faster
+        const pol1Color = '#3b82f6'; // blue enzyme fill
+        const pol1Stroke = '#1d4ed8'; // blue enzyme stroke
+        // Visible nick gap between Pol I patches and Pol III products
+        const nickGapPx = 8;
+
+        function updatePol3CTA() { /* no-op: keep buttons always visible/clickable */ }
+
+        function hasAnyPrimers() {
+          return !!primersGroup.querySelector('rect.primer-block-leading, rect.primer-block-lagging');
+        }
+
+        function updatePol1CTA() { /* no-op: keep buttons always visible/clickable */ }
+
+        function updateLigaseCTA() { /* no-op: keep buttons always visible/clickable */ }
+
+        function addLigaseNick(nick) {
+          const eps = 1;
+          for (const n of ligaseNicks) {
+            if (n.strand === nick.strand &&
+                Math.abs(n.xLeft - nick.xLeft) < eps &&
+                Math.abs(n.xRight - nick.xRight) < eps) {
+              return;
+            }
+          }
+          ligaseNicks.push(nick);
+        }
+
+        /* removed: separate lagging CTA (combined into single Pol III button) */
+
+        const primaseBtn = document.getElementById('primase-start');
+        let primaseCompleted = false;
+
+        // Order notice helpers
+        const orderNotice = document.getElementById('order-notice');
+        let noticeTimer = null;
+        function showOrderNotice(msg) {
+          if (!orderNotice) return;
+          orderNotice.textContent = msg;
+          orderNotice.style.display = '';
+          if (noticeTimer) clearTimeout(noticeTimer);
+          noticeTimer = setTimeout(() => {
+            if (orderNotice) orderNotice.style.display = 'none';
+            noticeTimer = null;
+          }, 2000);
+        }
+
+        // Determine expected next step id based on current completion state
+        function getExpectedStepId() {
+          if (!helicaseCompleted) return 'helicase-start';
+          if (!primaseCompleted) return 'primase-start';
+          if (!(pol3Completed && pol3LagCompleted)) return 'pol3-start';
+          if (!pol1Completed) return 'pol1-start';
+          if (!ligaseCompleted) return 'ligase-start';
+          return null;
+        }
+
+        /* (Buttons are always clickable; order enforced by attemptStep + notice) */
+
+        // Global busy-state helper to prevent overlapping animations
+        function isBusy() {
+          return running || primaseActive || pol3Active || pol3LagActive || pol1Active || ligaseActive;
+        }
+
+        // Lock/unlock all control buttons (including Reset during animations)
+        const savedDisabledStates = new Map();
+        const stepButtonIds = ['helicase-start', 'primase-start', 'pol3-start', 'pol1-start', 'ligase-start', 'helicase-reset'];
+        function lockStepButtons() {
+          savedDisabledStates.clear();
+          stepButtonIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+              savedDisabledStates.set(id, el.disabled);
+              el.disabled = true;
+            }
+          });
+        }
+        function unlockStepButtons() {
+          stepButtonIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+              el.disabled = savedDisabledStates.has(id) ? !!savedDisabledStates.get(id) : false;
+            }
+          });
+          savedDisabledStates.clear();
+        }
+        function maybeUnlockWhenIdle() {
+          if (!isBusy()) unlockStepButtons();
+        }
+
+        // Wrapper to enforce order; wrong clicks show notice, do nothing
+        function attemptStep(stepId, run) {
+          if (isBusy()) return;
+          lockStepButtons();
+          const expected = getExpectedStepId();
+          if (expected && stepId !== expected) {
+            showOrderNotice('That is not the correct next step.');
+            unlockStepButtons();
+            return;
+          }
+          // Disable the correct step immediately and persist that disabled state through unlocks
+          const stepEl = document.getElementById(stepId);
+          if (stepEl) {
+            savedDisabledStates.set(stepId, true);
+            stepEl.disabled = true;
+          }
+          run();
+          // If no animation actually began, unlock on next tick; otherwise wait for completion hooks.
+          setTimeout(maybeUnlockWhenIdle, 0);
+        }
+
+        function friendlyName(stepId) {
+          switch (stepId) {
+            case 'helicase-start': return 'Helicase';
+            case 'primase-start': return 'Primase';
+            case 'pol3-start': return 'DNA Pol III';
+            case 'pol1-start': return 'DNA Pol I';
+            case 'ligase-start': return 'Ligase';
+            default: return 'Next step';
+          }
+        }
+
+        // Shuffle the five step buttons on load; keep Reset last, spans unmoved
+        (function shuffleButtons() {
+          const controls = document.querySelector('.controls');
+          if (!controls) return;
+          const ids = ['helicase-start', 'primase-start', 'pol3-start', 'pol1-start', 'ligase-start'];
+          const buttons = ids.map(id => document.getElementById(id)).filter(Boolean);
+          if (buttons.length !== ids.length) return;
+          const placeholders = buttons.map(() => document.createComment('btn-slot'));
+          // Insert placeholders before original buttons (capture slots)
+          for (let i = 0; i < buttons.length; i++) {
+            const btn = buttons[i];
+            const ph = placeholders[i];
+            controls.insertBefore(ph, btn);
+          }
+          // Fisher–Yates shuffle buttons array
+          for (let i = buttons.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const tmp = buttons[i];
+            buttons[i] = buttons[j];
+            buttons[j] = tmp;
+          }
+          // Reinsert shuffled buttons into the placeholder slots
+          for (let i = 0; i < placeholders.length; i++) {
+            controls.insertBefore(buttons[i], placeholders[i]);
+          }
+          // Remove placeholders
+          placeholders.forEach(ph => ph.parentNode && ph.parentNode.removeChild(ph));
+        })();
+
+        // Ensure all five step buttons are visible/enabled on load
+        (function enableAllStepButtons() {
+          ['helicase-start', 'primase-start', 'pol3-start', 'pol1-start', 'ligase-start'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.style.display = ''; el.disabled = false; }
+          });
+        })();
+
+        function placeLaggingPrimers(forkX) {
+          // Place multiple primers on the bottom (lagging) strand behind the helicase
+          const epsilon = 4; // small gap from the fork boundary
+          const marginLeft = 6; // avoid touching the extreme left edge
+          const w = primerBlockWidth;
+          const h = primerBlockHeight;
+          const offsetTowardCenter = 2; // place just inside toward the fork center
+          const xRightEdge = forkX - epsilon;
+
+          let count = 0;
+          // Start with a primer whose right edge is just left of the fork
+          let xCenter = xRightEdge - (w / 2) - 2;
+          // Lay primers every okazakiSpacingPx moving leftward
+          while (xCenter - w / 2 > startX + marginLeft) {
+            const yBottom = centerY + forkOffsetLeft(xCenter, forkX);
+            const yAbove = yBottom - (h / 2) - offsetTowardCenter; // slightly above bottom strand
+            makePrimerRect(xCenter, yAbove, false);
+            count++;
+            xCenter -= okazakiSpacingPx;
+          }
+          return count;
+        }
+
+        function stepAnim(ts) {
+          if (!lastTs) lastTs = ts;
+          const dt = (ts - lastTs) / 1000; // seconds
+          lastTs = ts;
+
+          helicaseX = Math.min(helicaseEndX, helicaseX + helicaseSpeed * dt);
+          setHelicasePoints(helicaseX);
+          setTopoisomerasePosition(helicaseX);
+          render(helicaseX);
+
+          // Primase remains hidden until helicase completes
+
+          // Primase simplified: no lagging primers in this step
+
+          if (helicaseX >= helicaseEndX) {
+            running = false;
+            cancelAnimationFrame(animId);
+            animId = null;
+            // no status text
+            const resetBtn = document.getElementById('helicase-reset');
+            const startBtn = document.getElementById('helicase-start');
+            if (resetBtn && startBtn) {
+              resetBtn.style.display = '';
+            }
+            // Now reveal and enable Primase
+            if (primaseBtn) {
+              primaseBtn.style.display = '';
+              primaseBtn.disabled = false;
+            }
+            primaseEnabled = true;
+            // Join the remaining helix tail to the unwound strands visually
+            addCompletionJunctions(helicaseX);
+            helicaseCompleted = true;
+            updatePol3CTA();
+            maybeUnlockWhenIdle();
+            return;
+          }
+
+          animId = requestAnimationFrame(stepAnim);
+        }
+
+        // Controls
+        const startBtn = document.getElementById('helicase-start');
+        const resetBtn = document.getElementById('helicase-reset');
+        startBtn?.addEventListener('click', () => {
+          attemptStep('helicase-start', () => {
+            if (running) return;
+            running = true;
+            // no status text
+            startBtn.disabled = true;
+            resetBtn.style.display = 'none';
+            helicaseX = helicaseStartX;
+            lastTs = null;
+            // Ensure fork begins at the helicase location
+            setHelicasePoints(helicaseX);
+            helicase.style.display = '';
+            topo.style.display = '';
+            setTopoisomerasePosition(helicaseX);
+            // Keep fully formed helix at t=0; fork appears as motion begins
+            render(helicaseX - 1);
+            animId = requestAnimationFrame(stepAnim);
+          });
+        });
+
+        // Primase control
+        primaseBtn?.addEventListener('click', () => {
+          attemptStep('primase-start', () => {
+            if (leadingPrimerPlaced && laggingPrimersPlaced) return;
+            primaseActive = true;
+            // Build primer placement positions (leading first, then lagging)
+            const xLeftEdge = startX; // leftmost edge of the unwound region
+            const yTop = centerY - forkOffsetLeft(xLeftEdge, helicaseX);
+            const offsetUnder = 2; // small visual gap below the strand
+            const yUnder = yTop + (primerBlockHeight / 2) + offsetUnder;
+            const positions = [{ x: xLeftEdge, y: yUnder, leading: true }];
+            // lagging primers from near fork moving leftwards
+            const laggingPositions = (function() {
+              const epsilon = 4;
+              const marginLeft = 6;
+              const w = primerBlockWidth;
+              const h = primerBlockHeight;
+              const offsetTowardCenter = 2;
+              const xRightEdge = helicaseX - epsilon;
+              const arr = [];
+              let xCenter = xRightEdge - (w / 2) - 2;
+              while (xCenter - w / 2 > startX + marginLeft) {
+                const yBottom = centerY + forkOffsetLeft(xCenter, helicaseX);
+                const yAbove = yBottom - (h / 2) - offsetTowardCenter;
+                arr.push({ x: xCenter, y: yAbove, leading: false });
+                xCenter -= okazakiSpacingPx;
+              }
+              return arr;
+            })();
+            positions.push(...laggingPositions);
+
+            // Show primase enzyme and place primers sequentially with travel animation
+            primase.style.display = '';
+            const placePrimerAt = (pos) => {
+              if (pos.leading && !leadingPrimerPlaced) {
+                makePrimerRect(pos.x, pos.y, true);
+                leadingPrimerPlaced = true;
+              } else if (!pos.leading) {
+                makePrimerRect(pos.x, pos.y, false);
+              }
+            };
+            let idx = 0;
+            if (positions.length === 0) {
+              primase.style.display = 'none';
+              laggingPrimersPlaced = true;
+              primaseCompleted = true;
+              primaseActive = false;
+              updatePol3CTA();
+              maybeUnlockWhenIdle();
+              return;
+            }
+            // Place the first primer immediately at its target position
+            setPrimasePosition(positions[0].x, positions[0].y);
+            placePrimerAt(positions[0]);
+            idx = 1;
+            function moveNext() {
+              if (idx >= positions.length) {
+                primase.style.display = 'none';
+                laggingPrimersPlaced = true;
+                primaseCompleted = true;
+                primaseActive = false;
+                // no status text
+                updatePol3CTA();
+                maybeUnlockWhenIdle();
+                return;
+              }
+              const target = positions[idx];
+              const cur = getPrimaseXY();
+              const dx = target.x - (cur.hasPos ? cur.x : target.x);
+              const dy = target.y - (cur.hasPos ? cur.y : target.y);
+              const durationMs = Math.max(200, (Math.hypot(dx, dy) / primaseSpeed) * 1000);
+              travelPrimaseTo(target.x, target.y, durationMs, () => {
+                placePrimerAt(target);
+                idx++;
+                moveNext();
+              });
+            }
+            moveNext();
+          });
+        });
+
+        function getLaggingPrimers() {
+          const rects = Array.from(primersGroup.querySelectorAll('rect.primer-block-lagging'));
+          const arr = rects.map(r => {
+            const x = parseFloat(r.getAttribute('x') || '0');
+            const w = parseFloat(r.getAttribute('width') || '0');
+            const y = parseFloat(r.getAttribute('y') || '0');
+            const h = parseFloat(r.getAttribute('height') || '0');
+            return { xLeft: x, xRight: x + w, xCenter: x + w / 2, yCenter: y + h / 2 };
+          });
+          // Sort right-to-left: nearest to fork first
+          arr.sort((a, b) => b.xCenter - a.xCenter);
+          return arr;
+        }
+
+        // ===== DNA Pol I (Primer Replacement) =====
+        let pol1FrontX = 0;
+
+        function ensurePol1Enzyme() {
+          if (pol1Enzyme) return pol1Enzyme;
+          const c = document.createElementNS(NS, 'circle');
+          c.setAttribute('r', String(Math.max(8, pol3BlockHeight / 2 + 6)));
+          c.setAttribute('fill', pol1Color);
+          c.setAttribute('stroke', pol1Stroke);
+          c.setAttribute('stroke-width', '2');
+          pol1Group.appendChild(c);
+          pol1Enzyme = c;
+          return c;
+        }
+
+        function updatePol1EnzymeTop(x) {
+          if (!pol1Enzyme) return;
+          const leadOffsetX = (pol3BlockWidth / 2) + pol3BlockGap + 6;
+          const xFront = Math.min(x + leadOffsetX, helicaseEndX - pol3Epsilon);
+          const yTop = centerY - forkOffsetLeft(xFront, helicaseEndX);
+          const yCenter = yTop + (pol3BlockHeight / 2) + pol3OffsetUnder;
+          pol1Enzyme.setAttribute('cx', String(xFront));
+          pol1Enzyme.setAttribute('cy', String(yCenter));
+          pol1Group.appendChild(pol1Enzyme);
+        }
+
+        function updatePol1EnzymeBottom(x) {
+          if (!pol1Enzyme) return;
+          const leadOffsetX = (pol3BlockWidth / 2) + pol3BlockGap + 6;
+          const xFront = Math.max(x - leadOffsetX, startX + 6);
+          const yBottom = centerY + forkOffsetLeft(xFront, helicaseEndX);
+          const yCenter = yBottom - (pol3BlockHeight / 2) - pol3OffsetUnder;
+          pol1Enzyme.setAttribute('cx', String(xFront));
+          pol1Enzyme.setAttribute('cy', String(yCenter));
+          pol1Group.appendChild(pol1Enzyme);
+        }
+
+        function makePol1BlockTop(xCenter, idx) {
+          const rect = document.createElementNS(NS, 'rect');
+          const yTop = centerY - forkOffsetLeft(xCenter, helicaseEndX);
+          const yCenter = yTop + (pol3BlockHeight / 2) + pol3OffsetUnder;
+          rect.setAttribute('x', String(xCenter - pol3BlockWidth / 2));
+          rect.setAttribute('y', String(yCenter - pol3BlockHeight / 2));
+          rect.setAttribute('width', String(pol3BlockWidth));
+          rect.setAttribute('height', String(pol3BlockHeight));
+          rect.setAttribute('rx', '3');
+          rect.setAttribute('class', 'pol1-block');
+          const color = nucleotideColors[idx % nucleotideColors.length];
+          rect.setAttribute('fill', color);
+          rect.setAttribute('style', 'fill: ' + color);
+          pol1Group.appendChild(rect);
+          return rect;
+        }
+
+        function makePol1BlockBottom(xCenter, idx) {
+          const rect = document.createElementNS(NS, 'rect');
+          const yBottom = centerY + forkOffsetLeft(xCenter, helicaseEndX);
+          const yCenter = yBottom - (pol3BlockHeight / 2) - pol3OffsetUnder;
+          rect.setAttribute('x', String(xCenter - pol3BlockWidth / 2));
+          rect.setAttribute('y', String(yCenter - pol3BlockHeight / 2));
+          rect.setAttribute('width', String(pol3BlockWidth));
+          rect.setAttribute('height', String(pol3BlockHeight));
+          rect.setAttribute('rx', '3');
+          rect.setAttribute('class', 'pol1-block');
+          const color = nucleotideColors[idx % nucleotideColors.length];
+          rect.setAttribute('fill', color);
+          rect.setAttribute('style', 'fill: ' + color);
+          pol1Group.appendChild(rect);
+          return rect;
+        }
+
+        function mergePol1PathTop(xLeft, xRight, pol3StartX) {
+          // Leave nick only where Pol I meets Pol III (to the right on leading)
+          const xs = Math.max(startX, xLeft);
+          const xe = Math.min(helicaseEndX, Math.min(xRight, pol3StartX - nickGapPx));
+          const path = document.createElementNS(NS, 'path');
+          let d = '';
+          let started = false;
+          if (!(xe > xs)) {
+            // Fallback: draw a minimal segment inside the primer bounds
+            const xs2 = Math.max(startX, xLeft + 2);
+            const xe2 = Math.min(helicaseEndX, xRight - 2);
+            if (xe2 > xs2) {
+              for (let x = xs2; x <= xe2; x += step) {
+                const yTop = centerY - forkOffsetLeft(x, helicaseEndX);
+                const y = yTop + pol3PathOffset;
+                if (!started) { d += 'M ' + x + ' ' + y; started = true; }
+                else { d += ' L ' + x + ' ' + y; }
+              }
+              path.setAttribute('d', d || `M ${xs2} ${centerY}`);
+              path.setAttribute('class', 'pol3-path');
+              pol3Group.appendChild(path);
+              const blocks = pol1Group.querySelectorAll('rect.pol1-block');
+              blocks.forEach(b => b.parentNode?.removeChild(b));
+              // Record the leading-strand nick at the junction with Pol III
+              addLigaseNick({ strand: 'top', xLeft: Math.max(startX, pol3StartX - nickGapPx), xRight: Math.max(startX, pol3StartX) });
+              updateLigaseCTA();
+              return;
+            } else {
+              const blocks = pol1Group.querySelectorAll('rect.pol1-block');
+              blocks.forEach(b => b.parentNode?.removeChild(b));
+              updateLigaseCTA();
+              return;
+            }
+          }
+          for (let x = xs; x <= xe; x += step) {
+            const yTop = centerY - forkOffsetLeft(x, helicaseEndX);
+            const y = yTop + pol3PathOffset;
+            if (!started) { d += 'M ' + x + ' ' + y; started = true; }
+            else { d += ' L ' + x + ' ' + y; }
+          }
+          path.setAttribute('d', d || `M ${xs} ${centerY}`);
+          path.setAttribute('class', 'pol3-path');
+          pol3Group.appendChild(path);
+
+          const blocks = pol1Group.querySelectorAll('rect.pol1-block');
+          blocks.forEach(b => b.parentNode?.removeChild(b));
+          // Record the leading-strand nick at the junction with Pol III
+          addLigaseNick({ strand: 'top', xLeft: Math.max(startX, pol3StartX - nickGapPx), xRight: Math.max(startX, pol3StartX) });
+          updateLigaseCTA();
+        }
+
+        function mergePol1PathBottom(xRight, xLeft, rightFragEnd, leftFragEnd) {
+          // Leave a nick only where this segment meets the right-hand Pol III fragment.
+          // The left-hand junction nick will be handled by the next (left) segment.
+          const xl = Math.max(startX, Math.max(xLeft, rightFragEnd + nickGapPx));
+          const xr = Math.min(helicaseEndX, xRight);
+          const path = document.createElementNS(NS, 'path');
+          let d = '';
+          let started = false;
+          const stepSize = Math.max(2, Math.min(6, step));
+          if (!(xr > xl)) {
+            // Fallback: draw a minimal segment inside the primer bounds
+            const xl2 = Math.max(startX, xLeft + 2);
+            const xr2 = Math.min(helicaseEndX, xRight - 2);
+            if (xr2 > xl2) {
+              for (let x = xr2; x >= xl2; x -= stepSize) {
+                const yBottom = centerY + forkOffsetLeft(x, helicaseEndX);
+                const y = yBottom - pol3PathOffset;
+                if (!started) { d += 'M ' + x + ' ' + y; started = true; }
+                else { d += ' L ' + x + ' ' + y; }
+              }
+              path.setAttribute('d', d || `M ${xr2} ${centerY}`);
+              path.setAttribute('class', 'pol3-path');
+              pol3LagGroup.appendChild(path);
+              const blocks = pol1Group.querySelectorAll('rect.pol1-block');
+              blocks.forEach(b => b.parentNode?.removeChild(b));
+              // Record the lagging-strand nick at the junction with the right Pol III fragment
+              addLigaseNick({ strand: 'bottom', xLeft: rightFragEnd, xRight: rightFragEnd + nickGapPx });
+              // Also record the left-hand junction nick (between this Pol I patch and the left Pol III fragment)
+              addLigaseNick({ strand: 'bottom', xLeft: Math.max(startX, leftFragEnd - nickGapPx), xRight: Math.max(startX, leftFragEnd) });
+              updateLigaseCTA();
+              return;
+            } else {
+              const blocks = pol1Group.querySelectorAll('rect.pol1-block');
+              blocks.forEach(b => b.parentNode?.removeChild(b));
+              updateLigaseCTA();
+              return;
+            }
+          }
+          for (let x = xr; x >= xl; x -= stepSize) {
+            const yBottom = centerY + forkOffsetLeft(x, helicaseEndX);
+            const y = yBottom - pol3PathOffset;
+            if (!started) { d += 'M ' + x + ' ' + y; started = true; }
+            else { d += ' L ' + x + ' ' + y; }
+          }
+          path.setAttribute('d', d || `M ${xr} ${centerY}`);
+          path.setAttribute('class', 'pol3-path');
+          pol3LagGroup.appendChild(path);
+
+          const blocks = pol1Group.querySelectorAll('rect.pol1-block');
+          blocks.forEach(b => b.parentNode?.removeChild(b));
+          // Record the lagging-strand nick at the junction with the right Pol III fragment
+          addLigaseNick({ strand: 'bottom', xLeft: rightFragEnd, xRight: rightFragEnd + nickGapPx });
+          // Also record the left-hand junction nick (between this Pol I patch and the left Pol III fragment)
+          addLigaseNick({ strand: 'bottom', xLeft: Math.max(startX, leftFragEnd - nickGapPx), xRight: Math.max(startX, leftFragEnd) });
+          updateLigaseCTA();
+        }
+
+        // Travel animation for Pol I enzyme between segment starts
+        function getPol1EnzymeXY() {
+          if (!pol1Enzyme) return { x: 0, y: 0 };
+          const cx = parseFloat(pol1Enzyme.getAttribute('cx') || '0');
+          const cy = parseFloat(pol1Enzyme.getAttribute('cy') || '0');
+          return { x: cx, y: cy };
+        }
+
+        function computePol1StartXYForSegment(seg) {
+          const leadOffsetX = (pol3BlockWidth / 2) + pol3BlockGap + 6;
+          if (seg.type === 'top') {
+            const xFront = Math.min(seg.xLeft + leadOffsetX, helicaseEndX - pol3Epsilon);
+            const yTop = centerY - forkOffsetLeft(xFront, helicaseEndX);
+            const yCenter = yTop + (pol3BlockHeight / 2) + pol3OffsetUnder;
+            return { x: xFront, y: yCenter };
+          } else {
+            const xFront = Math.max(seg.xRight - leadOffsetX, startX + 6);
+            const yBottom = centerY + forkOffsetLeft(xFront, helicaseEndX);
+            const yCenter = yBottom - (pol3BlockHeight / 2) - pol3OffsetUnder;
+            return { x: xFront, y: yCenter };
+          }
+        }
+
+        function travelPol1To(seg, durationMs, onDone) {
+          ensurePol1Enzyme();
+          const start = getPol1EnzymeXY();
+          const target = computePol1StartXYForSegment(seg);
+          const t0 = performance.now();
+
+          function step(now) {
+            const t = Math.min(1, (now - t0) / durationMs);
+            const x = start.x + (target.x - start.x) * t;
+            const y = start.y + (target.y - start.y) * t;
+            pol1Enzyme.setAttribute('cx', String(x));
+            pol1Enzyme.setAttribute('cy', String(y));
+            pol1Group.appendChild(pol1Enzyme);
+            if (t < 1) {
+              requestAnimationFrame(step);
+            } else {
+              if (onDone) onDone();
+            }
+          }
+
+          requestAnimationFrame(step);
+        }
+
+        function makePol3Block(xCenter, idx) {
+          const rect = document.createElementNS(NS, 'rect');
+          const yTop = centerY - forkOffsetLeft(xCenter, helicaseEndX);
+          const yCenter = yTop + (pol3BlockHeight / 2) + pol3OffsetUnder;
+          rect.setAttribute('x', String(xCenter - pol3BlockWidth / 2));
+          rect.setAttribute('y', String(yCenter - pol3BlockHeight / 2));
+          rect.setAttribute('width', String(pol3BlockWidth));
+          rect.setAttribute('height', String(pol3BlockHeight));
+          rect.setAttribute('rx', '3');
+          rect.setAttribute('class', 'pol3-block');
+          // Color by nucleotide cycling A->T->C->G
+          const color = nucleotideColors[idx % nucleotideColors.length];
+          rect.setAttribute('fill', color);
+          rect.setAttribute('style', 'fill: ' + color);
+          pol3Group.appendChild(rect);
+          return rect;
+        }
+
+        function ensurePol3Enzyme() {
+          if (pol3Enzyme) return pol3Enzyme;
+          const c = document.createElementNS(NS, 'circle');
+          c.setAttribute('r', String(Math.max(8, pol3BlockHeight / 2 + 6)));
+          c.setAttribute('fill', '#8b5cf6'); // purple
+          c.setAttribute('stroke', '#6d28d9');
+          c.setAttribute('stroke-width', '2');
+          pol3Group.appendChild(c);
+          pol3Enzyme = c;
+          return c;
+        }
+
+        function updatePol3EnzymePosition(x) {
+          if (!pol3Enzyme) return;
+          const leadOffsetX = (pol3BlockWidth / 2) + pol3BlockGap + 6; // place in front of newest block
+          const xMax = helicaseEndX - pol3Epsilon;
+          const xFront = Math.min(x + leadOffsetX, xMax);
+          const yTop = centerY - forkOffsetLeft(xFront, helicaseEndX);
+          const yCenter = yTop + (pol3BlockHeight / 2) + pol3OffsetUnder;
+          pol3Enzyme.setAttribute('cx', String(xFront));
+          pol3Enzyme.setAttribute('cy', String(yCenter));
+          // Keep enzyme on top of newly added blocks
+          pol3Group.appendChild(pol3Enzyme);
+        }
+
+        function mergePol3BlocksToPath(xStart, xEnd) {
+          // Build a smooth path along the top template slightly below it
+          const path = document.createElementNS(NS, 'path');
+          let d = '';
+          let started = false;
+          for (let x = xStart; x <= xEnd; x += step) {
+            const yTop = centerY - forkOffsetLeft(x, helicaseEndX);
+            const y = yTop + pol3PathOffset; // increased offset under the template
+            if (!started) { d += 'M ' + x + ' ' + y; started = true; }
+            else { d += ' L ' + x + ' ' + y; }
+          }
+          path.setAttribute('d', d || `M ${xStart} ${centerY}`);
+          path.setAttribute('class', 'pol3-path');
+          pol3Group.appendChild(path);
+
+          // Remove all block rects but keep the primer in its own group
+          const blocks = pol3Group.querySelectorAll('rect.pol3-block');
+          blocks.forEach(b => b.parentNode?.removeChild(b));
+
+          pol3Active = false;
+          pol3Completed = true;
+          updatePol1CTA();
+          maybeUnlockWhenIdle();
+        }
+
+        function startPol3() {
+          if (pol3Active || pol3Completed) return;
+          // Determine synthesis bounds
+          const xStart = startX + (primerBlockWidth / 2) + pol3BlockGap;
+          const xEnd = Math.max(xStart, helicaseEndX - pol3Epsilon);
+          pol3FrontX = xStart;
+          pol3LastTs = null;
+          pol3Active = true;
+
+          // Place blocks progressively as front advances
+          let nextBlockCenterX = xStart + (pol3BlockWidth / 2);
+          let nextBlockIndex = 0;
+
+          ensurePol3Enzyme();
+          updatePol3EnzymePosition(pol3FrontX);
+
+          function stepPol3(ts) {
+            if (!pol3LastTs) pol3LastTs = ts;
+            const dt = (ts - pol3LastTs) / 1000;
+            pol3LastTs = ts;
+
+            pol3FrontX = Math.min(xEnd, pol3FrontX + pol3Speed * dt);
+
+            while (nextBlockCenterX - (pol3BlockWidth / 2) <= pol3FrontX && nextBlockCenterX + (pol3BlockWidth / 2) <= xEnd) {
+              makePol3Block(nextBlockCenterX, nextBlockIndex++);
+              nextBlockCenterX += pol3BlockWidth + pol3BlockGap;
+              // Ensure enzyme renders above newly appended block
+              if (pol3Enzyme) pol3Group.appendChild(pol3Enzyme);
+            }
+
+            updatePol3EnzymePosition(pol3FrontX);
+
+            if (pol3FrontX >= xEnd) {
+              cancelAnimationFrame(pol3AnimId);
+              pol3AnimId = null;
+              // Remove enzyme when synthesis completes
+              if (pol3Enzyme && pol3Enzyme.parentNode) pol3Enzyme.parentNode.removeChild(pol3Enzyme);
+              pol3Enzyme = null;
+              mergePol3BlocksToPath(xStart, xEnd);
+              return;
+            }
+
+            pol3AnimId = requestAnimationFrame(stepPol3);
+          }
+
+          pol3AnimId = requestAnimationFrame(stepPol3);
+        }
+
+        pol3Btn?.addEventListener('click', () => {
+          attemptStep('pol3-start', () => {
+            startPol3();
+            startPol3Lagging();
+          });
+        });
+
+        function startPol1() {
+          if (pol1Active || pol1Completed) return;
+          if (!hasAnyPrimers()) return;
+          pol1Active = true;
+          pol1LastTs = null;
+          ensurePol1Enzyme();
+
+          // Build segment list: leading then lagging
+          const segments = [];
+          const leadRect = primersGroup.querySelector('rect.primer-block-leading');
+          if (leadRect) {
+            const x = parseFloat(leadRect.getAttribute('x') || '0');
+            const w = parseFloat(leadRect.getAttribute('width') || '0');
+            const xLeft = x;
+            const xRight = x + w;
+            const pol3Start = startX + (primerBlockWidth / 2) + pol3BlockGap;
+            const xClampRight = Math.max(xLeft, Math.min(xRight, pol3Start));
+            segments.push({ type: 'top', xLeft, xRight: xClampRight, rect: leadRect });
+          }
+          const lagRects = Array.from(primersGroup.querySelectorAll('rect.primer-block-lagging')).map(r => {
+            const x = parseFloat(r.getAttribute('x') || '0');
+            const w = parseFloat(r.getAttribute('width') || '0');
+            const xCenter = x + w / 2;
+            return { rect: r, xLeft: x, xRight: x + w, xCenter };
+          }).sort((a, b) => b.xCenter - a.xCenter);
+          lagRects.forEach(item => segments.push({ type: 'bottom', xLeft: item.xLeft, xRight: item.xRight, rect: item.rect }));
+
+          let segIndex = 0;
+
+          function runNextSegment() {
+            if (segIndex >= segments.length) {
+              // done
+              pol1Active = false;
+              pol1Completed = true;
+              if (pol1Enzyme && pol1Enzyme.parentNode) pol1Enzyme.parentNode.removeChild(pol1Enzyme);
+              pol1Enzyme = null;
+              updateLigaseCTA();
+              maybeUnlockWhenIdle();
+              return;
+            }
+
+            const seg = segments[segIndex];
+            if (seg.type === 'top') {
+              // Move left -> right
+              pol1FrontX = seg.xLeft;
+              pol1LastTs = null;
+              // Remove primer immediately
+              if (seg.rect && seg.rect.parentNode) seg.rect.parentNode.removeChild(seg.rect);
+              let nextBlockCenterX = seg.xLeft + (pol3BlockWidth / 2);
+              let nextBlockIndex = 0;
+              function stepTop(ts) {
+                if (!pol1LastTs) pol1LastTs = ts;
+                const dt = (ts - pol1LastTs) / 1000;
+                pol1LastTs = ts;
+
+                pol1FrontX = Math.min(seg.xRight, pol1FrontX + pol1Speed * dt);
+
+                while ((nextBlockCenterX + (pol3BlockWidth / 2) <= pol1FrontX) && (nextBlockCenterX + (pol3BlockWidth / 2) <= seg.xRight)) {
+                  makePol1BlockTop(nextBlockCenterX, nextBlockIndex++);
+                  nextBlockCenterX += (pol3BlockWidth + pol3BlockGap);
+                  if (pol1Enzyme) pol1Group.appendChild(pol1Enzyme);
+                }
+
+                updatePol1EnzymeTop(pol1FrontX);
+
+                if (pol1FrontX >= seg.xRight) {
+                  cancelAnimationFrame(pol1AnimId);
+                  pol1AnimId = null;
+                  // merge and remove primer
+                  const pol3Start = startX + (primerBlockWidth / 2) + pol3BlockGap;
+                  mergePol1PathTop(seg.xLeft, seg.xRight, pol3Start);
+                  segIndex++;
+                  if (segIndex < segments.length) {
+                    const nextSeg = segments[segIndex];
+                    const travelMs = nextSeg.type === 'bottom' ? 1000 : 1200;
+                    travelPol1To(nextSeg, travelMs, () => runNextSegment());
+                  } else {
+                    runNextSegment();
+                  }
+                  return;
+                }
+
+                pol1AnimId = requestAnimationFrame(stepTop);
+              }
+              pol1AnimId = requestAnimationFrame(stepTop);
+            } else {
+              // bottom: Move right -> left
+              pol1FrontX = seg.xRight;
+              pol1LastTs = null;
+              // Remove primer immediately
+              if (seg.rect && seg.rect.parentNode) seg.rect.parentNode.removeChild(seg.rect);
+              let nextBlockCenterX = seg.xRight - (pol3BlockWidth / 2);
+              let nextBlockIndex = 0;
+              function stepBottom(ts) {
+                if (!pol1LastTs) pol1LastTs = ts;
+                const dt = (ts - pol1LastTs) / 1000;
+                pol1LastTs = ts;
+
+                pol1FrontX = Math.max(seg.xLeft, pol1FrontX - (pol1Speed * pol1LagSpeedFactor) * dt);
+
+                while (
+                  (nextBlockCenterX - (pol3BlockWidth / 2) >= seg.xLeft) &&
+                  (nextBlockCenterX + (pol3BlockWidth / 2) >= pol1FrontX)
+                ) {
+                  makePol1BlockBottom(nextBlockCenterX, nextBlockIndex++);
+                  nextBlockCenterX -= (pol3BlockWidth + pol3BlockGap);
+                  if (pol1Enzyme) pol1Group.appendChild(pol1Enzyme);
+                }
+
+                updatePol1EnzymeBottom(pol1FrontX);
+
+                if (pol1FrontX <= seg.xLeft) {
+                  cancelAnimationFrame(pol1AnimId);
+                  pol1AnimId = null;
+                  // Determine neighboring Pol III fragment endpoints for trimming
+                  const rightFragEnd = seg.xLeft - pol3BlockGap;
+                  const leftClamp = startX + 10;
+                  const nextSeg = segments[segIndex + 1];
+                  const leftFragEnd = (nextSeg && nextSeg.type === 'bottom')
+                    ? nextSeg.xRight + pol3BlockGap
+                    : leftClamp;
+                  mergePol1PathBottom(seg.xRight, seg.xLeft, rightFragEnd, leftFragEnd);
+                  segIndex++;
+                  if (segIndex < segments.length) {
+                    const nextSeg = segments[segIndex];
+                    const travelMs = nextSeg.type === 'bottom' ? 1000 : 1200;
+                    travelPol1To(nextSeg, travelMs, () => runNextSegment());
+                  } else {
+                    runNextSegment();
+                  }
+                  return;
+                }
+
+                pol1AnimId = requestAnimationFrame(stepBottom);
+              }
+              pol1AnimId = requestAnimationFrame(stepBottom);
+            }
+          }
+
+          runNextSegment();
+        }
+
+        pol1Btn?.addEventListener('click', () => {
+          attemptStep('pol1-start', () => {
+            startPol1();
+          });
+        });
+
+        // ===== DNA Ligase (Seals nicks) =====
+        function ensureLigaseEnzyme() {
+          if (ligaseEnzyme) return ligaseEnzyme;
+          const c = document.createElementNS(NS, 'circle');
+          c.setAttribute('r', String(Math.max(8, pol3BlockHeight / 2 + 6)));
+          c.setAttribute('class', 'ligase-enzyme');
+          ligaseGroup.appendChild(c);
+          ligaseEnzyme = c;
+          return c;
+        }
+
+        function getLigaseXY() {
+          if (!ligaseEnzyme) return { x: NaN, y: NaN };
+          const cx = parseFloat(ligaseEnzyme.getAttribute('cx') || 'NaN');
+          const cy = parseFloat(ligaseEnzyme.getAttribute('cy') || 'NaN');
+          return { x: cx, y: cy };
+        }
+
+        function travelLigaseTo(xTarget, yTarget, durationMs, onDone) {
+          ensureLigaseEnzyme();
+          const start = getLigaseXY();
+          const xStart = Number.isFinite(start.x) ? start.x : xTarget;
+          const yStart = Number.isFinite(start.y) ? start.y : yTarget;
+          const t0 = performance.now();
+          function step(now) {
+            const t = Math.min(1, (now - t0) / durationMs);
+            const x = xStart + (xTarget - xStart) * t;
+            const y = yStart + (yTarget - yStart) * t;
+            ligaseEnzyme.setAttribute('cx', String(x));
+            ligaseEnzyme.setAttribute('cy', String(y));
+            ligaseGroup.appendChild(ligaseEnzyme);
+            if (t < 1) requestAnimationFrame(step);
+            else if (onDone) onDone();
+          }
+          requestAnimationFrame(step);
+        }
+
+        function sealNick(n, onDone) {
+          const overlapPx = 1;
+          const path = document.createElementNS(NS, 'path');
+          let d = '';
+          const stepSize = Math.max(2, Math.min(6, step));
+          if (n.strand === 'top') {
+            const xs = Math.max(startX, n.xLeft - overlapPx);
+            const xe = Math.min(helicaseEndX, n.xRight + overlapPx);
+            for (let x = xs; x <= xe; x += stepSize) {
+              const yTop = centerY - forkOffsetLeft(x, helicaseEndX);
+              const y = yTop + pol3PathOffset;
+              if (!d) d = 'M ' + x + ' ' + y;
+              else d += ' L ' + x + ' ' + y;
+            }
+          } else {
+            const xs = Math.max(startX, n.xLeft - overlapPx);
+            const xe = Math.min(helicaseEndX, n.xRight + overlapPx);
+            for (let x = xe; x >= xs; x -= stepSize) {
+              const yBottom = centerY + forkOffsetLeft(x, helicaseEndX);
+              const y = yBottom - pol3PathOffset;
+              if (!d) d = 'M ' + x + ' ' + y;
+              else d += ' L ' + x + ' ' + y;
+            }
+          }
+          path.setAttribute('d', d || `M ${n.xLeft} ${centerY}`);
+          path.setAttribute('class', 'ligase-weld');
+          ligaseGroup.appendChild(path);
+          if (onDone) onDone();
+        }
+
+        function startLigase() {
+          if (ligaseActive || ligaseCompleted) return;
+          if (!ligaseNicks.length) return;
+          ligaseActive = true;
+          ensureLigaseEnzyme();
+          // Order: top first (if any), then bottom from right to left
+          const topNicks = ligaseNicks.filter(n => n.strand === 'top');
+          const bottomNicks = ligaseNicks.filter(n => n.strand === 'bottom').sort((a, b) => b.xRight - a.xRight);
+          const seq = [...topNicks, ...bottomNicks];
+          let i = 0;
+          function next() {
+            if (i >= seq.length) {
+              ligaseActive = false;
+              ligaseCompleted = true;
+              // Remove enzyme after completion
+              if (ligaseEnzyme && ligaseEnzyme.parentNode) ligaseEnzyme.parentNode.removeChild(ligaseEnzyme);
+              ligaseEnzyme = null;
+              const ligBtn = document.getElementById('ligase-start');
+              maybeUnlockWhenIdle();
+              return;
+            }
+            const n = seq[i++];
+            const xTarget = n.strand === 'top' ? n.xLeft : n.xRight;
+            const yTarget = (function() {
+              if (n.strand === 'top') {
+                const yTop = centerY - forkOffsetLeft(xTarget, helicaseEndX);
+                return yTop + (pol3BlockHeight / 2) + pol3OffsetUnder;
+              } else {
+                const yBottom = centerY + forkOffsetLeft(xTarget, helicaseEndX);
+                return yBottom - (pol3BlockHeight / 2) - pol3OffsetUnder;
+              }
+            })();
+            const cur = getLigaseXY();
+            const dx = xTarget - (Number.isFinite(cur.x) ? cur.x : xTarget);
+            const dy = yTarget - (Number.isFinite(cur.y) ? cur.y : yTarget);
+            const travelMs = Math.max(200, (Math.hypot(dx, dy) / 380) * 1000);
+            travelLigaseTo(xTarget, yTarget, travelMs, () => {
+              sealNick(n, next);
+            });
+          }
+          next();
+        }
+
+        const ligaseBtn = document.getElementById('ligase-start');
+        ligaseBtn?.addEventListener('click', () => {
+          attemptStep('ligase-start', () => {
+            startLigase();
+          });
+        });
+
+        function ensurePol3LagEnzyme() {
+          if (pol3LagEnzyme) return pol3LagEnzyme;
+          const c = document.createElementNS(NS, 'circle');
+          c.setAttribute('r', String(Math.max(8, pol3BlockHeight / 2 + 6)));
+          c.setAttribute('class', 'pol3-lag-enzyme');
+          c.setAttribute('fill', '#8b5cf6');
+          c.setAttribute('stroke', '#6d28d9');
+          c.setAttribute('stroke-width', '2');
+          pol3LagGroup.appendChild(c);
+          pol3LagEnzyme = c;
+          return c;
+        }
+
+        function updatePol3LagEnzymePosition(x) {
+          if (!pol3LagEnzyme) return;
+          const leadOffsetX = (pol3BlockWidth / 2) + pol3BlockGap + 6;
+          const xMin = startX + 6;
+          const xFront = Math.max(x - leadOffsetX, xMin);
+          const yBottom = centerY + forkOffsetLeft(xFront, helicaseEndX);
+          const yCenter = yBottom - (pol3BlockHeight / 2) - pol3OffsetUnder;
+          pol3LagEnzyme.setAttribute('cx', String(xFront));
+          pol3LagEnzyme.setAttribute('cy', String(yCenter));
+          pol3LagGroup.appendChild(pol3LagEnzyme);
+        }
+
+        function makeLagBlock(xCenter, idx) {
+          const rect = document.createElementNS(NS, 'rect');
+          const yBottom = centerY + forkOffsetLeft(xCenter, helicaseEndX);
+          const yCenter = yBottom - (pol3BlockHeight / 2) - pol3OffsetUnder;
+          rect.setAttribute('x', String(xCenter - pol3BlockWidth / 2));
+          rect.setAttribute('y', String(yCenter - pol3BlockHeight / 2));
+          rect.setAttribute('width', String(pol3BlockWidth));
+          rect.setAttribute('height', String(pol3BlockHeight));
+          rect.setAttribute('rx', '3');
+          rect.setAttribute('class', 'pol3-lag-block');
+          const color = nucleotideColors[idx % nucleotideColors.length];
+          rect.setAttribute('fill', color);
+          rect.setAttribute('style', 'fill: ' + color);
+          pol3LagGroup.appendChild(rect);
+          return rect;
+        }
+
+        function mergeLagBlocksToPath(xRight, xLeft) {
+          const path = document.createElementNS(NS, 'path');
+          let d = '';
+          let started = false;
+          const stepSize = Math.max(2, Math.min(6, step));
+          for (let x = xRight; x >= xLeft; x -= stepSize) {
+            const yBottom = centerY + forkOffsetLeft(x, helicaseEndX);
+            const y = yBottom - pol3PathOffset;
+            if (!started) { d += 'M ' + x + ' ' + y; started = true; }
+            else { d += ' L ' + x + ' ' + y; }
+          }
+          path.setAttribute('d', d || `M ${xRight} ${centerY}`);
+          path.setAttribute('class', 'pol3-path');
+          pol3LagGroup.appendChild(path);
+
+          // Remove all lagging block rects for this fragment (group currently contains only those)
+          const blocks = pol3LagGroup.querySelectorAll('rect.pol3-lag-block');
+          blocks.forEach(b => b.parentNode?.removeChild(b));
+        }
+
+        function startPol3Lagging() {
+          if (pol3LagActive || pol3LagCompleted) return;
+          const primers = getLaggingPrimers();
+          if (!primers.length) return;
+          pol3LagActive = true;
+
+          ensurePol3LagEnzyme();
+
+          const leftClamp = startX + 10;
+          let fragmentIndex = 0;
+
+          function synthesizeNextFragment() {
+            if (fragmentIndex >= primers.length) {
+              // done
+              pol3LagActive = false;
+              pol3LagCompleted = true;
+              if (pol3LagEnzyme && pol3LagEnzyme.parentNode) pol3LagEnzyme.parentNode.removeChild(pol3LagEnzyme);
+              pol3LagEnzyme = null;
+              updatePol1CTA();
+              maybeUnlockWhenIdle();
+              return;
+            }
+
+            const curr = primers[fragmentIndex];
+            const next = primers[fragmentIndex + 1];
+            const gap = pol3BlockGap;
+            const xRightBound = Math.max(leftClamp + gap, curr.xLeft - gap);
+            const xLeftBound = next ? Math.max(leftClamp, next.xRight + gap) : leftClamp;
+
+            /* no status readout */
+
+            pol3LagFrontX = xRightBound;
+            pol3LagLastTs = null;
+
+            let nextBlockCenterX = xRightBound - (pol3BlockWidth / 2);
+            let nextBlockIndex = 0;
+
+            updatePol3LagEnzymePosition(pol3LagFrontX);
+
+            function stepFragment(ts) {
+              if (!pol3LagLastTs) pol3LagLastTs = ts;
+              const dt = (ts - pol3LagLastTs) / 1000;
+              pol3LagLastTs = ts;
+
+              pol3LagFrontX = Math.max(xLeftBound, pol3LagFrontX - pol3Speed * dt);
+
+              while (
+                (nextBlockCenterX - (pol3BlockWidth / 2) >= xLeftBound) &&
+                (nextBlockCenterX + (pol3BlockWidth / 2) >= pol3LagFrontX)
+              ) {
+                makeLagBlock(nextBlockCenterX, nextBlockIndex++);
+                nextBlockCenterX -= (pol3BlockWidth + pol3BlockGap);
+                if (pol3LagEnzyme) pol3LagGroup.appendChild(pol3LagEnzyme);
+              }
+
+              updatePol3LagEnzymePosition(pol3LagFrontX);
+
+              if (pol3LagFrontX <= xLeftBound) {
+                cancelAnimationFrame(pol3LagAnimId);
+                pol3LagAnimId = null;
+                // merge this fragment and advance
+                mergeLagBlocksToPath(xRightBound, xLeftBound);
+                fragmentIndex++;
+                synthesizeNextFragment();
+                return;
+              }
+
+              pol3LagAnimId = requestAnimationFrame(stepFragment);
+            }
+
+            pol3LagAnimId = requestAnimationFrame(stepFragment);
+          }
+
+          synthesizeNextFragment();
+        }
+
+        /* removed: separate lagging start button listener (combined into single Pol III button) */
+
+        resetBtn?.addEventListener('click', () => {
+          if (animId) cancelAnimationFrame(animId);
+          animId = null;
+          running = false;
+          // no status text
+          // Restore full double helix
+          render(startX - 1);
+          setHelicasePoints(helicaseStartX);
+          helicase.style.display = 'none';
+          topo.style.display = 'none';
+          // Remove completion junctions if present
+          if (junctionsAdded) {
+            if (junctionTopPath.parentNode) junctionTopPath.parentNode.removeChild(junctionTopPath);
+            if (junctionBottomPath.parentNode) junctionBottomPath.parentNode.removeChild(junctionBottomPath);
+            junctionsAdded = false;
+          }
+          startBtn.disabled = false;
+          resetBtn.style.display = 'none';
+
+          // Clear primers and primase state
+          while (primersGroup.firstChild) primersGroup.removeChild(primersGroup.firstChild);
+          primaseActive = false;
+          primaseEnabled = false;
+          leadingPrimerPlaced = false;
+          laggingPrimersPlaced = false;
+          primaseCompleted = false;
+          primase.style.display = 'none';
+          if (primaseBtn) { primaseBtn.disabled = false; primaseBtn.style.display = ''; }
+
+          // Clear Pol III visuals and state
+          while (pol3Group.firstChild) pol3Group.removeChild(pol3Group.firstChild);
+          helicaseCompleted = false;
+          pol3Active = false;
+          pol3Completed = false;
+          if (pol3AnimId) cancelAnimationFrame(pol3AnimId);
+          pol3AnimId = null;
+          pol3LastTs = null;
+          pol3Enzyme = null;
+          if (pol3Btn) { pol3Btn.disabled = false; pol3Btn.style.display = ''; }
+
+          // Clear Lagging Pol III visuals and state
+          while (pol3LagGroup.firstChild) pol3LagGroup.removeChild(pol3LagGroup.firstChild);
+          pol3LagActive = false;
+          pol3LagCompleted = false;
+          if (pol3LagAnimId) cancelAnimationFrame(pol3LagAnimId);
+          pol3LagAnimId = null;
+          pol3LagLastTs = null;
+          pol3LagEnzyme = null;
+          /* removed: separate lagging button/status reset */
+
+          // Clear Pol I visuals and state
+          while (pol1Group.firstChild) pol1Group.removeChild(pol1Group.firstChild);
+          pol1Active = false;
+          pol1Completed = false;
+          if (pol1AnimId) cancelAnimationFrame(pol1AnimId);
+          pol1AnimId = null;
+          pol1LastTs = null;
+          pol1Enzyme = null;
+          if (pol1Btn) { pol1Btn.disabled = false; pol1Btn.style.display = ''; }
+          // Clear Ligase visuals and state
+          while (ligaseGroup.firstChild) ligaseGroup.removeChild(ligaseGroup.firstChild);
+          ligaseActive = false;
+          ligaseCompleted = false;
+          ligaseNicks = [];
+          ligaseEnzyme = null;
+          const ligBtn = document.getElementById('ligase-start');
+          if (ligBtn) { ligBtn.disabled = false; ligBtn.style.display = ''; }
+          // Clear order notice
+          if (orderNotice) orderNotice.style.display = 'none';
+          // Ensure step buttons are unlocked after a reset
+          unlockStepButtons();
+        });
+      })();
+    </script>
+  </body>
+  </html>
+
+
