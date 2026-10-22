@@ -1,38 +1,62 @@
-import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import {
+  ControlSection,
+  CoordinatePlane,
+  EquationStrip,
+  Legend,
+  ParamControl,
+  PlotFrame,
+  PresetBadge,
+  PresetsModal,
+  ReflectToggle,
+  TabbedPanel,
+  ToggleButton,
+  ViewControls,
+  type Preset,
+} from '../../../components/explorer'
+import { Tex } from '../../../components/tex'
+import { formatMovementLines, formatNumber } from '../../../utils/format'
+import { curvePath, inPlane, labelPosition, panView, sameView, samplePoints, viewPlane, zoomView, type Point, type View, type ZoomAxis } from '../../../utils/plane'
+import {
+  axisOfSymmetry,
+  domainTex,
+  endBehavior,
+  evaluate,
+  generalTokens,
+  limitTex,
+  mappingTex,
+  opensUpward,
+  parentTex,
+  pointTex,
+  range,
+  rangeTex,
+  standardFormExact,
+  standardFormTex,
+  substitutedTokens,
+  vertex,
+  vertexFormTex,
+  xIntercepts,
+  yIntercept,
+  type DomainRestriction,
+  type QuadraticParams,
+  type TermWrap,
+} from './math'
+import { Glyph, RestrictIcon } from './glyphs'
+
+/**
+ * Quadratic Transformations Explorer
+ *   parent      f(x) = x²
+ *   transformed g(x) = a(x − h)² + k
+ * Math lives in ./math.ts; this file is layout + state.
+ */
 
 type ExplorerValues = {
   stretch: number
   flip: boolean
   h: number
   k: number
-}
-
-type Preset = {
-  label: string
-  hint: string
-  values: ExplorerValues
-}
-
-type SliderControlProps = {
-  id: string
-  label: string
-  value: number
-  min: number
-  max: number
-  step: number
-  hint: string
-  onChange: (value: number) => void
-}
-
-type EquationCardProps = {
-  label: string
-  equation: string
-  note: string
-}
-
-type Point = {
-  x: number
-  y: number
+  /** Keep only one branch (x ≥ h or x ≤ h) so g is one-to-one (for the inverse-functions lesson). */
+  domain: DomainRestriction
 }
 
 const DEFAULT_VALUES: ExplorerValues = {
@@ -40,150 +64,28 @@ const DEFAULT_VALUES: ExplorerValues = {
   flip: false,
   h: 0,
   k: 0,
+  domain: 'none',
 }
 
-const PRESETS: Preset[] = [
-  {
-    label: 'Parent',
-    hint: 'Reset to p(x) = x²',
-    values: { stretch: 1, flip: false, h: 0, k: 0 },
-  },
-  {
-    label: 'Narrower',
-    hint: 'Strong vertical stretch',
-    values: { stretch: 2.5, flip: false, h: 0, k: 0 },
-  },
-  {
-    label: 'Wider Down',
-    hint: 'Reflect and compress',
-    values: { stretch: 0.5, flip: true, h: 0, k: 0 },
-  },
-  {
-    label: 'Right and Up',
-    hint: 'Shift the vertex to (2, 3)',
-    values: { stretch: 1, flip: false, h: 2, k: 3 },
-  },
-  {
-    label: 'Left and Down',
-    hint: 'Move the vertex to (-2.5, -2)',
-    values: { stretch: 1.5, flip: false, h: -2.5, k: -2 },
-  },
-  {
-    label: 'Touching Axis',
-    hint: 'Vertex sits on the x-axis',
-    values: { stretch: 1, flip: false, h: -3, k: 0 },
-  },
+const PRESETS: Preset<ExplorerValues>[] = [
+  { label: 'Parent', hint: 'Reset to f(x) = x²', values: { ...DEFAULT_VALUES } },
+  { label: 'Narrower', hint: 'Strong vertical stretch', values: { ...DEFAULT_VALUES, stretch: 2.5 } },
+  { label: 'Wider Down', hint: 'Reflect and compress', values: { ...DEFAULT_VALUES, stretch: 0.5, flip: true } },
+  { label: 'Right and Up', hint: 'Shift the vertex to (2, 3)', values: { ...DEFAULT_VALUES, h: 2, k: 3 } },
+  { label: 'Left and Down', hint: 'Move the vertex to (−2.5, −2)', values: { ...DEFAULT_VALUES, stretch: 1.5, h: -2.5, k: -2 } },
+  { label: 'Touching Axis', hint: 'Vertex sits on the x-axis', values: { ...DEFAULT_VALUES, h: -3 } },
+  { label: 'One-to-One', hint: 'Keep only x ≥ 1 so g has an inverse', values: { ...DEFAULT_VALUES, h: 1, k: -3, domain: 'right' } },
 ]
 
-const GRAPH_WIDTH = 760
-const GRAPH_HEIGHT = 520
-const MARGIN = { top: 24, right: 28, bottom: 46, left: 52 }
-const X_MIN = -6
-const X_MAX = 6
-const Y_MIN = -8
-const Y_MAX = 12
-const X_TICKS = Array.from({ length: X_MAX - X_MIN + 1 }, (_, i) => X_MIN + i)
-const Y_TICKS = Array.from({ length: Y_MAX - Y_MIN + 1 }, (_, i) => Y_MIN + i)
-const SAMPLE_COUNT = 241
+const PLANE_BASE = { width: 760, height: 520, margin: { top: 24, right: 28, bottom: 46, left: 52 } }
+const DEFAULT_VIEW: View = { xMin: -6, xMax: 6, yMin: -8, yMax: 12 }
 
-function roundToTenth(value: number) {
-  return Math.round(value * 10) / 10
-}
-
-function nearlyZero(value: number) {
-  return Math.abs(value) < 0.0001
-}
-
-function isApproximate(value: number) {
-  return Math.abs(value - roundToTenth(value)) > 0.00001
-}
-
-function formatPoint(x: number, y: number) {
-  const approx = isApproximate(x) || isApproximate(y)
-  return `${approx ? '~' : ''}(${formatNumber(x)}, ${formatNumber(y)})`
-}
-
-function formatNumber(value: number) {
-  const rounded = nearlyZero(value) ? 0 : roundToTenth(value)
-
-  if (Number.isInteger(rounded)) {
-    return String(rounded)
-  }
-
-  return rounded.toFixed(1).replace(/\.0$/, '')
-}
-
-function formatAbs(value: number) {
-  return formatNumber(Math.abs(value))
-}
-
-function formatMovementLines(value: number, positiveDirection: string, negativeDirection: string) {
-  if (nearlyZero(value)) return { firstLine: 'No', secondLine: 'shift' }
-
+function toParams(values: ExplorerValues): QuadraticParams {
   return {
-    firstLine: `${formatAbs(value)} ${Math.abs(value) === 1 ? 'unit' : 'units'}`,
-    secondLine: value > 0 ? positiveDirection : negativeDirection,
+    a: values.flip ? -values.stretch : values.stretch,
+    h: values.h,
+    k: values.k,
   }
-}
-
-function formatShiftedX(value: number) {
-  if (nearlyZero(value)) return 'x + 0'
-  return value > 0 ? `x + ${formatNumber(value)}` : `x - ${formatAbs(value)}`
-}
-
-function formatScaledShiftedY(a: number, k: number) {
-  const aPart = `${formatNumber(a)}y`
-  if (nearlyZero(k)) return `${aPart} + 0`
-  return k > 0 ? `${aPart} + ${formatNumber(k)}` : `${aPart} - ${formatAbs(k)}`
-}
-
-function evaluateQuadratic(x: number, a: number, h: number, k: number) {
-  return a * (x - h) * (x - h) + k
-}
-
-function formatVertexForm(a: number, h: number, k: number) {
-  const aPart = Math.abs(Math.abs(a) - 1) < 0.001 ? (a < 0 ? '-' : '') : formatNumber(a)
-  const hPart = nearlyZero(h) ? 'x' : h > 0 ? `(x - ${formatNumber(h)})` : `(x + ${formatAbs(h)})`
-  const kPart = nearlyZero(k) ? '' : k > 0 ? ` + ${formatNumber(k)}` : ` - ${formatAbs(k)}`
-  return `${aPart}${hPart}²${kPart}`
-}
-
-function formatQuadraticTerm(a: number) {
-  if (Math.abs(a - 1) < 0.001) return 'x²'
-  if (Math.abs(a + 1) < 0.001) return '-x²'
-  return `${formatNumber(a)}x²`
-}
-
-function formatLinearTerm(b: number) {
-  if (Math.abs(b - 1) < 0.001) return 'x'
-  if (Math.abs(b + 1) < 0.001) return '-x'
-  return `${formatNumber(b)}x`
-}
-
-function formatStandardForm(a: number, h: number, k: number) {
-  const b = roundToTenth(-2 * a * h)
-  const c = roundToTenth(a * h * h + k)
-  const pieces: string[] = [formatQuadraticTerm(a)]
-
-  if (!nearlyZero(b)) {
-    pieces.push(`${b > 0 ? '+' : '-'} ${formatLinearTerm(Math.abs(b))}`)
-  }
-
-  if (!nearlyZero(c)) {
-    pieces.push(`${c > 0 ? '+' : '-'} ${formatNumber(Math.abs(c))}`)
-  }
-
-  return pieces.join(' ')
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value))
-}
-
-function makeCurvePath(points: Point[], mapX: (value: number) => number, mapY: (value: number) => number) {
-  return points
-    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${mapX(point.x).toFixed(2)} ${mapY(point.y).toFixed(2)}`)
-    .join(' ')
 }
 
 function statesMatch(a: ExplorerValues, b: ExplorerValues) {
@@ -191,87 +93,38 @@ function statesMatch(a: ExplorerValues, b: ExplorerValues) {
     Math.abs(a.stretch - b.stretch) < 0.001 &&
     a.flip === b.flip &&
     Math.abs(a.h - b.h) < 0.001 &&
-    Math.abs(a.k - b.k) < 0.001
+    Math.abs(a.k - b.k) < 0.001 &&
+    a.domain === b.domain
   )
 }
 
-function SliderControl({ id, label, value, min, max, step, hint, onChange }: SliderControlProps) {
+/**
+ * Wraps a parameter's value in a chip colored like its control row. The outer
+ * braces matter: KaTeX gives a bare \htmlClass no operator spacing on its
+ * left.
+ */
+const chip: TermWrap = (term, tex) => `{\\htmlClass{xp-term xp-term--${term}}{${tex}}}`
+
+function scaleLabel(factor: number, moreWord: string, lessWord: string) {
+  if (Math.abs(factor - 1) < 0.001) return 'None'
+  return factor > 1 ? `Stretch ×${formatNumber(factor, 2)} (${moreWord})` : `Compress ×${formatNumber(factor, 2)} (${lessWord})`
+}
+
+/* ---- Tabbed info panel building blocks ---- */
+function InfoSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="field qe-control">
-      <div className="qe-control__row">
-        <label className="label" htmlFor={id}>{label}</label>
-        <code className="qe-control__value">{formatNumber(value)}</code>
-      </div>
-      <input
-        id={id}
-        className="range"
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={event => onChange(Number(event.target.value))}
-      />
-      <p className="helper-text qe-control__hint">{hint}</p>
-    </div>
+    <section className="xp-info-section">
+      <div className="xp-info-section__title">{title}</div>
+      <div className="xp-info">{children}</div>
+    </section>
   )
 }
 
-function ShrinkToFitInline({ children }: { children: ReactNode }) {
-  const wrapperRef = useRef<HTMLSpanElement | null>(null)
-  const contentRef = useRef<HTMLSpanElement | null>(null)
-  const [scale, setScale] = useState(1)
-
-  useLayoutEffect(() => {
-    const wrapper = wrapperRef.current
-    const content = contentRef.current
-    if (!wrapper || !content) return
-
-    const updateScale = () => {
-      const availableWidth = wrapper.clientWidth
-      const contentWidth = content.scrollWidth
-
-      if (availableWidth <= 0 || contentWidth <= 0) {
-        setScale(1)
-        return
-      }
-
-      setScale(Math.max(0.72, Math.min(1, availableWidth / contentWidth)))
-    }
-
-    updateScale()
-
-    const observer = new ResizeObserver(updateScale)
-    observer.observe(wrapper)
-    observer.observe(content)
-
-    return () => observer.disconnect()
-  }, [children])
-
+function InfoRow({ label, children, stacked = false }: { label: ReactNode; children: ReactNode; stacked?: boolean }) {
   return (
-    <span ref={wrapperRef} className="qe-fit-wrap">
-      <span
-        ref={contentRef}
-        className="qe-fit-content"
-        style={{ transform: `scale(${scale})` }}
-      >
-        {children}
-      </span>
-    </span>
-  )
-}
-
-function EquationCard({ label, equation, note }: EquationCardProps) {
-  return (
-    <div className="canvas-card qe-equation-card">
-      <span className="canvas-card__label">{label}</span>
-      <div className="qe-equation-card__equation">
-        <span className="qe-equation-card__fn">g(x)=</span>
-        <ShrinkToFitInline>
-          <code>{equation}</code>
-        </ShrinkToFitInline>
-      </div>
-      <p className="muted qe-equation-card__note">{note}</p>
+    <div className={`xp-info-row${stacked ? ' xp-info-row--stacked' : ''}`}>
+      <span className="xp-info-row__label">{label}</span>
+      <span className="xp-info-row__value">{children}</span>
     </div>
   )
 }
@@ -279,7 +132,14 @@ function EquationCard({ label, equation, note }: EquationCardProps) {
 export default function QuadraticExplorer() {
   const [values, setValues] = useState<ExplorerValues>(DEFAULT_VALUES)
   const [showPresets, setShowPresets] = useState(false)
-  const [restrictDomain, setRestrictDomain] = useState(false)
+  const closePresets = useCallback(() => setShowPresets(false), [])
+  const [view, setView] = useState<View>(DEFAULT_VIEW)
+  const PLANE = useMemo(() => viewPlane(PLANE_BASE, view), [view])
+  const pan = useCallback((dx: number, dy: number) => setView(v => panView(v, dx, dy)), [])
+  const [zoomAxis, setZoomAxis] = useState<ZoomAxis>('both')
+  const zoom = useCallback((factor: number, anchor: Point, axis: ZoomAxis) => setView(v => zoomView(v, factor, anchor, axis)), [])
+  const resetView = useCallback(() => setView(DEFAULT_VIEW), [])
+  const viewMoved = !sameView(view, DEFAULT_VIEW)
 
   useEffect(() => {
     const previousTitle = document.title
@@ -289,475 +149,279 @@ export default function QuadraticExplorer() {
     }
   }, [])
 
-  useEffect(() => {
-    if (!showPresets) return
+  const params = toParams(values)
+  const { h, k } = params
+  const restriction = values.domain
+  const restricted = restriction !== 'none'
+  const upward = opensUpward(params)
+  const V = vertex(params)
+  const axis = axisOfSymmetry(params)
+  const yInt = yIntercept(params, restriction)
+  const xInts = xIntercepts(params, restriction)
+  const limits = endBehavior(params, restriction)
+  const horizontalMovement = formatMovementLines(h, 'right', 'left')
+  const verticalMovement = formatMovementLines(k, 'up', 'down')
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setShowPresets(false)
-      }
-    }
+  // Plot geometry. With the domain restricted, keep the samples on that side
+  // of h and include the vertex itself so the branch starts exactly there,
+  // not one sample step past it.
+  const parentPath = curvePath(samplePoints(PLANE, x => x * x), PLANE)
+  const transformedSamples = samplePoints(PLANE, x => evaluate(x, params))
+  const transformedPath = curvePath(
+    restriction === 'right'
+      ? [V, ...transformedSamples.filter(p => p.x > h)]
+      : restriction === 'left'
+        ? [...transformedSamples.filter(p => p.x < h), V]
+        : transformedSamples,
+    PLANE,
+  )
+  const axisVisible = axis >= PLANE.xMin && axis <= PLANE.xMax
+  const vertexVisible = inPlane(PLANE, V)
+  const vertexLabelPos = labelPosition(PLANE, V, 120)
 
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.body.style.overflow = previousOverflow
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [showPresets])
-
-  const aSigned = values.flip ? -values.stretch : values.stretch
-  const vertex = { x: values.h, y: values.k }
-  const opensLabel = aSigned >= 0 ? 'Upward' : 'Downward'
-  const widthLabel = Math.abs(values.stretch - 1) < 0.001 ? 'Same' : values.stretch > 1 ? 'Narrower' : 'Wider'
-  const parentEquation = 'p(x) = x²'
-  const geometricNotation = `(x,y) → (${formatShiftedX(values.h)}, ${formatScaledShiftedY(aSigned, values.k)})`
-  const absoluteExtremumLabel = aSigned >= 0 ? 'Vertex is Absolute Min' : 'Vertex is Absolute Max'
-  const vertexEquation = formatVertexForm(aSigned, values.h, values.k)
-  const standardEquation = formatStandardForm(aSigned, values.h, values.k)
-  const domainLabel = restrictDomain
-    ? `[${formatNumber(values.h)}, ∞)`
-    : '(-∞, ∞)'
-
-  const xInterceptsDiscriminant = nearlyZero(aSigned) ? NaN : -values.k / aSigned
-  let xInterceptsLabel: string
-  if (isNaN(xInterceptsDiscriminant) || xInterceptsDiscriminant < -0.0001) {
-    xInterceptsLabel = 'No real roots'
-  } else if (Math.abs(xInterceptsDiscriminant) <= 0.0001) {
-    xInterceptsLabel = formatPoint(values.h, 0)
-  } else {
-    const sqrtD = Math.sqrt(xInterceptsDiscriminant)
-    const x1 = values.h - sqrtD
-    const x2 = values.h + sqrtD
-    xInterceptsLabel = restrictDomain
-      ? formatPoint(x2, 0)
-      : `${formatPoint(x1, 0)},  ${formatPoint(x2, 0)}`
-  }
-
-  let yInterceptLabel: string
-  if (restrictDomain && values.h > 0.0001) {
-    yInterceptLabel = 'Not in domain'
-  } else {
-    const yInt = evaluateQuadratic(0, aSigned, values.h, values.k)
-    yInterceptLabel = formatPoint(0, yInt)
-  }
-  const rangeLabel = aSigned >= 0
-    ? `[${formatNumber(values.k)}, ∞)`
-    : `(-∞, ${formatNumber(values.k)}]`
-  const horizontalMovementLines = formatMovementLines(values.h, 'right', 'left')
-  const verticalMovementLines = formatMovementLines(values.k, 'up', 'down')
   const activePreset = PRESETS.find(preset => statesMatch(values, preset.values))?.label ?? null
+  const update = (patch: Partial<ExplorerValues>) => setValues(current => ({ ...current, ...patch }))
 
-  const plotWidth = GRAPH_WIDTH - MARGIN.left - MARGIN.right
-  const plotHeight = GRAPH_HEIGHT - MARGIN.top - MARGIN.bottom
-
-  const mapX = (value: number) => MARGIN.left + ((value - X_MIN) / (X_MAX - X_MIN)) * plotWidth
-  const mapY = (value: number) => GRAPH_HEIGHT - MARGIN.bottom - ((value - Y_MIN) / (Y_MAX - Y_MIN)) * plotHeight
-
-  const sampleStep = (X_MAX - X_MIN) / (SAMPLE_COUNT - 1)
-  const parentPoints = Array.from({ length: SAMPLE_COUNT }, (_, index) => {
-    const x = X_MIN + index * sampleStep
-    return { x, y: x * x }
-  })
-  const allTransformedPoints = Array.from({ length: SAMPLE_COUNT }, (_, index) => {
-    const x = X_MIN + index * sampleStep
-    return { x, y: evaluateQuadratic(x, aSigned, values.h, values.k) }
-  })
-  const transformedPoints = restrictDomain
-    ? [{ x: values.h, y: values.k }, ...allTransformedPoints.filter(p => p.x > values.h + 0.001)]
-    : allTransformedPoints
-
-  const parentPath = makeCurvePath(parentPoints, mapX, mapY)
-  const transformedPath = makeCurvePath(transformedPoints, mapX, mapY)
-  const vertexX = mapX(vertex.x)
-  const vertexY = mapY(vertex.y)
-  const axisX = mapX(values.h)
-  const xAxisY = mapY(0)
-  const yAxisX = mapX(0)
-  const vertexLabelX = clamp(vertexX + 12, MARGIN.left + 12, MARGIN.left + plotWidth - 128)
-  const vertexLabelY = clamp(vertexY - 12, MARGIN.top + 18, MARGIN.top + plotHeight - 10)
-  const handlePresetSelect = (presetValues: ExplorerValues) => {
-    setValues(presetValues)
-    setShowPresets(false)
-  }
+  const xInterceptsTex =
+    xInts.kind === 'none' ? ['\\text{none}'] : xInts.kind === 'one' ? [pointTex(xInts.point)] : xInts.points.map(p => pointTex(p))
+  const yInterceptTex = yInt === null ? '\\text{none (0 is not in the domain)}' : pointTex(yInt)
+  const standardRelation = standardFormExact(params) ? '=' : '\\approx'
 
   return (
-    <main className="page qe-page">
+    <main className="page xp-page">
       <div className="container container--wide">
-        <section className="panel qe-hero">
+        <section className="panel xp-hero">
           <div className="eyebrow">Math Explorer</div>
-          <div className="qe-hero__row">
-            <div className="qe-hero__copy">
-              <h1 className="h2 qe-hero__title">Quadratic Transformations Explorer</h1>
-              <p className="lead qe-hero__lead">
-                Watch the parent parabola turn into <code>g(x)</code> as you stretch, reflect, and shift it in real time.
+          <div className="xp-hero__row">
+            <div className="xp-hero__copy">
+              <h1 className="h2 xp-hero__title">Quadratic Transformations Explorer</h1>
+              <p className="lead xp-hero__lead">
+                Stretch, reflect, and shift <Tex tex="x^{2}" /> and watch the vertex, the intercepts, and both forms of the equation move together.
               </p>
             </div>
           </div>
         </section>
 
-        <div className="qe-layout">
-          <aside className="qe-sidebar">
-            <section className="panel qe-controls-panel">
-              <div className="widget-panel__head qe-side-panel__head">
-                <div className="eyebrow">Controls</div>
-              </div>
-              <span className={`badge ${activePreset ? 'badge--accent' : 'badge--neutral'} qe-preset-badge`}>
-                {activePreset ? `Preset: ${activePreset}` : 'Custom state'}
-              </span>
-              <button
-                type="button"
-                className="btn btn--block btn--caps qe-presets-trigger"
-                aria-haspopup="dialog"
-                aria-expanded={showPresets}
-                onClick={() => setShowPresets(true)}
-              >
-                Presets
-              </button>
-
-              <div className="qe-control-stack">
-                <div className="qe-control-group">
-                  <div className="qe-control-group__title">Vertical Stretch + Reflection</div>
-                  <SliderControl
-                    id="qe-a"
-                    label="a"
-                    value={values.stretch}
-                    min={0.1}
-                    max={5}
-                    step={0.1}
-                    hint="Larger |a| makes the parabola narrower."
-                    onChange={stretch => setValues(current => ({ ...current, stretch }))}
-                  />
-
-                  <div className="field qe-control">
-                    <button
-                      id="qe-flip"
-                      type="button"
-                      className={`qe-toggle-btn${values.flip ? ' qe-toggle-btn--active' : ''}`}
-                      aria-pressed={values.flip}
-                      onClick={() => setValues(current => ({ ...current, flip: !current.flip }))}
-                    >
-                      Reflect vertically
-                    </button>
-                    <p className="helper-text qe-control__hint">This changes the sign of <code>a</code>.</p>
-                  </div>
-                </div>
-
-                <div className="qe-control-group">
-                  <div className="qe-control-group__title">Horizontal Shift</div>
-                  <SliderControl
-                    id="qe-h"
-                    label="h"
-                    value={values.h}
-                    min={-5}
-                    max={5}
-                    step={0.1}
-                    hint="Positive h shifts right; negative h shifts left."
-                    onChange={h => setValues(current => ({ ...current, h }))}
-                  />
-                </div>
-
-                <div className="qe-control-group">
-                  <div className="qe-control-group__title">Vertical Shift</div>
-                  <SliderControl
-                    id="qe-k"
-                    label="k"
-                    value={values.k}
-                    min={-5}
-                    max={5}
-                    step={0.1}
-                    hint="Positive k moves the graph up; negative k moves it down."
-                    onChange={k => setValues(current => ({ ...current, k }))}
-                  />
-                </div>
-
-                <div className="qe-control-group">
-                  <div className="qe-control-group__title">Invertibility</div>
-                  <div className="field qe-control">
-                    <button
-                      type="button"
-                      className={`qe-toggle-btn${restrictDomain ? ' qe-toggle-btn--active' : ''}`}
-                      aria-pressed={restrictDomain}
-                      onClick={() => setRestrictDomain(r => !r)}
-                    >
-                      Restrict domain
-                    </button>
-                    <p className="helper-text qe-control__hint">
-                      {restrictDomain
-                        ? `Domain restricted to x ≥ ${formatNumber(values.h)}. g(x) is now invertible.`
-                        : 'Restrict to the right branch to make g(x) one-to-one.'}
-                    </p>
-                  </div>
-                </div>
+        <div className="xp-layout">
+          <aside className="xp-sidebar">
+            <section className="panel xp-controls-panel">
+              {/* Same tab markup as the info panel so the three panel titles match. */}
+              <div className="tabs xp-tabs xp-side-panel__head">
+                <span className="tab active">Controls</span>
+                <PresetBadge activeLabel={activePreset} />
               </div>
 
-              <button className="btn btn--outline btn--block" onClick={() => { setValues(DEFAULT_VALUES); setRestrictDomain(false) }}>
-                Reset
-              </button>
+              <EquationStrip rows={[generalTokens(chip), substitutedTokens(params, chip)]} />
+
+              <ControlSection title="Shape">
+                <ParamControl
+                  id="qe-a"
+                  term="a"
+                  label="Vertical stretch"
+                  value={values.stretch}
+                  min={0.1}
+                  max={5}
+                  step={0.1}
+                  typedMin={0.1}
+                  defaultValue={DEFAULT_VALUES.stretch}
+                  glyph={<Glyph kind="vertical" />}
+                  hint="Larger a makes the parabola narrower; a < 1 makes it wider."
+                  onChange={stretch => update({ stretch })}
+                />
+                <div className="xp-reflect-row" role="group" aria-label="Reflect across">
+                  <span className="xp-reflect-row__label">Reflect</span>
+                  <ReflectToggle id="qe-flip" axis="x" pressed={values.flip} onToggle={() => update({ flip: !values.flip })} />
+                </div>
+              </ControlSection>
+
+              <ControlSection title="Position">
+                <ParamControl
+                  id="qe-h"
+                  term="h"
+                  label="Shift right / left"
+                  value={h}
+                  min={-5}
+                  max={5}
+                  step={0.1}
+                  defaultValue={DEFAULT_VALUES.h}
+                  glyph={<Glyph kind="shift-h" />}
+                  hint="Moves the vertex and the axis of symmetry to x = h."
+                  onChange={h => update({ h })}
+                />
+                <ParamControl
+                  id="qe-k"
+                  term="k"
+                  label="Shift up / down"
+                  value={k}
+                  min={-5}
+                  max={5}
+                  step={0.1}
+                  defaultValue={DEFAULT_VALUES.k}
+                  glyph={<Glyph kind="shift-k" />}
+                  hint="Moves the vertex to y = k."
+                  onChange={k => update({ k })}
+                />
+              </ControlSection>
+
+              <ControlSection title="Domain">
+                <div className="xp-reflect-row" role="group" aria-label="Restrict the domain to one branch">
+                  <span className="xp-reflect-row__label">Restrict</span>
+                  <ToggleButton id="qe-restrict-left" pressed={restriction === 'left'} icon={<RestrictIcon side="left" />} onToggle={() => update({ domain: restriction === 'left' ? 'none' : 'left' })}>
+                    x ≤ h
+                  </ToggleButton>
+                  <ToggleButton id="qe-restrict-right" pressed={restriction === 'right'} icon={<RestrictIcon side="right" />} onToggle={() => update({ domain: restriction === 'right' ? 'none' : 'right' })}>
+                    x ≥ h
+                  </ToggleButton>
+                </div>
+              </ControlSection>
+
+              <div className="xp-controls-panel__actions">
+                <button
+                  type="button"
+                  className="btn btn--caps xp-presets-trigger"
+                  aria-haspopup="dialog"
+                  aria-expanded={showPresets}
+                  onClick={() => setShowPresets(true)}
+                >
+                  Presets
+                </button>
+                <button type="button" className="btn btn--outline" onClick={() => setValues(DEFAULT_VALUES)}>
+                  Reset
+                </button>
+              </div>
             </section>
           </aside>
 
-          <section className="qe-center">
-            <div className="qe-equation-grid">
-              <EquationCard
-                label="Vertex Form"
-                equation={vertexEquation}
-                note="Best for seeing transformations and the vertex directly."
-              />
-              <EquationCard
-                label="Standard Form"
-                equation={standardEquation}
-                note="Best for using the quadratic formula."
-              />
-            </div>
-
-            <section className="qe-plot-frame" data-label="Coordinate Plane">
-              <div className="qe-graph-shell">
-                <svg
-                  viewBox={`0 0 ${GRAPH_WIDTH} ${GRAPH_HEIGHT}`}
-                  className="qe-graph"
-                  role="img"
-                  aria-labelledby="qe-graph-title qe-graph-desc"
-                >
-                  <title id="qe-graph-title">Quadratic graph</title>
-                  <desc id="qe-graph-desc">
-                    Parent parabola y equals x squared and transformed parabola g of x equals {vertexEquation}.
-                  </desc>
-
-                  <defs>
-                    <clipPath id="qe-plot-clip">
-                      <rect
-                        x={MARGIN.left}
-                        y={MARGIN.top}
-                        width={plotWidth}
-                        height={plotHeight}
-                        rx="0"
-                      />
-                    </clipPath>
-                  </defs>
-
-                  <rect
-                    x={MARGIN.left}
-                    y={MARGIN.top}
-                    width={plotWidth}
-                    height={plotHeight}
-                    rx="0"
-                    className="qe-graph__backdrop"
-                  />
-
-                  {X_TICKS.map(tick => (
-                    <g key={`x-${tick}`}>
-                      <line
-                        x1={mapX(tick)}
-                        y1={MARGIN.top}
-                        x2={mapX(tick)}
-                        y2={MARGIN.top + plotHeight}
-                        className="qe-graph__grid"
-                      />
-                      <text x={mapX(tick)} y={GRAPH_HEIGHT - 16} textAnchor="middle" className="qe-graph__tick">
-                        {tick}
+          <section className="xp-center">
+            <PlotFrame label="Coordinate Plane">
+              <CoordinatePlane
+                plane={PLANE}
+                id="qe-graph"
+                title="Quadratic graph"
+                desc={`Parent parabola y equals x squared and transformed parabola g of x with vertex at (${formatNumber(V.x)}, ${formatNumber(V.y)})${restriction === 'right' ? ', right branch only' : restriction === 'left' ? ', left branch only' : ''}. Drag to move the window, scroll to zoom, double-click to reset.`}
+                onPan={pan}
+                onZoom={zoom}
+                zoomAxis={zoomAxis}
+                onResetView={resetView}
+                overlay={
+                  vertexVisible && (
+                    <>
+                      <circle cx={PLANE.mapX(V.x)} cy={PLANE.mapY(V.y)} r="6.5" className="xp-graph__point xp-graph__point--transformed" />
+                      <text x={vertexLabelPos.x} y={vertexLabelPos.y} className="xp-graph__point-note">
+                        Vertex ({formatNumber(V.x)}, {formatNumber(V.y)})
                       </text>
-                    </g>
-                  ))}
-
-                  {Y_TICKS.map(tick => (
-                    <g key={`y-${tick}`}>
-                      <line
-                        x1={MARGIN.left}
-                        y1={mapY(tick)}
-                        x2={MARGIN.left + plotWidth}
-                        y2={mapY(tick)}
-                        className="qe-graph__grid"
-                      />
-                      <text x={MARGIN.left - 12} y={mapY(tick) + 4} textAnchor="end" className="qe-graph__tick">
-                        {tick}
-                      </text>
-                    </g>
-                  ))}
-
+                    </>
+                  )
+                }
+              >
+                {axisVisible && (
                   <line
-                    x1={MARGIN.left}
-                    y1={xAxisY}
-                    x2={MARGIN.left + plotWidth}
-                    y2={xAxisY}
-                    className="qe-graph__axis"
+                    x1={PLANE.mapX(axis)}
+                    y1={PLANE.margin.top}
+                    x2={PLANE.mapX(axis)}
+                    y2={PLANE.margin.top + PLANE.plotHeight}
+                    className="xp-graph__guide"
                   />
-                  <line
-                    x1={yAxisX}
-                    y1={MARGIN.top}
-                    x2={yAxisX}
-                    y2={MARGIN.top + plotHeight}
-                    className="qe-graph__axis"
-                  />
+                )}
+                <path d={parentPath} className="xp-graph__curve xp-graph__curve--parent" />
+                <path d={transformedPath} className="xp-graph__curve xp-graph__curve--transformed" />
+              </CoordinatePlane>
 
-                  <g clipPath="url(#qe-plot-clip)">
-                    <path d={parentPath} className="qe-graph__curve qe-graph__curve--parent" />
-                    <path d={transformedPath} className="qe-graph__curve qe-graph__curve--transformed" />
-                    <line
-                      x1={axisX}
-                      y1={MARGIN.top}
-                      x2={axisX}
-                      y2={MARGIN.top + plotHeight}
-                      className="qe-graph__axis-of-symmetry"
-                    />
-                  </g>
-
-                  <circle cx={vertexX} cy={vertexY} r="6.5" className="qe-graph__vertex" />
-                  <text x={vertexLabelX} y={vertexLabelY} className="qe-graph__vertex-note">
-                    Vertex ({formatNumber(vertex.x)}, {formatNumber(vertex.y)})
-                  </text>
-
-                  <text x={MARGIN.left + plotWidth - 10} y={xAxisY - 8} textAnchor="end" className="qe-graph__axis-label">
-                    x
-                  </text>
-                  <text x={yAxisX + 10} y={MARGIN.top + 16} className="qe-graph__axis-label">
-                    y
-                  </text>
-                </svg>
+              <div className="xp-plot-foot">
+                <Legend
+                  items={[
+                    { kind: 'parent', label: 'Parent' },
+                    { kind: 'transformed', label: restriction === 'right' ? 'Transformed (x ≥ h)' : restriction === 'left' ? 'Transformed (x ≤ h)' : 'Transformed' },
+                    { kind: 'guide', label: <>Axis of symmetry <Tex tex={`x = ${formatNumber(axis)}`} /></> },
+                    { kind: 'point-transformed', label: 'Vertex' },
+                  ]}
+                />
+                <ViewControls axis={zoomAxis} onAxisChange={setZoomAxis} canReset={viewMoved} onReset={resetView} />
               </div>
-
-              <div className="legend-key qe-legend qe-legend--below">
-                <div className="legend-key__item">
-                  <span className="qe-legend__line qe-legend__line--parent" />
-                  Parent
-                </div>
-                <div className="legend-key__item">
-                  <span className="qe-legend__line qe-legend__line--transformed" />
-                  Transformed
-                </div>
-                <div className="legend-key__item">
-                  <span className="qe-legend__line qe-legend__line--axis" />
-                  Axis of symmetry
-                </div>
-              </div>
-            </section>
-
-            <section className="panel qe-key-points-panel">
-              <div className="widget-panel__head qe-side-panel__head">
-                <div className="eyebrow">Key Points</div>
-              </div>
-              <div className="metrics-grid qe-key-points-grid">
-                <div className="metric">
-                  <span className="metric__label">Vertex</span>
-                  <span className="metric__value qe-metric-value">({formatNumber(vertex.x)}, {formatNumber(vertex.y)})</span>
-                </div>
-                <div className="metric">
-                  <span className="metric__label">x-intercepts</span>
-                  <span className="metric__value qe-metric-value">{xInterceptsLabel}</span>
-                </div>
-                <div className="metric">
-                  <span className="metric__label">y-intercept</span>
-                  <span className="metric__value qe-metric-value">{yInterceptLabel}</span>
-                </div>
-              </div>
-            </section>
+            </PlotFrame>
           </section>
 
-          <aside className="qe-insights">
-            <section className="panel">
-              <div className="widget-panel__head qe-side-panel__head">
-                <div className="eyebrow">Key Features</div>
-              </div>
-              <div className="metrics-grid qe-snapshot-grid">
-                <div className="metric">
-                  <span className="metric__label">Domain</span>
-                  <span className="metric__value qe-metric-value">{domainLabel}</span>
-                </div>
-                <div className="metric">
-                  <span className="metric__label">Range</span>
-                  <span className="metric__value qe-metric-value">{rangeLabel}</span>
-                </div>
-                <div className="metric">
-                  <span className="metric__label">Parent</span>
-                  <span className="metric__value qe-metric-value">{parentEquation}</span>
-                </div>
-                <div className="metric">
-                  <span className="metric__label">Axis</span>
-                  <span className="metric__value">x = {formatNumber(values.h)}</span>
-                </div>
-                <div className="metric qe-metric--span-2">
-                  <span className="metric__label">Geometric Notation</span>
-                  <span className="metric__value qe-metric-value">{geometricNotation}</span>
-                </div>
-                <div className="metric qe-metric--span-2">
-                  <span className="metric__label">Absolute Min/Max</span>
-                  <span className="metric__value qe-metric-value">{absoluteExtremumLabel}</span>
-                </div>
-              </div>
-            </section>
-
-            <section className="panel">
-              <div className="widget-panel__head qe-side-panel__head">
-                <div className="eyebrow">Transformations</div>
-              </div>
-              <div className="metrics-grid">
-                <div className="metric">
-                  <span className="metric__label">Opens</span>
-                  <span className="metric__value">{opensLabel}</span>
-                </div>
-                <div className="metric">
-                  <span className="metric__label">Width</span>
-                  <span className="metric__value">{widthLabel}</span>
-                </div>
-                <div className="metric">
-                  <span className="metric__label">Horizontal<br />Movement</span>
-                  <span className="metric__value qe-metric-value qe-metric-value--stacked">
-                    <span>{horizontalMovementLines.firstLine}</span>
-                    <span>{horizontalMovementLines.secondLine}</span>
-                  </span>
-                </div>
-                <div className="metric">
-                  <span className="metric__label">Vertical<br />Movement</span>
-                  <span className="metric__value qe-metric-value qe-metric-value--stacked">
-                    <span>{verticalMovementLines.firstLine}</span>
-                    <span>{verticalMovementLines.secondLine}</span>
-                  </span>
-                </div>
-              </div>
+          <aside className="xp-insights">
+            <section className="panel xp-insights-panel">
+              <TabbedPanel
+                id="qe-info"
+                tabs={[
+                  {
+                    id: 'info',
+                    label: 'Key Information',
+                    content: (
+                      <>
+                        <InfoSection title="Equations">
+                          <InfoRow label="Parent"><Tex tex={`f(x) = ${parentTex()}`} /></InfoRow>
+                          <InfoRow label="Vertex form"><Tex tex={`g(x) = ${vertexFormTex(params)}`} /></InfoRow>
+                          <InfoRow label="Standard form"><Tex tex={`g(x) ${standardRelation} ${standardFormTex(params)}`} /></InfoRow>
+                        </InfoSection>
+                        <InfoSection title="Points">
+                          <InfoRow label="Vertex"><Tex tex={`(0,\\ 0) \\to ${pointTex(V)}`} /></InfoRow>
+                          <InfoRow label={xInts.kind === 'two' ? 'x-intercepts' : 'x-intercept'} stacked={xInts.kind === 'two'}>
+                            {xInterceptsTex.map((tex, i) => <Tex key={i} tex={tex} />)}
+                          </InfoRow>
+                          <InfoRow label="y-intercept"><Tex tex={yInterceptTex} /></InfoRow>
+                        </InfoSection>
+                        <InfoSection title="Features">
+                          <InfoRow label="Domain"><Tex tex={domainTex(params, restriction)} /></InfoRow>
+                          <InfoRow label="Range"><Tex tex={rangeTex(range(params))} /></InfoRow>
+                          <InfoRow label="Axis of symmetry"><Tex tex={`x = ${formatNumber(axis)}`} /></InfoRow>
+                          <InfoRow label="Opens">{upward ? 'Upward — the vertex is the minimum' : 'Downward — the vertex is the maximum'}</InfoRow>
+                          <InfoRow label="End behavior" stacked>
+                            {limits.left !== null && <Tex tex={`\\text{As } x \\to -\\infty,\\ g(x) \\to ${limitTex(limits.left)}`} />}
+                            {limits.right !== null && <Tex tex={`\\text{As } x \\to \\infty,\\ g(x) \\to ${limitTex(limits.right)}`} />}
+                          </InfoRow>
+                        </InfoSection>
+                        {restricted && (
+                          <p className="helper-text xp-insights__note">
+                            Restricted to <Tex tex={`x ${restriction === 'right' ? '\\geq' : '\\leq'} ${formatNumber(h)}`} />, each output comes from exactly one input, so{' '}
+                            <Tex tex="g" /> passes the horizontal line test and has an inverse.
+                          </p>
+                        )}
+                      </>
+                    ),
+                  },
+                  {
+                    id: 'transformations',
+                    label: 'Transformations',
+                    content: (
+                      <>
+                        <InfoSection title="Mapping">
+                          <InfoRow label="Each point" stacked>
+                            <Tex tex={mappingTex(params)} />
+                          </InfoRow>
+                        </InfoSection>
+                        <InfoSection title="Steps">
+                          <InfoRow label="Vertical">{scaleLabel(values.stretch, 'narrower', 'wider')}</InfoRow>
+                          <InfoRow label="Reflect (x-axis)">{values.flip ? 'Yes — now opens downward' : 'No'}</InfoRow>
+                          <InfoRow label="Shift right/left">{horizontalMovement.firstLine === 'No' ? 'None' : `${horizontalMovement.firstLine} ${horizontalMovement.secondLine}`}</InfoRow>
+                          <InfoRow label="Shift up/down">{verticalMovement.firstLine === 'No' ? 'None' : `${verticalMovement.firstLine} ${verticalMovement.secondLine}`}</InfoRow>
+                        </InfoSection>
+                        <p className="helper-text xp-insights__note">
+                          There is no horizontal-stretch slider because a parabola cannot tell the difference:{' '}
+                          <Tex tex="(px)^{2} = p^{2}x^{2}" />, so stretching sideways by <Tex tex="p" /> is the same as stretching vertically by <Tex tex="p^{2}" />.
+                        </p>
+                      </>
+                    ),
+                  },
+                ]}
+              />
             </section>
           </aside>
         </div>
 
         {showPresets && (
-          <div className="popup-overlay" role="presentation" onClick={() => setShowPresets(false)}>
-            <section
-              className="panel popup"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="qe-presets-title"
-              onClick={event => event.stopPropagation()}
-            >
-              <div className="popup__header">
-                <div className="eyebrow" id="qe-presets-title">Presets</div>
-                <button
-                  type="button"
-                  className="btn btn--outline btn--sm popup__close"
-                  onClick={() => setShowPresets(false)}
-                >
-                  Close
-                </button>
-              </div>
-
-              <div className="qe-preset-grid qe-preset-grid--wide qe-preset-grid--modal">
-                {PRESETS.map(preset => {
-                  const isActive = statesMatch(values, preset.values)
-
-                  return (
-                    <button
-                      key={preset.label}
-                      className={`qe-preset${isActive ? ' qe-preset--active' : ''}`}
-                      onClick={() => handlePresetSelect(preset.values)}
-                    >
-                      <span className="qe-preset__label">{preset.label}</span>
-                      <span className="qe-preset__hint">{preset.hint}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </section>
-          </div>
+          <PresetsModal
+            titleId="qe-presets-title"
+            presets={PRESETS}
+            isActive={preset => statesMatch(values, preset.values)}
+            onSelect={presetValues => {
+              setValues(presetValues)
+              setShowPresets(false)
+            }}
+            onClose={closePresets}
+          />
         )}
       </div>
     </main>

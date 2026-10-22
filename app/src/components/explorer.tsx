@@ -82,8 +82,12 @@ export function ParamControl({
   // Typed and stepped values land on the slider's grid so the number shown
   // in the equation is exactly the number being graphed. They are not held to
   // the slider's range: the slider just parks at its end when the value is
-  // beyond it.
-  const set = (next: number) => onChange(clamp(snapToStep(next, step), typedMin, typedMax))
+  // beyond it. A parameter that cannot be negative (typedMin ≥ 0) is a
+  // magnitude — its sign is a Reflect toggle — so a typed −3 means 3.
+  const set = (next: number) => {
+    const magnitude = typedMin >= 0 ? Math.abs(next) : next
+    onChange(clamp(snapToStep(magnitude, step), typedMin, typedMax))
+  }
 
   return (
     <div className={`xp-param xp-param--${term}`}>
@@ -160,6 +164,34 @@ function Stepper({ term, value, step, format, onChange }: StepperProps) {
   )
 }
 
+export type ToggleButtonProps = {
+  id?: string
+  pressed: boolean
+  onToggle: () => void
+  /** A 20×20 icon (give it `className="xp-reflect__icon"`); drawn before the label. */
+  icon?: ReactNode
+  children: ReactNode
+}
+
+/**
+ * On/off button for a boolean parameter (reflections, a domain restriction).
+ * Active = black. Sits in an `.xp-reflect-row` next to its row label.
+ */
+export function ToggleButton({ id, pressed, onToggle, icon, children }: ToggleButtonProps) {
+  return (
+    <button
+      id={id}
+      type="button"
+      className={`xp-reflect${pressed ? ' xp-reflect--active' : ''}`}
+      aria-pressed={pressed}
+      onClick={onToggle}
+    >
+      {icon}
+      <span>{children}</span>
+    </button>
+  )
+}
+
 export type ReflectToggleProps = {
   id?: string
   axis: 'x' | 'y'
@@ -169,31 +201,27 @@ export type ReflectToggleProps = {
 
 /** "Reflect across the x/y-axis" button with a tiny mirrored-curve icon. */
 export function ReflectToggle({ id, axis, pressed, onToggle }: ReflectToggleProps) {
+  const icon = (
+    <svg viewBox="0 0 20 20" className="xp-reflect__icon" aria-hidden="true">
+      {axis === 'x' ? (
+        <>
+          <path d="M2 10H18" className="xp-reflect__axis" />
+          <path d="M4 7C8 7 12 5 16 2" className="xp-reflect__before" />
+          <path d="M4 13C8 13 12 15 16 18" className="xp-reflect__after" />
+        </>
+      ) : (
+        <>
+          <path d="M10 2V18" className="xp-reflect__axis" />
+          <path d="M12 16C13 12 15 8 18 4" className="xp-reflect__before" />
+          <path d="M8 16C7 12 5 8 2 4" className="xp-reflect__after" />
+        </>
+      )}
+    </svg>
+  )
   return (
-    <button
-      id={id}
-      type="button"
-      className={`xp-reflect${pressed ? ' xp-reflect--active' : ''}`}
-      aria-pressed={pressed}
-      onClick={onToggle}
-    >
-      <svg viewBox="0 0 20 20" className="xp-reflect__icon" aria-hidden="true">
-        {axis === 'x' ? (
-          <>
-            <path d="M2 10H18" className="xp-reflect__axis" />
-            <path d="M4 7C8 7 12 5 16 2" className="xp-reflect__before" />
-            <path d="M4 13C8 13 12 15 16 18" className="xp-reflect__after" />
-          </>
-        ) : (
-          <>
-            <path d="M10 2V18" className="xp-reflect__axis" />
-            <path d="M12 16C13 12 15 8 18 4" className="xp-reflect__before" />
-            <path d="M8 16C7 12 5 8 2 4" className="xp-reflect__after" />
-          </>
-        )}
-      </svg>
-      <span>{axis}-axis</span>
-    </button>
+    <ToggleButton id={id} pressed={pressed} onToggle={onToggle} icon={icon}>
+      {axis}-axis
+    </ToggleButton>
   )
 }
 
@@ -202,12 +230,13 @@ export function ReflectToggle({ id, axis, pressed, onToggle }: ReflectToggleProp
  * one row per form (the general form with letters, then the same form with
  * the current values). Operators sit centered in their own columns and the
  * rows line up exactly, whatever the values are. Each row must have the same
- * number of tokens; the widget's math.ts builds them.
+ * number of tokens; the widget's math.ts builds them. `dense` shrinks the
+ * type for forms with more columns than fit at the normal size.
  */
-export function EquationStrip({ rows }: { rows: string[][] }) {
+export function EquationStrip({ rows, dense = false }: { rows: string[][]; dense?: boolean }) {
   const columns = rows[0]?.length ?? 0
   return (
-    <div className="xp-equation-strip" style={{ gridTemplateColumns: `repeat(${columns}, auto)` }}>
+    <div className={`xp-equation-strip${dense ? ' xp-equation-strip--dense' : ''}`} style={{ gridTemplateColumns: `repeat(${columns}, auto)` }}>
       {rows.map((tokens, r) =>
         tokens.map((tex, c) => (
           <span key={`${r}-${c}`} className={`xp-equation-strip__cell${r < rows.length - 1 ? ' xp-equation-strip__cell--general' : ''}`}>
