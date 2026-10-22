@@ -21,6 +21,7 @@
                                         code blocks)
      - Memory grid + bit tile patterns (.mem-*, .bit-*)
      - Quadratic explorer              (.qe-*)
+     - Explorer shared (transformation family, components/explorer.tsx)  (.xp-*)
      - RSA cracker explorer            (.rc-*)
      - Index → Tree visualizer         (.it-*)
    ============================================================================ */
@@ -3935,4 +3936,667 @@ code:not(pre code) {
 
 @media (max-width: 900px) {
   .it-tree-grid, .it-out-grid { grid-template-columns: 1fr; }
+}
+
+/* ================================================================
+   EXPLORER SHARED  (.xp-*)
+   Layout + plot + control language shared by the transformation
+   explorer family (components/explorer.tsx). First consumer:
+   ExponentialExplorer. QuadraticExplorer still uses its own .qe-*
+   block; fold it into this one when it is migrated.
+
+   Projector budget: hero + controls + plot + key points must fit a
+   1920×1080 window with no scrolling (Context/widget-standards.md #12).
+   Hence the compact hero, the vh-capped graph, and the wide container.
+   ================================================================ */
+
+.xp-page {
+  padding-block: .5rem 1rem;
+  --hw-radius: 0;
+  --hw-radius-sm: 0;
+  --hw-radius-xs: 0;
+}
+
+.xp-page .container {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* index.css sets .container--wide { width: min(1400px, …) }; the explorer
+   family gets more room so the graph fills a projector. */
+.xp-page .container--wide { width: min(1720px, 100% - 2rem); max-width: none; }
+
+.xp-page code sup { font-size: .72em; }
+
+.xp-hero {
+  background: transparent;
+  padding: .35rem .75rem .25rem;
+}
+
+.xp-hero .eyebrow { margin-bottom: 0; }
+
+.xp-hero__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.xp-hero__copy {
+  flex: 1 1 540px;
+  min-width: 0;
+  width: 100%;
+  text-align: left;
+}
+
+.xp-hero__title {
+  margin-bottom: .15rem;
+  margin-left: 0;
+  text-align: left;
+  font-size: clamp(1.35rem, 1.9vw, 1.9rem);
+}
+.xp-hero__lead {
+  max-width: 60rem;
+  margin-bottom: 0;
+  color: var(--hw-secondary-black);
+  font-size: var(--step-0);
+}
+
+.xp-layout {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr) 360px;
+  gap: .85rem;
+  margin-top: .6rem;
+  align-items: start;
+}
+
+.xp-sidebar,
+.xp-center,
+.xp-insights {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+}
+
+.xp-sidebar .panel,
+.xp-insights .panel {
+  padding: .65rem;
+}
+
+/* --- Controls panel --- */
+.xp-controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+/* A one-tab tab bar: "Controls" is set exactly like "Key Information". */
+.xp-side-panel__head {
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin: 0;
+}
+.xp-side-panel__head .tab { flex: 0 0 auto; text-align: left; cursor: default; }
+.xp-preset-badge { font-size: .68rem; white-space: nowrap; margin-bottom: 2px; }
+
+/* Live equation. Each parameter's value is wrapped (\htmlClass in math.ts)
+   in a chip whose color matches that parameter's tile below. */
+.xp-equation-strip {
+  display: grid;                 /* columns set inline: one per token */
+  column-gap: .22em;             /* ≈ KaTeX's own operator spacing */
+  row-gap: .15rem;
+  align-items: baseline;
+  justify-content: start;
+  min-width: 0;
+  padding: .25rem 0;
+  background: var(--hw-surface);
+  color: var(--hw-black);
+  overflow: hidden;
+}
+.xp-equation-strip__cell {
+  display: inline-flex;
+  justify-content: center;
+  align-items: baseline;
+  white-space: nowrap;
+}
+.xp-equation-strip__cell--general { color: var(--hw-secondary-black); }
+.xp-equation-strip .katex { font-size: .96rem; }
+
+/* Parameter colors. One per term: used by the equation chip, the letter
+   chip in the row, the slider thumb, and the glyph's curve. */
+.xp-term--a, .xp-param--a { --xp-term-bg: var(--hw-red); --xp-term-fg: #fff; }
+.xp-term--b, .xp-param--b { --xp-term-bg: var(--hw-gold); --xp-term-fg: var(--hw-black); }
+.xp-term--p, .xp-param--p { --xp-term-bg: var(--hw-secondary-blue); --xp-term-fg: var(--hw-black); }
+.xp-term--h, .xp-param--h { --xp-term-bg: var(--hw-secondary-green); --xp-term-fg: var(--hw-black); }
+.xp-term--k, .xp-param--k { --xp-term-bg: var(--hw-secondary-orange); --xp-term-fg: var(--hw-black); }
+
+.xp-term {
+  display: inline-block;
+  padding: 0 .28em;
+  background: var(--xp-term-bg, var(--hw-secondary-black));
+  color: var(--xp-term-fg, #fff);
+}
+/* Fixed-width chips so the strip never reflows as values change
+   (widest value is four characters, e.g. −2.5). */
+.katex .xp-term {
+  display: inline-block;
+  min-width: 2.7em;
+  padding: .04em .2em;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* Section headings share the look of the info-panel sections on the right. */
+.xp-control-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  margin-top: .35rem;
+}
+
+/* One row per parameter: glyph | chip + label + stepper over the slider.
+   No background or border — the color lives in the chip, thumb, and glyph. */
+.xp-param {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: .55rem;
+  /* Bottom padding clears the 18px slider thumb, which hangs below the 5px track. */
+  padding: .2rem .2rem .55rem;
+}
+.xp-param__glyph {
+  width: 40px;
+  height: 40px;
+  color: var(--xp-term-bg, var(--hw-secondary-black));
+}
+.xp-glyph { display: block; width: 100%; height: 100%; }
+.xp-glyph__axis { fill: none; stroke: var(--hw-secondary-black-50); stroke-width: 1.2; }
+.xp-glyph__before { fill: none; stroke: var(--hw-secondary-black-50); stroke-width: 1.8; stroke-dasharray: 3 3; }
+.xp-glyph__after { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
+.xp-glyph__arrow { fill: none; stroke: var(--hw-black); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.xp-param__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+}
+.xp-param__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+/* Typography shared with .xp-info-row__label (defined with it below) so
+   "Base" / "Reflect" are set like "Parent" / "Key point". */
+.xp-param__label {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.xp-param__label .xp-term {
+  min-width: 1.4em;
+  text-align: center;
+  font-family: KaTeX_Math, 'Times New Roman', serif;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: .95rem;
+  line-height: 1.25;
+}
+.xp-param__range { margin: .15rem 0 0; }
+.xp-param .range::-webkit-slider-thumb { background: var(--xp-term-bg); box-shadow: 0 0 0 1px var(--xp-term-bg); }
+.xp-param .range::-moz-range-thumb { background: var(--xp-term-bg); box-shadow: 0 0 0 1px var(--xp-term-bg); }
+
+/* −/+ around a typeable value. */
+.xp-stepper {
+  display: inline-flex;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+.xp-stepper__btn,
+.xp-stepper__input {
+  height: 26px;
+  border: 0;
+  background: var(--hw-secondary-khaki-20);
+  color: var(--hw-black);
+  font: inherit;
+  font-weight: 700;
+}
+.xp-stepper__btn {
+  width: 24px;
+  padding: 0;
+  line-height: 1;
+  cursor: pointer;
+}
+.xp-stepper__btn:hover { background: var(--hw-gold); }
+/* index.css styles input[type="text"]; the two-class selector outranks it. */
+.xp-stepper .xp-stepper__input {
+  width: 46px;
+  flex: 0 0 46px;
+  box-sizing: border-box;
+  height: 26px;
+  padding: 0 .2rem;
+  border: 0;
+  border-radius: 0;
+  background: var(--hw-secondary-khaki-20);
+  color: var(--hw-black);
+  text-align: center;
+  font-family: KaTeX_Main, 'Times New Roman', serif;
+  font-size: .95rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: none;
+}
+.xp-stepper .xp-stepper__input:focus { outline: 2px solid var(--xp-term-bg); outline-offset: -2px; box-shadow: none; }
+
+/* Reflections: label + two D-style buttons. */
+.xp-reflect-row {
+  display: grid;
+  grid-template-columns: auto repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: .4rem;
+  padding-left: .2rem;
+}
+.xp-reflect-row__label { padding-right: .3rem; }
+.xp-reflect {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  min-height: 36px;
+  padding: .25rem .5rem;
+  border: 0;
+  background: var(--hw-secondary-khaki-20);
+  color: var(--hw-black);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.xp-reflect:hover { background: var(--hw-gold); }
+.xp-reflect--active { background: var(--hw-black); color: #fff; }
+.xp-reflect__icon { width: 20px; height: 20px; flex-shrink: 0; }
+.xp-reflect__axis { fill: none; stroke: currentColor; stroke-width: 1.5; }
+.xp-reflect__before { fill: none; stroke: currentColor; opacity: .45; stroke-width: 1.5; stroke-dasharray: 2 2; }
+.xp-reflect__after { fill: none; stroke: var(--hw-red); stroke-width: 2; }
+.xp-reflect--active .xp-reflect__after { stroke: var(--hw-gold); }
+
+.xp-controls-panel__actions {
+  display: flex;
+  gap: .4rem;
+  margin-top: .3rem;
+}
+.xp-controls-panel__actions .btn { min-height: 36px; }
+.xp-controls-panel__actions .xp-presets-trigger { flex: 1 1 auto; }
+
+.xp-control__hint {
+  margin-bottom: 0;
+  line-height: 1.35;
+  font-size: .78rem;
+}
+
+/* --- Presets modal --- */
+.xp-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .6rem;
+}
+
+.xp-preset {
+  text-align: left;
+  border: 1px solid var(--hw-border);
+  background: #fff;
+  border-radius: var(--hw-radius-sm);
+  padding: .75rem .8rem;
+  cursor: pointer;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background .18s ease;
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.xp-preset:hover {
+  transform: translateY(-1px);
+  border-color: var(--hw-gold);
+  box-shadow: 0 6px 18px rgba(35,31,32,.08);
+}
+
+.xp-preset--active {
+  border-color: var(--hw-red);
+  background: #fff6f7;
+  box-shadow: 0 0 0 1px rgba(200, 16, 46, 0.1);
+}
+
+.xp-preset__label {
+  font-weight: 800;
+  color: var(--hw-black);
+}
+
+.xp-preset__hint {
+  font-size: var(--step--1);
+  color: var(--hw-secondary-black);
+  line-height: 1.4;
+}
+
+/* --- Fit-to-width (EquationStrip) --- */
+.xp-fit-wrap {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.xp-fit-content {
+  display: inline-block;
+  transform-origin: left center;
+  white-space: nowrap;
+}
+
+/* --- Plot --- */
+.xp-plot-frame {
+  background: var(--hw-surface);
+  border: 3px solid var(--hw-red);
+  border-radius: var(--hw-radius);
+  padding: 1.4rem 1.1rem 1.1rem;
+  position: relative;
+  box-shadow: var(--hw-shadow);
+}
+
+.xp-plot-frame::before {
+  content: attr(data-label);
+  position: absolute;
+  top: -11px;
+  left: 22px;
+  padding: 0 10px;
+  background: var(--hw-surface);
+  color: var(--hw-red);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.xp-graph-shell {
+  border: 2px solid var(--hw-border);
+  border-radius: var(--hw-radius);
+  overflow: hidden;
+  background: var(--hw-surface);
+  /* Width is bounded by BOTH the column and a height budget (viewBox is
+     760×520), so the graph never letterboxes and the page fits 1080p. */
+  --xp-graph-max-h: min(66vh, 720px);
+  width: min(100%, calc(var(--xp-graph-max-h) * 760 / 520));
+  margin: 0 auto;
+}
+
+.xp-graph--pannable { cursor: grab; touch-action: none; user-select: none; }
+.xp-graph--dragging { cursor: grabbing; }
+
+.xp-graph {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.xp-graph__backdrop {
+  fill: white;
+  stroke: var(--hw-secondary-khaki-50);
+  stroke-width: 1.5;
+}
+
+.xp-graph__grid {
+  stroke: var(--hw-secondary-khaki-50);
+  stroke-width: 1;
+}
+
+.xp-graph__axis {
+  stroke: var(--hw-brand-black);
+  stroke-width: 2;
+}
+
+.xp-graph__curve {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+}
+
+.xp-graph__curve--parent {
+  stroke: var(--hw-secondary-black-50);
+  stroke-dasharray: 10 10;
+}
+
+.xp-graph__curve--transformed {
+  stroke: var(--hw-red);
+  filter: drop-shadow(0 4px 10px var(--hw-brand-red-20));
+}
+
+/* Dashed gold helper line: asymptote, axis of symmetry, etc. */
+.xp-graph__guide {
+  stroke: var(--hw-gold);
+  stroke-width: 3;
+  stroke-dasharray: 10 10;
+}
+
+.xp-graph__point {
+  stroke: white;
+  stroke-width: 3;
+}
+.xp-graph__point--parent { fill: var(--hw-secondary-black-50); }
+.xp-graph__point--transformed { fill: var(--hw-red); }
+
+.xp-graph__point-note {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--hw-red);
+  paint-order: stroke;
+  stroke: rgba(255,255,255,0.96);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.xp-graph__point-note--parent { fill: var(--hw-secondary-black); }
+
+.xp-graph__tick {
+  font-size: 12px;
+  fill: var(--hw-secondary-black-50);
+}
+
+.xp-graph__axis-label {
+  font-size: 13px;
+  font-weight: 800;
+  fill: var(--hw-secondary-black);
+}
+
+/* --- Legend --- */
+/* Legend on the left, zoom controls on the right, one row under the plot. */
+.xp-plot-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-top: .6rem;
+}
+
+.xp-legend {
+  justify-content: flex-start;
+  align-items: center;
+  margin: 0;
+}
+
+/* label | Both/X/Y | Reset on one row, the how-to line under them. */
+.xp-view-controls {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: center;
+  gap: .25rem .4rem;
+  margin-left: auto;
+}
+.xp-view-controls__hint {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin: 0;
+  text-align: right;
+  white-space: nowrap;
+  font-size: .72rem;
+  color: var(--hw-secondary-black-50);
+}
+.xp-view-controls__label {
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--hw-secondary-black);
+}
+.xp-seg { display: inline-flex; gap: 2px; }
+.xp-seg__btn {
+  min-height: 30px;
+  padding: .2rem .6rem;
+  border: 0;
+  background: var(--hw-secondary-khaki-20);
+  color: var(--hw-black);
+  font: inherit;
+  font-size: .74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.xp-seg__btn:hover { background: var(--hw-gold); }
+.xp-seg__btn--active { background: var(--hw-black); color: #fff; }
+.xp-view-controls__reset { min-height: 30px; padding: .2rem .6rem; font-size: .74rem; }
+.xp-view-controls__reset:disabled { opacity: .45; cursor: default; }
+.xp-view-controls__reset:disabled:hover { background: transparent; color: var(--hw-red); border-color: var(--hw-red); }
+
+.xp-legend__swatch {
+  display: inline-block;
+  width: 24px;
+  border-top: 3px solid currentColor;
+  flex-shrink: 0;
+}
+
+.xp-legend__swatch--parent {
+  color: var(--hw-secondary-black-50);
+  border-top-style: dashed;
+}
+
+.xp-legend__swatch--transformed { color: var(--hw-red); }
+
+.xp-legend__swatch--guide {
+  color: var(--hw-gold);
+  border-top-style: dashed;
+}
+
+.xp-legend__swatch--point-parent,
+.xp-legend__swatch--point-transformed {
+  width: 12px;
+  height: 12px;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--hw-border);
+}
+.xp-legend__swatch--point-parent { background: var(--hw-secondary-black-50); }
+.xp-legend__swatch--point-transformed { background: var(--hw-red); }
+
+/* --- Metrics --- */
+.xp-center { gap: .6rem; }
+
+/* --- Tabbed insights panel --- */
+.xp-insights-panel { padding: .5rem .75rem .7rem; }
+.xp-tabs { margin: 0 0 .5rem; }
+/* font-family: inherit — <button> defaults to the UA font (Arial), which is why
+   the tab labels never matched the panel text. */
+.xp-tabs .tab { flex: 1 1 auto; text-align: center; padding: .45rem .25rem; font-family: inherit; font-size: .8rem; white-space: nowrap; }
+.xp-tab-panel { padding: 0; }
+.xp-tab-panel.active { display: block; }
+.xp-insights__note { margin: .7rem 0 0; line-height: 1.45; font-size: .8rem; }
+
+/* Sections of label → value rows inside a tab. Math values are KaTeX. */
+.xp-info-section + .xp-info-section { margin-top: .6rem; }
+.xp-info-section__title,
+.xp-control-section__title {
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--hw-red);
+  padding-bottom: .2rem;
+  border-bottom: 1px solid var(--hw-border);
+  margin-bottom: .15rem;
+}
+.xp-info-row {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: .5rem;
+  padding: .3rem 0;
+  border-bottom: 1px solid var(--hw-secondary-khaki-20);
+}
+.xp-info-row:last-child { border-bottom: 0; }
+.xp-info-row--stacked { grid-template-columns: 1fr; gap: .15rem; }
+.xp-info-row--stacked .xp-info-row__value { display: grid; gap: .15rem; }
+.xp-info-row__label,
+.xp-param__label,
+.xp-reflect-row__label {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--hw-secondary-black);
+}
+.xp-info-row__value {
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--hw-black);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.xp-info-row__value .katex { font-size: 1.08em; }
+.xp-hero__lead .katex { font-size: 1em; }
+.xp-legend .katex { font-size: 1em; }
+
+/* Short windows (laptops, 1080p with browser chrome): drop the slider hints;
+   the same facts are in the Key Features / Transformations panels. */
+@media (max-height: 1000px) {
+  .xp-control__hint { display: none; }
+  .xp-hero__lead { display: none; }
+  .xp-controls-panel { gap: .45rem; }
+  .xp-control-section__body { gap: .3rem; margin-top: .25rem; }
+  .xp-param { padding: .15rem .2rem .5rem; }
+  .xp-insights { gap: .6rem; }
+  .xp-insights .panel { padding: .45rem .6rem .55rem; }
+  .xp-info-row { padding: .22rem 0; }
+}
+
+@media (max-width: 1240px) {
+  .xp-layout {
+    grid-template-columns: 330px minmax(0, 1fr);
+  }
+
+  .xp-insights {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .xp-layout,
+  .xp-insights,
+  .xp-preset-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .xp-legend {
+    justify-content: flex-start;
+  }
 }

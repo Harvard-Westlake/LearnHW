@@ -14,7 +14,7 @@ export default function Stats() {
               <div className="title-row">
                 <h3>{w.title}</h3>
               </div>
-              <p>Static HTML embedded.</p>
+              <p>{w.blurb}</p>
               <span className="button">Open</span>
             </Link>
           ))}

@@ -27,7 +27,7 @@ export default function Math() {
               <div className="title-row">
                 <h3>{w.title}</h3>
               </div>
-              <p>{w.blurb ?? 'Static HTML embedded.'}</p>
+              <p>{w.blurb}</p>
               <span className="button">Open</span>
             </Link>
           ))}

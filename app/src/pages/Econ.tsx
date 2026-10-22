@@ -12,7 +12,7 @@ export default function Econ() {
             <div className="title-row">
               <h3>Imperfect Competitor</h3>
             </div>
-            <p>Microeconomics widget (static HTML embedded).</p>
+            <p>Set output for a firm with market power and see where marginal revenue meets marginal cost.</p>
             <span className="button">Open</span>
           </Link>
 
@@ -20,7 +20,7 @@ export default function Econ() {
             <div className="title-row">
               <h3>Production Cost</h3>
             </div>
-            <p>Cost curves widget (static HTML embedded).</p>
+            <p>Change a firm's inputs and watch its total, average, and marginal cost curves respond.</p>
             <span className="button">Open</span>
           </Link>
 

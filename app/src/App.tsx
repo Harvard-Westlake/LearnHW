@@ -36,7 +36,8 @@ const LectureViewer = lazy(() => import('./history/LectureViewer.tsx'))
 // individually, but together they add a couple hundred KB to index.
 const ArrayListVisualizer = lazy(() => import('./pages/ArrayListVisualizer.tsx'))
 const BinaryExplorer = lazy(() => import('./pages/BinaryExplorer.tsx'))
-const QuadraticExplorer = lazy(() => import('./pages/QuadraticExplorer.tsx'))
+const QuadraticExplorer = lazy(() => import('./widgets/math/quadratic-explorer/index.tsx'))
+const ExponentialExplorer = lazy(() => import('./widgets/math/exponential-explorer/index.tsx'))
 const Sha1FlowExplorer = lazy(() => import('./pages/Sha1FlowExplorer.tsx'))
 const RsaCrackerExplorer = lazy(() => import('./pages/RsaCrackerExplorer.tsx'))
 const IndexTreeVisualizer = lazy(() => import('./pages/IndexTreeVisualizer.tsx'))
@@ -133,6 +134,7 @@ export default function App() {
         <Route path="math" element={<Math />} />
         <Route path="math/overview" element={<Navigate to="/#subject-math" replace />} />
         <Route path="math/quadratic-explorer" element={lazyRoute(<QuadraticExplorer />)} />
+        <Route path="math/exponential-explorer" element={lazyRoute(<ExponentialExplorer />)} />
         <Route path="math/:widget" element={<WidgetRoute widgets={MATH_WIDGETS} backTo="/math" />} />
         <Route path="code" element={<Code />} />
         <Route path="code/overview" element={lazyRoute(<Cryptography />)} />

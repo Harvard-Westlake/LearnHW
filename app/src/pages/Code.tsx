@@ -13,7 +13,7 @@ export default function Code() {
             <div className="title-row">
               <h3>Java ArrayList — Memory Visualizer</h3>
             </div>
-            <p>Native React component. See allocation, growth, and shifting as you add or remove elements from an ArrayList.</p>
+            <p>See allocation, growth, and shifting as you add or remove elements from an ArrayList.</p>
             <span className="button">Open</span>
           </Link>
 
@@ -21,7 +21,7 @@ export default function Code() {
             <div className="title-row">
               <h3>Binary Interpretation Explorer</h3>
             </div>
-            <p>Native React component. See how the exact same bits can represent integers, characters, hex values, and booleans.</p>
+            <p>See how the exact same bits can represent integers, characters, hex values, and booleans.</p>
             <span className="button">Open</span>
           </Link>
 
@@ -32,7 +32,7 @@ export default function Code() {
                 <div className="title-row">
                   <h3>{w.title}</h3>
                 </div>
-                <p>Memory visualization and data structure exploration.</p>
+                <p>{w.blurb}</p>
                 <span className="button">Open</span>
               </Link>
             )
@@ -45,7 +45,7 @@ export default function Code() {
             <div className="title-row">
               <h3>SHA-1 Flow Explorer</h3>
             </div>
-            <p>Native React component. Watch text turn into bits, then move through padding, chunks, 80 rounds, and the final fingerprint.</p>
+            <p>Watch text turn into bits, then move through padding, chunks, 80 rounds, and the final fingerprint.</p>
             <span className="button">Open</span>
           </Link>
 
@@ -53,7 +53,7 @@ export default function Code() {
             <div className="title-row">
               <h3>Cracking RSA — Period Finding &amp; Quantum Interference</h3>
             </div>
-            <p>Native React component. Build a toy RSA lock, watch the powers of a random number loop back to 1, split the period to expose the primes, then see a quantum computer read the same period off an interference pattern.</p>
+            <p>Build a toy RSA lock, watch the powers of a random number loop back to 1, split the period to expose the primes, then see a quantum computer read the same period off an interference pattern.</p>
             <span className="button">Open</span>
           </Link>
 
@@ -64,7 +64,7 @@ export default function Code() {
                 <div className="title-row">
                   <h3>{w.title}</h3>
                 </div>
-                <p>Cryptography and secure computation concepts.</p>
+                <p>{w.blurb}</p>
                 <span className="button">Open</span>
               </Link>
             )
@@ -90,7 +90,7 @@ export default function Code() {
             <div className="title-row">
               <h3>Index → Tree Files</h3>
             </div>
-            <p>Native React component. Turn a flat Git index into tree files bottom-up, one directory at a time, and watch the working list collapse to the root tree.</p>
+            <p>Turn a flat Git index into tree files bottom-up, one directory at a time, and watch the working list collapse to the root tree.</p>
             <span className="button">Open</span>
           </Link>
         </div>
@@ -101,7 +101,7 @@ export default function Code() {
             <div className="title-row">
               <h3>Vyper Framework — On-chain NFTs &amp; ERC-20</h3>
             </div>
-            <p>Native React dApp. Deploy Vyper contracts (NFT minter + ERC-20) and mint on-chain images from your wallet on Sepolia, Arbitrum Sepolia, mainnet, or Animechain.</p>
+            <p>Deploy Vyper contracts (NFT minter + ERC-20) and mint on-chain images from your wallet on Sepolia, Arbitrum Sepolia, mainnet, or Animechain.</p>
             <span className="button">Open</span>
           </Link>
         </div>

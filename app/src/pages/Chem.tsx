@@ -12,7 +12,7 @@ export default function Chem() {
             <div className="title-row">
               <h3>Crystallization Explorer</h3>
             </div>
-            <p>Visualize crystal growth dynamics (static HTML embedded).</p>
+            <p>Watch crystals nucleate and grow over time and see how conditions change the pattern.</p>
             <span className="button">Open</span>
           </Link>
 
