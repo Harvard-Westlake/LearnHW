@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <title>Class Resources</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='20' y='15' width='60' height='70' rx='8' fill='%23d8f1ff' stroke='%23232a38' stroke-width='2'/%3E%3Ctext x='50' y='55' font-size='40' text-anchor='middle' fill='%23ff3b30' font-family='serif' font-weight='bold'%3E♥%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=IBM+Plex+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://3dmol.org/build/3Dmol-min.js"></script>
+    <meta
+      name="description"
+      content="Interactive educational widgets and resources."
+    />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.155.0/build/three.module.js",
+          "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+          "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+          "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <h1 class="site-title">Class Resources</h1>
+        <nav class="site-nav" aria-label="Primary">
+          <a href="/static/chem/index.html" class="nav-link">Chemistry</a>
+          <a href="/static/math/index.html" class="nav-link">Math</a>
+          <a href="/static/code/index.html" class="nav-link">Code</a>
+          <a href="/static/econ/index.html" class="nav-link">Economics</a>
+          <a href="/static/history/index.html" class="nav-link">History</a>
+          <a href="/static/stats/index.html" class="nav-link">Statistics</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container app-root">
+      <section class="panel compact">
+        <h2 class="section-title">Welcome to Class Resources</h2>
+        <p>Explore interactive educational widgets organized by subject.</p>
+        <div
+          class="grid"
+          style="
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+          "
+        >
+          <a
+            href="/static/chem/index.html"
+            style="
+              background: #fff;
+              border-radius: 12px;
+              padding: 1.75rem;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+              border: 1px solid rgba(0, 0, 0, 0.05);
+              color: inherit;
+              text-decoration: none;
+              display: block;
+              transition: 0.3s;
+            "
+          >
+            <h3
+              style="
+                margin: 0 0 0.5rem;
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #000;
+              "
+            >
+              Chemistry
+            </h3>
+            <p style="color: #666; margin: 0">
+              Hands-on chemistry demos and visualizations.
+            </p>
+          </a>
+          <a
+            href="/static/math/index.html"
+            style="
+              background: #fff;
+              border-radius: 12px;
+              padding: 1.75rem;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+              border: 1px solid rgba(0, 0, 0, 0.05);
+              color: inherit;
+              text-decoration: none;
+              display: block;
+              transition: 0.3s;
+            "
+          >
+            <h3
+              style="
+                margin: 0 0 0.5rem;
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #000;
+              "
+            >
+              Math
+            </h3>
+            <p style="color: #666; margin: 0">
+              Interactive math learning widgets and explorations.
+            </p>
+          </a>
+          <a
+            href="/static/code/index.html"
+            style="
+              background: #fff;
+              border-radius: 12px;
+              padding: 1.75rem;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+              border: 1px solid rgba(0, 0, 0, 0.05);
+              color: inherit;
+              text-decoration: none;
+              display: block;
+              transition: 0.3s;
+            "
+          >
+            <h3
+              style="
+                margin: 0 0 0.5rem;
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #000;
+              "
+            >
+              Code
+            </h3>
+            <p style="color: #666; margin: 0">
+              Programming visualizations, data structures, and crypto demos.
+            </p>
+          </a>
+          <a
+            href="/static/econ/index.html"
+            style="
+              background: #fff;
+              border-radius: 12px;
+              padding: 1.75rem;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+              border: 1px solid rgba(0, 0, 0, 0.05);
+              color: inherit;
+              text-decoration: none;
+              display: block;
+              transition: 0.3s;
+            "
+          >
+            <h3
+              style="
+                margin: 0 0 0.5rem;
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #000;
+              "
+            >
+              Economics
+            </h3>
+            <p style="color: #666; margin: 0">
+              Micro and macro interactive widgets.
+            </p>
+          </a>
+          <a
+            href="/static/history/index.html"
+            style="
+              background: #fff;
+              border-radius: 12px;
+              padding: 1.75rem;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+              border: 1px solid rgba(0, 0, 0, 0.05);
+              color: inherit;
+              text-decoration: none;
+              display: block;
+              transition: 0.3s;
+            "
+          >
+            <h3
+              style="
+                margin: 0 0 0.5rem;
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #000;
+              "
+            >
+              History
+            </h3>
+            <p style="color: #666; margin: 0">
+              Historical visualizations and timelines.
+            </p>
+          </a>
+          <a
+            href="/static/stats/index.html"
+            style="
+              background: #fff;
+              border-radius: 12px;
+              padding: 1.75rem;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+              border: 1px solid rgba(0, 0, 0, 0.05);
+              color: inherit;
+              text-decoration: none;
+              display: block;
+              transition: 0.3s;
+            "
+          >
+            <h3
+              style="
+                margin: 0 0 0.5rem;
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #000;
+              "
+            >
+              Statistics
+            </h3>
+            <p style="color: #666; margin: 0">
+              Stats tools, visualizations, and calculators.
+            </p>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>Made with ♥ for education. No downloads, no tracking.</p>
+      </div>
+    </footer>
+  </body>
+</html>

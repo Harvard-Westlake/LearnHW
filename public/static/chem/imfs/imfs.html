@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Intermolecular Forces (IMFs) Playground</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=IBM+Plex+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../math/widgets/shared/styles.css" />
+    <script src="https://3dmol.org/build/3Dmol-min.js"></script>
+    <style>
+      body {
+        background-color: #f8f9fa;
+        font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto,
+          sans-serif;
+      }
+      #imfs-container {
+        width: 100%;
+        min-height: calc(100vh - 60px);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <a class="back-link" href="../index.html">← Back to Chemistry Widgets</a>
+      <div id="imfs-container"></div>
+    </div>
+    <script type="module">
+      import { mountIMFs } from "./imfs.js";
+      const container = document.getElementById("imfs-container");
+      mountIMFs(container);
+    </script>
+  </body>
+</html>
