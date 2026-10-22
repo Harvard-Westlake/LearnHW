@@ -1,0 +1,167 @@
+// Go to a tcgplayer price guide of your set
+// Open dev console(inspect webpage)
+//Sort by number(optional but reccomended)
+
+// Paste this code into the dev console:
+(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  async function loadAll() {
+    for (let i = 0; i < 50; i++) {
+      const btn = Array.from(document.querySelectorAll('button, a[role="button"], a'))
+        .find(el => /load more|show more|more results|show all/i.test(el.textContent || ""));
+      if (!btn) break;
+      btn.click();
+      await sleep(1200);
+    }
+  }
+
+  function normalize(s) {
+    return (s || "").replace(/\s+/g, " ").trim().toLowerCase();
+  }
+
+  function findPriceGuideTable() {
+    const tables = Array.from(document.querySelectorAll("table, [role='table']"));
+    for (const table of tables) {
+      const headers = Array.from(table.querySelectorAll("thead th, [role='columnheader']"))
+        .map(th => normalize(th.textContent));
+      if (!headers.length) continue;
+
+      const map = {};
+      headers.forEach((h, i) => {
+        if (h.includes("product")) map.product = i;
+        if (h.includes("rarity")) map.rarity = i;
+        if (h.includes("number") || h === "#") map.number = i;
+        if (h.includes("market price") || h.includes("tcgplayer market")) map.price = i;
+      });
+
+      const hasAll = ["product","rarity","number","price"].every(k => Number.isInteger(map[k]));
+      if (hasAll) return { table, map };
+    }
+    return null;
+  }
+
+  function parsePrice(text) {
+    const n = parseFloat((text || "").replace(/[^0-9.]/g, ""));
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function toAbs(u) {
+    try { return new URL(u, location.origin).href; } catch { return u; }
+  }
+
+  function pickFromSrcset(srcset) {
+    if (!srcset) return null;
+    const parts = srcset.split(",").map(s => s.trim()).map(s => {
+      const m = s.match(/^(\\S+)(?:\\s+(\\d+)(w|x))?$/i);
+      return m ? { url: m[1], metric: parseInt(m[2] || "0", 10) || 0 } : { url: s, metric: 0 };
+    });
+    parts.sort((a, b) => b.metric - a.metric);
+    return parts[0]?.url || null;
+  }
+
+  function getImgFromRow(row) {
+    const img = row.querySelector("img");
+    if (!img) return null;
+    const cand = img.getAttribute("src") && !/^data:/i.test(img.getAttribute("src")) ? img.getAttribute("src") : null
+      || img.getAttribute("data-src")
+      || img.getAttribute("data-original")
+      || pickFromSrcset(img.getAttribute("srcset"));
+    return cand ? toAbs(cand) : null;
+  }
+
+  async function fetchProductImage(productUrl) {
+    if (!productUrl) return null;
+    try {
+      const res = await fetch(productUrl, { credentials: "include" });
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+
+      const og = doc.querySelector('meta[property="og:image"]')?.content;
+      if (og) return toAbs(og);
+
+      const hero = doc.querySelector("img[src*='product'], img[src*='image'], picture img");
+      if (hero) {
+        const src = hero.getAttribute("src") && !/^data:/i.test(hero.getAttribute("src")) ? hero.getAttribute("src") : null
+          || hero.getAttribute("data-src")
+          || hero.getAttribute("data-original")
+          || pickFromSrcset(hero.getAttribute("srcset"));
+        if (src) return toAbs(src);
+      }
+    } catch (e) {
+      // ignore fetch/parse errors per item
+    }
+    return null;
+  }
+
+  async function mapLimit(items, limit, iter) {
+    const results = new Array(items.length);
+    let i = 0;
+    const workers = new Array(Math.min(limit, items.length)).fill(0).map(async () => {
+      while (true) {
+        const idx = i++;
+        if (idx >= items.length) break;
+        results[idx] = await iter(items[idx], idx);
+      }
+    });
+    await Promise.all(workers);
+    return results;
+  }
+
+  await loadAll();
+
+  const found = findPriceGuideTable();
+  if (!found) {
+    console.warn("Could not locate the price guide table. Scroll/expand and try again.");
+    return;
+  }
+
+  const { table, map } = found;
+  const rows = Array.from(table.querySelectorAll("tbody tr, [role='rowgroup'] [role='row']"));
+
+  const base = rows.map(row => {
+    const cells = Array.from(row.querySelectorAll("td, [role='cell']"));
+    const nameCell = cells[map.product];
+    const link = nameCell?.querySelector("a");
+    const productUrl = link ? toAbs(link.href) : null;
+
+    const name = (link?.textContent || nameCell?.textContent || "").trim();
+    const rarity = (cells[map.rarity]?.textContent || "").trim();
+    const number = (cells[map.number]?.textContent || "").trim();
+    const priceText = (cells[map.price]?.textContent || "").trim();
+    const price = parsePrice(priceText);
+    const rowImage = getImgFromRow(row);
+
+    return { name, rarity, number, price, productUrl, rowImage };
+  }).filter(r => r.name && r.number);
+
+  const enriched = await mapLimit(base, 6, async (r) => {
+    if (r.rowImage) return { ...r, imageUrl: r.rowImage };
+    const imageUrl = await fetchProductImage(r.productUrl);
+    return { ...r, imageUrl: imageUrl || null };
+  });
+
+  const records = enriched.map(({ name, rarity, number, price, imageUrl }) =>
+    ({ name, rarity, number, price, imageUrl })
+  );
+
+  const slug = (location.pathname.split("/").filter(Boolean).pop() || "tcgplayer-price-guide")
+    .replace(/[^a-z0-9-]+/gi, "-")
+    .toLowerCase();
+  const filename = `${slug}.json`;
+
+  const blob = new Blob([JSON.stringify(records, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  console.log(`Saved ${records.length} cards to ${filename}`);
+})();
+
+// Save the file to the sets folder
+// Ask cursor to implement the set
