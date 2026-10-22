@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>File Permissions — Terminal Tutor</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        background: #0c0c0c; /* Windows Terminal dark */
+        color: #cccccc;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        overflow: hidden; /* hide page scrollbar; use terminal's internal scroll */
+      }
+      .term {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        background: #0c0c0c; /* terminal background */
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .term-header {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+        height: 36px;
+        background: #1a1a1a;
+        border-bottom: 1px solid #2a2a2a;
+        padding: 0 8px;
+      }
+      .term-tabs {
+        display: flex;
+        align-items: stretch;
+        gap: 6px;
+        flex: 1;
+        min-width: 0;
+      }
+      .term-tab {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        font-size: 12px;
+        color: #cccccc;
+        background: #2a2a2a;
+        border: 1px solid #3a3a3a;
+        border-bottom: none;
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+        max-width: 12.5%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        align-self: stretch;
+        /* Ensure the tab touches header borders without gaps */
+        margin-bottom: 0;
+        margin-top: 0;
+      }
+      .term-tab.active {
+        background: #0c0c0c;
+        color: #ffffff;
+        border-color: #4a4a4a;
+      }
+      .term-screen {
+        padding: 12px 14px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        flex: 1;
+        background: #0c0c0c;
+      }
+      .fs-pane {
+        display: none;
+        padding: 12px 14px;
+        overflow-y: auto;
+        white-space: normal;
+        flex: 1;
+        background: #0c0c0c;
+      }
+      .fs-breadcrumbs {
+        color: #ddd;
+        font-size: 12px;
+        margin: 4px 0 8px;
+      }
+      .fs-breadcrumbs .crumb {
+        cursor: pointer;
+        color: #8ab4f8;
+      }
+      .fs-breadcrumbs .sep {
+        color: #777;
+        margin: 0 4px;
+      }
+      /* Campus map */
+      .fs-map {
+        display: block;
+        width: 100%;
+        height: 520px;
+        border: 1px solid #2a2a2a;
+        background: #0c0c0c;
+      }
+      .fs-building {
+        fill: #6e1b1b; /* deep red */
+        stroke: #a33a3a;
+        stroke-width: 1;
+      }
+      .fs-roof {
+        fill: #892424; /* darker red roof */
+        stroke: #a33a3a;
+        stroke-width: 1;
+      }
+      .fs-file {
+        fill: #2a2a2a;
+        stroke: #555;
+        stroke-width: 1;
+      }
+      .fs-file-fold {
+        fill: #3a3a3a;
+        stroke: #666;
+        stroke-width: 1;
+      }
+      .fs-building.current {
+        stroke: #fce94f;
+        stroke-width: 2;
+      }
+      .fs-building text {
+        fill: #e0e6f1;
+        font-size: 11px;
+        pointer-events: none;
+      }
+      .fs-perm-on {
+        fill: #f1c40f;
+        stroke: #b58f00;
+        stroke-width: 0.5;
+      }
+      .fs-perm-off {
+        fill: #000000;
+        stroke: #333333;
+        stroke-width: 0.5;
+      }
+      .term-input {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 14px;
+        border-top: 1px solid #2a2a2a;
+        background: #0c0c0c;
+      }
+      .term-prompt {
+        color: inherit;
+        white-space: pre;
+      }
+      .prompt-userhost {
+        color: #fce94f;
+      } /* yellow */
+      .prompt-path {
+        color: #ef2929;
+      } /* red */
+      .prompt-dollar {
+        color: #cccccc;
+      }
+      .ls-dir {
+        color: #3b78ff; /* Campbell bright blue */
+      }
+      .term-instruction {
+        font-style: italic;
+        margin: 12px 0;
+      }
+      /* Inline, borderless editing next to the prompt */
+      .term-line .term-input-editable {
+        display: inline-block;
+        min-width: 1ch;
+        outline: none;
+        border: none;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        white-space: pre;
+        caret-color: #cccccc;
+      }
+      .term-input input {
+        flex: 1;
+        background: transparent;
+        color: #e5e5e5;
+        border: none;
+        outline: none;
+        font: inherit;
+        padding: 0;
+      }
+      .title-line {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="term" id="term">
+      <div class="term-header" id="term-header" role="presentation">
+        <div class="term-tabs">
+          <div
+            class="term-tab active"
+            id="term-tab-label"
+            title="Ubuntu — bash"
+          >
+            Ubuntu — bash
+          </div>
+          <div class="term-tab" id="term-tab-fs" title="Filesystem">
+            Filesystem
+          </div>
+        </div>
+      </div>
+      <div class="term-screen" id="screen" aria-live="polite"></div>
+      <div class="fs-pane" id="fs-pane" aria-label="Filesystem view">
+        <div class="fs-breadcrumbs" id="fs-breadcrumbs"></div>
+        <svg
+          class="fs-map"
+          id="fs-view"
+          viewBox="0 0 1200 520"
+          role="img"
+          aria-label="Campus map"
+        ></svg>
+        <script id="fake-fs-embedded" type="text/plain">
+          Harvard-Westlake/
+
+          ├── ChalmersHall/
+          │   ├── LowerLevel/
+          │   │   ├── DanceStudio/
+          │   │   │   └── schedule.txt – "Mon: Ballet 3:30 PM; Tue: Contemporary 4:00 PM; Wed: Jazz 3:30 PM"
+          │   │   ├── Bookstore/
+          │   │   │   └── inventory.csv – (Textbook and merchandise stock list)
+          │   │   ├── MusicRoom1/
+          │   │   │   └── sheet_music.pdf – (Choir sheet music collection)
+          │   │   └── MusicRoom2/
+          │   │       └── practice_schedule.txt – "Band practice: M/W/F 3-5 PM"
+          │   ├── SecondFloor/
+          │   │   ├── Cafeteria/
+          │   │   │   ├── menu.txt – "Monday: Pizza; Tuesday: Tacos; …"
+          │   │   │   └── sandwich_window_menu.txt – "Sandwich Options: Turkey, Ham, Veggie, ..."
+          │   │   ├── DeansOffices/
+          │   │   │   ├── DeanOfStudents.txt – "Contact: Dean of Students (email, extension)"
+          │   │   │   ├── DeanOfFaculty.txt – "Contact: Dean of Faculty (email, extension)"
+          │   │   │   └── ClassDeans.txt – "Grade 10 Dean: ...; Grade 11 Dean: ...; Grade 12 Dean: ..."
+          │   │   └── StudentLounge/
+          │   │       └── notice_board.md – "Upcoming Events: Club Fair Friday; SAT Prep Session Thursday"
+          │   └── ThirdFloor/
+          │       ├── Chalmers301/
+          │       │   └── syllabus.pdf – (Calculus AB Syllabus)
+          │       ├── Chalmers305/
+          │       │   └── equation.txt – "e^(iπ) + 1 = 0"
+          │       └── Chalmers307/
+          │           └── homework_assignments.docx – ("Algebra II – Problem Set 5" assignment sheet)
+
+          ├── SeaverAcademicCenter/
+          │   ├── FlagCourtLevel/
+          │   │   ├── FrenchClassroom/
+          │   │   │   └── oral_exam.wav – (Audio recording for French pronunciation exam)
+          │   │   ├── SpanishClassroom/
+          │   │   │   └── vocab_list.txt – "Unidad 5 Vocab: la casa (house), la mesa (table), …"
+          │   │   ├── LatinClassroom/
+          │   │   │   └── translation_assignment.docx – ("Translate Vergil lines 1–10")
+          │   │   └── ChineseClassroom/
+          │   │       └── characters.pdf – (Worksheet of Chinese characters for study)
+          │   ├── SecondFloor/
+          │   │   ├── LearningCenter/
+          │   │   │   └── tutoring_schedule.pdf – ("Math Lab: Mon 3-4 PM; Writing Center: Tue 3-5 PM; …")
+          │   │   ├── AdminOffices/
+          │   │   │   ├── HeadOfUpperSchool.txt – "Head of Upper School: Office Hrs M-F 9 AM–11 AM"
+          │   │   │   ├── AttendanceOffice.txt – "Report absences: attendance@hw.com or x1234"
+          │   │   │   └── AdmissionsOffice.txt – "Admissions Dept – Info Session schedule.docx"
+          │   │   └── VisitorLobby/
+          │   │       └── campus_map.pdf – (Campus map for visitors)
+          │   └── ThirdFloor/
+          │       ├── Seaver301/
+          │       │   └── syllabus_AP_US_History.docx – (AP U.S. History syllabus document)
+          │       ├── Seaver303/
+          │       │   └── lecture_notes.md – "# World History Lecture – Industrial Revolution\n... (notes content) ..."
+          │       └── Seaver305/
+          │           └── project_guidelines.pdf – ("Senior Thesis Guidelines" for Social Studies)
+
+          ├── MungerScienceCenter/
+          │   ├── BiologyLab/
+          │   │   └── dissection_schedule.txt – "Frog dissection: Oct 12; Fetal pig: Nov 3; ... "
+          │   ├── ChemistryLab/
+          │   │   └── safety_rules.md – "* Always wear goggles in the lab. * No open-toed shoes. * ..."
+          │   ├── PhysicsLab/
+          │   │   └── experiment_data.csv – (CSV data from physics experiment trials)
+          │   ├── ComputerLab/
+          │   │   └── hello_world.py – `print("Hello, HW!")`
+          │   ├── RoboticsLab/
+          │   │   └── robot_design.png – (Image of a student robotics project blueprint)
+          │   └── AhmansonLectureHall/
+          │       └── guest_lecture_schedule.txt – "Oct 5: NASA Engineer @ 1PM; Nov 10: Alumni Scientist Talk @ 2PM"
+
+          ├── RugbyHall/
+          │   ├── EnglishDept/
+          │   │   ├── Rugby101/
+          │   │   │   └── reading_list.txt – "Fall Reading: 1984, Hamlet, The Great Gatsby, …"
+          │   │   ├── Rugby102/
+          │   │   │   └── essay_prompts.docx – ("Literary Analysis Essay Prompts.docx")
+          │   │   └── FacultyOffice/
+          │   │       └── english_teachers.xlsx – (Spreadsheet of English department faculty and contacts)
+          │   ├── Auditorium/
+          │   │   ├── Stage/
+          │   │   │   └── lighting_config.cfg – (Stage lighting configuration settings)
+          │   │   ├── CostumeShop/
+          │   │   │   └── inventory.txt – "Costumes: 1920s dresses (5), Viking helmets (3), ... "
+          │   │   ├── PropRoom/
+          │   │   │   └── props_list.txt – "Swords (2), Fake Books (10), Old Telephone (1), …"
+          │   │   └── ControlBooth/
+          │   │       └── sound_equipment.md – "- Mixer Model XYZ\n- Wireless Mics (10)\n- Speakers: 2000W x4\n..."
+          │   └── DramaLab/
+          │       └── script_draft.pdf – (PDF of a student-written one-act play draft)
+
+          ├── WeilerHall/
+          │   ├── ChronicleNewsroom/
+          │   │   └── latest_issue.pdf – (PDF of **The Harvard-Westlake Chronicle** school newspaper)
+          │   └── BroadcastStudio/
+          │       ├── equipment_list.txt – "Cameras: Canon XA11 (2); Microphones: Shure wireless (4); ... "
+          │       └── broadcast_schedule.txt – "Weekly News Broadcast: Fridays 8 AM on HWTV"
+
+          ├── KutlerCenter/
+          │   ├── KutlerLabs/
+          │   │   ├── ResearchLab1/
+          │   │   │   └── project_proposal.docx – ("Independent Research Project Proposal.docx")
+          │   │   └── ResearchLab2/
+          │   │       └── data_analysis.py – (Python script for data analysis in a Kutler project)
+          │   └── FeldmanHornArt/
+          │       ├── ArtStudio1/
+          │       │   └── painting_project.jpg – (JPEG image of a student oil painting)
+          │       ├── ArtStudio2/
+          │       │   └── clay_sculpture.png – (Image of a ceramic sculpture in progress)
+          │       ├── DarkRoom/
+          │       │   └── photo_developing_log.txt – "09/15: Developed 5 rolls B&W; 10/01: Chemistry refilled; …"
+          │       ├── VideoLab/
+          │       │   └── film_edit.mov – (Video file of a student short film edit)
+          │       └── Gallery/
+          │           └── current_exhibit.txt – "Fall Student Art Show – Featuring works from Photography and Studio Art classes"
+
+          ├── MuddLibrary/
+          │   ├── FirstFloor/
+          │   │   ├── CirculationDesk/
+          │   │   │   └── hours.txt – "Library Hours: M-Th 7:30 AM–6:00 PM; Fri 7:30 AM–5:00 PM"
+          │   │   └── ReadingArea/
+          │   │       └── newspapers_list.txt – "NY Times, LA Times, Wall Street Journal, ... (available daily)"
+          │   ├── SecondFloor/
+          │   │   ├── Stacks/
+          │   │   │   ├── fiction_section.txt – (List of popular novels and their call numbers)
+          │   │   │   └── reference_section.txt – (List of encyclopedias, dictionaries, reference books)
+          │   │   └── StudyArea/
+          │   │       └── computer_stations.csv – (CSV of library computer station IDs and statuses)
+          │   └── ThirdFloor/
+          │       ├── SilentStudy/
+          │       │   └── rules.md – "be quiet, no food."
+          │       └── StudyRoomA/
+          │           └── reservation_log.txt – "10/10 3-4PM: Booked (Jane D.); 10/10 4-5PM: Available; …"
+
+          ├── StSavioursChapel/
+          │   └── schedule.txt – "Chapel open daily 8 AM–4 PM; Meditation Club – Wed 3:30 PM"
+
+          ├── DidaxHouse/
+          │   ├── ITOffice/
+          │   │   └── server_status.log – (System uptime logs and server status messages)
+          │   └── DevTeam/
+          │       └── didax_source_code.py – (Source code snippet of the school's Didax system)
+
+          ├── AdvancementHouse/
+          │   └── alumni_events.docx – ("Alumni Reunion 2025 Plan.docx")
+
+          ├── BusinessOffice/
+          │   └── budget_fy2025.xlsx – (Spreadsheet of school budget for fiscal year 2024–25)
+
+          ├── PresidentsOffice/
+          │   └── welcome_letter.md – ("Welcome from the President" message markdown)
+
+          ├── TaperAthleticPavilion/
+          │   ├── MainGym/
+          │   │   └── basketball_schedule.txt – "Varsity Practice M-F 3-5 PM; Home Games listed on athletics.hw.com"
+          │   ├── WeightRoom/
+          │   │   └── equipment.csv – (Inventory of weight machines and free weights)
+          │   ├── LockerRoomMen/
+          │   │   └── locker_assignments.txt – (Locker # -> Student athlete name)
+          │   ├── LockerRoomWomen/
+          │   │   └── locker_assignments.txt – (Locker # -> Student athlete name)
+          │   └── FencingRoom/
+          │       └── practice_times.txt – "Fencing Team: Tue/Thu 4-6 PM"
+
+          ├── HamiltonGym/
+          │   └── practice_schedule.txt – "JV Basketball: Mon/Wed 4 PM; Wrestling: Tue/Thu 4 PM; ... "
+
+          ├── CopsesPool/
+          │   └── swim_meet_schedule.txt – "Fall Swim Meet: Oct 21 3:00 PM; Water Polo Finals: Nov 5 4:00 PM"
+
+          └── TedSlavinField/
+              └── track_and_field_schedule.csv – (CSV schedule for track meets and field events)
+        </script>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var screen = document.getElementById("screen");
+        var input = null; // dynamically created per prompt line
+        var activeLineEl = null;
+        var term = document.getElementById("term");
+        var currentUserhost = "hwwolverine@DESKTOP-WSL";
+        var currentPathText = "~/Harvard-Westlake";
+        var hideInput = false; // hide echo for secure input (sudo password)
+        var activeView = "terminal";
+        var fsModel = null;
+        var fsExpanded = {};
+        var fsCurrentPath = ["Harvard-Westlake"];
+        var fsViewPath = ["Harvard-Westlake"]; // current drill-down view
+        var fsBaselineByDemo = {}; // key -> snapshot of fsModel
+        var activeDemoKey = null;
+        var hintShown = {}; // one-time hints for visual map
+
+        function cloneFsModel(model) {
+          try {
+            return JSON.parse(JSON.stringify(model || initFsModel()));
+          } catch (e) {
+            return initFsModel();
+          }
+        }
+        function suggestHint(key, messageHtml) {
+          if (hintShown[key]) return;
+          hintShown[key] = true;
+          appendInstructionHtml(messageHtml);
+        }
+        function saveFsBaseline(key) {
+          fsBaselineByDemo[key] = cloneFsModel(fsModel);
+        }
+        function restoreFsBaseline(key) {
+          if (!key) return;
+          var snap = fsBaselineByDemo[key];
+          if (snap) {
+            fsModel = cloneFsModel(snap);
+            // Re-align current view and current working dir highlight
+            fsSetCurrentPathFromPrompt();
+            if (activeView === "fs") renderFsPane();
+          }
+        }
+
+        function escapeHtml(s) {
+          return String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        }
+        function getPromptHtml() {
+          return (
+            '<span class="prompt-userhost">' +
+            escapeHtml(currentUserhost) +
+            "</span>:" +
+            '<span class="prompt-path">' +
+            escapeHtml(currentPathText) +
+            "</span>" +
+            '<span class="prompt-dollar">$</span>'
+          );
+        }
+        function updateTabLabel() {
+          var el = document.getElementById("term-tab-label");
+          if (!el) return;
+          var labelText = currentUserhost + ":" + currentPathText + "$";
+          el.textContent = labelText;
+          el.setAttribute("title", labelText);
+        }
+        function fsPathKey(arr) {
+          return (arr || []).join("/");
+        }
+        function initFsModel() {
+          if (fsModel) return fsModel;
+          // Minimal placeholder; real model loaded from fakeFileSystem.md
+          fsModel = { type: "dir", name: "Harvard-Westlake", children: {} };
+          fsExpanded = { "Harvard-Westlake": true };
+          return fsModel;
+        }
+        function parseFakeFilesystemAscii(text) {
+          var lines = (text || "").split(/\r?\n/);
+          var root = null;
+          var stack = []; // each entry: {depth, node}
+          function makeDir(name) {
+            return {
+              type: "dir",
+              name: name,
+              mode: "drwxr-xr-x",
+              owner: "hw_admin",
+              group: "faculty",
+              children: {},
+            };
+          }
+          function makeFile(name) {
+            return {
+              type: "file",
+              name: name,
+              mode: "-rw-r--r--",
+              owner: "hw_admin",
+              group: "faculty",
+            };
+          }
+          function addChild(parent, child) {
+            if (!parent.children) parent.children = {};
+            parent.children[child.name] = child;
+          }
+          function computeDepth(prefix) {
+            // Count groups of 4 chars, treating pipes as spaces
+            var s = prefix.replace(/│/g, " ");
+            return Math.floor(s.length / 4);
+          }
+          for (var i = 0; i < lines.length; i++) {
+            var raw = lines[i];
+            if (!raw || !raw.trim()) continue;
+            var line = raw.replace(/\t/g, "    ");
+            // Root line like 'Harvard-Westlake/'
+            if (!root && /\/\s*$/.test(line.trim())) {
+              var rootName = line.trim().replace(/\/\s*$/, "");
+              root = makeDir(rootName);
+              stack = [{ depth: 0, node: root }];
+              continue;
+            }
+            var m = /(.*?)(├── |└── )(.+)$/.exec(line);
+            if (!m) continue;
+            var prefix = m[1] || "";
+            var nameAndMeta = m[3].trim();
+            var nameOnly = nameAndMeta.split(/\s[–-]\s/)[0].trim();
+            var isDir = /\/\s*$/.test(nameOnly);
+            var cleanName = nameOnly.replace(/\/\s*$/, "");
+            var depth = computeDepth(prefix) + 1; // child of current depth
+            while (stack.length && stack[stack.length - 1].depth >= depth) {
+              stack.pop();
+            }
+            var parent = stack.length ? stack[stack.length - 1].node : root;
+            if (!parent) continue;
+            var node = isDir ? makeDir(cleanName) : makeFile(cleanName);
+            addChild(parent, node);
+            stack.push({ depth: depth, node: node });
+          }
+          return root;
+        }
+        function fsNodeByPath(arr) {
+          var node = initFsModel();
+          var parts = (arr || []).slice();
+          if (!parts.length || parts[0] !== "Harvard-Westlake") {
+            parts.unshift("Harvard-Westlake");
+          }
+          for (var i = 1; i < parts.length; i++) {
+            if (!node.children || !node.children[parts[i]]) return null;
+            node = node.children[parts[i]];
+          }
+          return node;
+        }
+        function trimRootSingleFileDirs(keepCount) {
+          var root = initFsModel();
+          if (!root || !root.children) return;
+          var names = Object.keys(root.children).sort();
+          var simple = [];
+          for (var i = 0; i < names.length; i++) {
+            var child = root.children[names[i]];
+            if (!child || child.type !== "dir") continue;
+            var kids = child.children || {};
+            var kidNames = Object.keys(kids);
+            if (kidNames.length === 1) {
+              var only = kids[kidNames[0]];
+              if (only && only.type === "file") {
+                simple.push(names[i]);
+              }
+            }
+          }
+          if (simple.length > keepCount) {
+            // Keep the first one alphabetically; trim the rest
+            for (var j = keepCount; j < simple.length; j++) {
+              delete root.children[simple[j]];
+            }
+          }
+        }
+        function fsSetCurrentPathFromPrompt() {
+          var t = currentPathText || "~/Harvard-Westlake";
+          var p = t.replace(/^~\//, "");
+          if (p === "~") p = "Harvard-Westlake";
+          var parts = p.split("/").filter(Boolean);
+          if (!parts.length || parts[0] !== "Harvard-Westlake")
+            parts.unshift("Harvard-Westlake");
+          fsCurrentPath = parts;
+          var acc = [];
+          for (var i = 0; i < parts.length; i++) {
+            acc.push(parts[i]);
+            fsExpanded[fsPathKey(acc)] = true;
+          }
+          if (activeView === "fs") renderFsPane();
+        }
+        function renderNode(node, pathArr) {
+          var key = fsPathKey(pathArr);
+          var isDir = node.type === "dir";
+          var isExpanded = !!fsExpanded[key];
+          var isCurrent = key === fsPathKey(fsCurrentPath);
+          var nameHtml =
+            '<div class="fs-item ' +
+            (isDir ? "fs-dir" : "fs-file") +
+            (isExpanded ? " expanded" : "") +
+            (isCurrent ? " fs-current" : "") +
+            '">' +
+            '<span class="name" data-path="' +
+            escapeHtml(key) +
+            '">' +
+            escapeHtml(node.name) +
+            "</span>" +
+            (node.mode
+              ? '<span class="fs-meta">' +
+                escapeHtml(
+                  node.mode +
+                    " " +
+                    (node.owner || "") +
+                    " " +
+                    (node.group || "")
+                ) +
+                "</span>"
+              : "") +
+            "</div>";
+          var childrenHtml = "";
+          if (isDir && isExpanded) {
+            childrenHtml += '<div class="fs-children">';
+            var names = Object.keys(node.children || {}).sort();
+            for (var i = 0; i < names.length; i++) {
+              var child = node.children[names[i]];
+              childrenHtml += renderNode(child, pathArr.concat([names[i]]));
+            }
+            childrenHtml += "</div>";
+          }
+          return nameHtml + childrenHtml;
+        }
+        function renderBreadcrumbs() {
+          var bc = document.getElementById("fs-breadcrumbs");
+          if (!bc) return;
+          var parts = fsViewPath.slice();
+          var html = "";
+          for (var i = 0; i < parts.length; i++) {
+            if (i > 0) html += '<span class="sep">/</span>';
+            html +=
+              '<span class="crumb" data-index="' +
+              i +
+              '">' +
+              escapeHtml(parts[i]) +
+              "</span>";
+          }
+          bc.innerHTML = html;
+          bc.onclick = function (e) {
+            var t = e.target;
+            if (!t.classList.contains("crumb")) return;
+            var idx = parseInt(t.getAttribute("data-index") || "0", 10);
+            fsViewPath = fsViewPath.slice(0, idx + 1);
+            renderFsPane();
+          };
+        }
+        function layoutTreemap(nodes, x, y, w, h, horizontal) {
+          var out = [];
+          var n = nodes.length || 1;
+          for (var i = 0; i < n; i++) {
+            var nx, ny, nw, nh;
+            if (horizontal) {
+              nw = Math.max(40, Math.floor(w / n));
+              nh = h;
+              nx = x + i * nw;
+              ny = y;
+            } else {
+              nw = w;
+              nh = Math.max(40, Math.floor(h / n));
+              nx = x;
+              ny = y + i * nh;
+            }
+            out.push({ node: nodes[i], x: nx, y: ny, w: nw, h: nh });
+          }
+          return out;
+        }
+        function countDesc(node) {
+          if (!node || node.type !== "dir") return 1;
+          var sum = 1;
+          var names = Object.keys(node.children || {});
+          for (var i = 0; i < names.length; i++) {
+            sum += countDesc(node.children[names[i]]);
+          }
+          return sum;
+        }
+        function renderFsView() {
+          var svg = document.getElementById("fs-view");
+          if (!svg) return;
+          var root = fsNodeByPath(fsViewPath) || initFsModel();
+          while (svg.firstChild) svg.removeChild(svg.firstChild);
+          var width = 1200;
+          var height = 520;
+          var names = Object.keys((root && root.children) || {}).sort();
+          var children = names.map(function (n) {
+            return root.children[n];
+          });
+          var slices = layoutTreemap(
+            children,
+            10,
+            10,
+            width - 20,
+            height - 20,
+            true
+          );
+          for (var i = 0; i < slices.length; i++) {
+            var s = slices[i];
+            drawBlock(
+              svg,
+              s.node,
+              fsViewPath.concat([s.node.name]),
+              s.x,
+              s.y,
+              s.w - 6,
+              s.h - 6,
+              0,
+              1
+            );
+          }
+        }
+        function drawPermBadges(g, mode, x, y, w, h) {
+          if (!mode || mode.length < 10) return;
+          var owner = mode.slice(1, 4);
+          var group = mode.slice(4, 7);
+          var other = mode.slice(7, 10);
+          var rows = [owner, group, other]; // top-to-bottom labels handled by icons
+          var cols = ["r", "w", "x"];
+          // Layout inside box
+          var topMargin = 26;
+          var bottomMargin = 10;
+          var leftLabel = 26;
+          var rightMargin = 10;
+          var gridW = Math.max(0, w - leftLabel - rightMargin);
+          var gridH = Math.max(0, h - topMargin - bottomMargin);
+          var cell = Math.max(
+            12,
+            Math.min(24, Math.floor(Math.min(gridW, gridH) / 5))
+          );
+          if (cell < 12) return;
+          var pad = Math.floor(cell * 0.25);
+          var colHeaderY = y + topMargin + Math.floor(cell * 0.6);
+          var rowStartY = y + topMargin + cell + pad * 2;
+          var colStartX = x + leftLabel + pad * 2;
+          // Column headers: 👑, 👥, 🕵️
+          var colIcons = ["👑", "👥", "🕵️"];
+          for (var c = 0; c < 3; c++) {
+            var tx = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "text"
+            );
+            tx.setAttribute("x", colStartX + c * (cell + pad) + cell / 2);
+            tx.setAttribute("y", colHeaderY);
+            tx.setAttribute("text-anchor", "middle");
+            tx.setAttribute("dominant-baseline", "central");
+            tx.setAttribute("fill", "#e6e6e6");
+            tx.setAttribute("font-size", Math.floor(cell * 0.8));
+            tx.textContent = colIcons[c];
+            g.appendChild(tx);
+          }
+          // Row headers: 📖, ✏️, ⏺
+          var rowIcons = ["📖", "✏️", "⏺"];
+          for (var r = 0; r < 3; r++) {
+            var ty = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "text"
+            );
+            ty.setAttribute("x", x + Math.floor(leftLabel / 2));
+            ty.setAttribute("y", rowStartY + r * (cell + pad) + cell / 2);
+            ty.setAttribute("text-anchor", "middle");
+            ty.setAttribute("dominant-baseline", "central");
+            ty.setAttribute("fill", r === 2 ? "#e53935" : "#e6e6e6");
+            ty.setAttribute("font-size", Math.floor(cell * 0.9));
+            ty.textContent = rowIcons[r];
+            g.appendChild(ty);
+          }
+          // Grid cells
+          for (var rr = 0; rr < 3; rr++) {
+            for (var cc = 0; cc < 3; cc++) {
+              var on = rows[rr].indexOf(cols[cc]) !== -1;
+              var rect = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "rect"
+              );
+              rect.setAttribute("x", colStartX + cc * (cell + pad));
+              rect.setAttribute("y", rowStartY + rr * (cell + pad));
+              rect.setAttribute("width", cell);
+              rect.setAttribute("height", cell);
+              rect.setAttribute("class", on ? "fs-perm-on" : "fs-perm-off");
+              g.appendChild(rect);
+            }
+          }
+        }
+        function drawBlock(svg, node, pathArr, x, y, w, h, depth, maxDepth) {
+          var g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          svg.appendChild(g);
+          var isCurrent = fsPathKey(pathArr) === fsPathKey(fsCurrentPath);
+          if (node.type === "dir") {
+            // Building base
+            var base = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "rect"
+            );
+            base.setAttribute("x", x);
+            base.setAttribute("y", y + 12);
+            base.setAttribute("width", Math.max(40, w));
+            base.setAttribute("height", Math.max(28, h - 12));
+            base.setAttribute(
+              "class",
+              "fs-building" + (isCurrent ? " current" : "")
+            );
+            base.setAttribute("rx", 6);
+            base.setAttribute("ry", 6);
+            g.appendChild(base);
+            // Roof
+            var roof = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "polygon"
+            );
+            var rx1 = x,
+              ry1 = y + 12;
+            var rx2 = x + w,
+              ry2 = y + 12;
+            var rxm = x + w / 2,
+              rym = y + 2;
+            roof.setAttribute(
+              "points",
+              rx1 + "," + ry1 + " " + rx2 + "," + ry2 + " " + rxm + "," + rym
+            );
+            roof.setAttribute("class", "fs-roof");
+            g.appendChild(roof);
+            // Click to drill down
+            var drill = function () {
+              fsViewPath = pathArr.slice();
+              renderFsPane();
+            };
+            base.addEventListener("click", drill);
+            roof.addEventListener("click", drill);
+          } else {
+            // File sheet with folded corner
+            var sheet = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "rect"
+            );
+            sheet.setAttribute("x", x);
+            sheet.setAttribute("y", y + 6);
+            sheet.setAttribute("width", Math.max(36, w));
+            sheet.setAttribute("height", Math.max(36, h - 6));
+            sheet.setAttribute(
+              "class",
+              "fs-file" + (isCurrent ? " current" : "")
+            );
+            g.appendChild(sheet);
+            var fold = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "polygon"
+            );
+            var fx = x + Math.max(24, Math.min(w - 8, 28));
+            var fy = y + 6;
+            fold.setAttribute(
+              "points",
+              fx +
+                "," +
+                fy +
+                " " +
+                (fx + 10) +
+                "," +
+                (fy + 0) +
+                " " +
+                (fx + 10) +
+                "," +
+                (fy + 10)
+            );
+            fold.setAttribute("class", "fs-file-fold");
+            g.appendChild(fold);
+            var setCwd = function () {
+              var parent = pathArr.slice(0, -1);
+              currentPathText = "~/" + parent.join("/");
+              updatePrompt(currentUserhost, currentPathText);
+            };
+            sheet.addEventListener("click", setCwd);
+            fold.addEventListener("click", setCwd);
+          }
+          // Label
+          var label = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "text"
+          );
+          label.setAttribute("x", x + 8);
+          label.setAttribute("y", y + 22);
+          label.setAttribute("fill", "#ffffff");
+          label.textContent = node.name;
+          g.appendChild(label);
+          // Artistic permission badges (spread within the box)
+          drawPermBadges(g, node.mode, x, y + 6, w, Math.max(40, h - 6));
+          if (
+            node.type === "dir" &&
+            (maxDepth === undefined || depth + 1 < maxDepth)
+          ) {
+            var names = Object.keys(node.children || {}).sort();
+            if (names.length > 0) {
+              var innerNodes = names.map(function (n) {
+                return { name: n, node: node.children[n] };
+              });
+              var horiz = depth % 2 === 0 ? false : true;
+              var slices = layoutTreemap(
+                innerNodes.map(function (x) {
+                  return x.node;
+                }),
+                x + 8,
+                y + 24,
+                Math.max(24, w - 16),
+                Math.max(10, h - 32),
+                horiz
+              );
+              for (var i = 0; i < slices.length; i++) {
+                var s = slices[i];
+                drawBlock(
+                  svg,
+                  s.node,
+                  pathArr.concat([s.node.name]),
+                  s.x,
+                  s.y,
+                  s.w - 4,
+                  s.h - 4,
+                  depth + 1,
+                  maxDepth
+                );
+              }
+            }
+          }
+        }
+        function renderFsPane() {
+          renderBreadcrumbs();
+          renderFsView();
+        }
+        function setView(view) {
+          activeView = view;
+          var screenEl = document.getElementById("screen");
+          var fsEl = document.getElementById("fs-pane");
+          var tabTerm = document.getElementById("term-tab-label");
+          var tabFs = document.getElementById("term-tab-fs");
+          if (view === "terminal") {
+            screenEl.style.display = "block";
+            fsEl.style.display = "none";
+            tabTerm.classList.add("active");
+            tabFs.classList.remove("active");
+          } else {
+            screenEl.style.display = "none";
+            fsEl.style.display = "block";
+            tabTerm.classList.remove("active");
+            tabFs.classList.add("active");
+            renderFsPane();
+          }
+        }
+        function appendLine(text) {
+          screen.insertAdjacentHTML(
+            "beforeend",
+            '<div class="term-line">' + escapeHtml(text) + "</div>"
+          );
+          screen.scrollTop = screen.scrollHeight;
+        }
+        function appendRawLine(html) {
+          screen.insertAdjacentHTML(
+            "beforeend",
+            '<div class="term-line">' + html + "</div>"
+          );
+          screen.scrollTop = screen.scrollHeight;
+        }
+        function appendInstructionHtml(html) {
+          screen.insertAdjacentHTML(
+            "beforeend",
+            '<div class="term-instruction"><em>' + html + "</em></div>"
+          );
+          screen.scrollTop = screen.scrollHeight;
+        }
+        function updatePrompt(userhost, pathText) {
+          currentUserhost = userhost;
+          currentPathText = pathText;
+          // Update the visible current prompt, if present
+          if (activeLineEl) {
+            var promptSpan = activeLineEl.querySelector(".term-prompt");
+            if (promptSpan) promptSpan.innerHTML = getPromptHtml();
+          }
+          updateTabLabel();
+          fsSetCurrentPathFromPrompt();
+        }
+        function createInputLine() {
+          var line = document.createElement("div");
+          line.className = "term-line";
+          line.innerHTML =
+            '<span class="term-prompt">' +
+            getPromptHtml() +
+            "</span> " +
+            '<span class="term-input-editable" contenteditable="true" spellcheck="false" role="textbox" aria-label="Terminal command input"></span>';
+          screen.appendChild(line);
+          activeLineEl = line;
+          input = line.querySelector(".term-input-editable");
+          input.addEventListener("keydown", onKeyDown);
+          screen.scrollTop = screen.scrollHeight;
+          input.focus();
+        }
+        function finalizeCurrentInput(raw) {
+          if (!activeLineEl) return;
+          var promptHtml =
+            '<span class="term-prompt">' + getPromptHtml() + "</span>";
+          var suffix = "";
+          if (!hideInput && raw && raw.length) {
+            suffix = " " + escapeHtml(raw);
+          }
+          activeLineEl.innerHTML = promptHtml + suffix;
+          activeLineEl = null;
+          input = null;
+        }
+
+        // Focus input on load and on screen click
+        window.addEventListener("load", function () {
+          if (input) input.focus();
+        });
+        term.addEventListener("click", function () {
+          if (input) input.focus();
+        });
+
+        // ===== Lesson Content (HTML, bold preserved) =====
+        var textSections = [
+          [
+            "A <strong>file</strong> contains data that your operating system (Windows, Linux, macOS, etc.) stores. A <strong>directory</strong> is a special kind of record that stores a list of names and references to those files and/or other directories so the system can organize everything. Imagine in a school, a file is a single room that holds its materials. A directory is a hallway that leads to or contains rooms, as well as branches off into other hallways. This system of rooms and hallways is a <strong>tree</strong>. In a Harvard-Westlake school metaphor, the school campus is the root of the tree, which branches out into buildings (Chalmers, Seaver, etc.), and then further into rooms (Student Lounge) and hallways (Upper Chalmers), that contain their own rooms (Chalmers 305).",
+            "<strong>cd</strong> changes your working directory, hence, c.hange d.irectory. Use <strong>cd filepath</strong> to move into a folder; <strong>cd ..</strong> goes up to the parent; <strong>cd ~</strong> jumps to your home (here, the campus root). After you change location, <strong>ls</strong> shows what’s inside the current directory.",
+          ],
+          [
+            "Every file and directory belongs to an <strong>owner</strong>, which is a single user account responsible for it; it also belongs to a <strong>group</strong>, which is a named team of user accounts, and everyone else on the system is treated as <strong>other</strong>. In the school picture, imagine the Harvard-Westlake school as one person, the owner is that one person who owns a given room, or hallway. The group could for example be the student body, who is also given certain privleges in the room, or hallway. Finally, other(s) are the general public, who may only be granted access to the room or hallway during a public Harvard-Westlake event. The system checks three basic actions for each of these audiences: <strong>read</strong>, <strong>write</strong>, and <strong>execute</strong>. On a file, read means you may view the contents, write means you may change the contents, and execute means you may run it as a program if it is runnable. On a directory, read means you may list the names inside, write means you may add, rename, or remove entries, and execute means you may enter it and move through it when you already know the name of something inside.",
+            "<strong>ls -l</strong> shows a “long listing” of the current directory: each item on its own line with its permissions, number of links, owner, group, size, last modified time, and name. This is like reading the hallway roster that lists each room with its posted rules and who is responsible.",
+          ],
+          [
+            "<strong>chmod</strong> changes the rules themselves—who may read, who may write, and who may execute, without changing who owns a file or which group it belongs to. In the school picture, this is like updating the sign on a room’s door: “Teachers may rearrange desks,” “Club members may come in after school,” “Guests may only observe.” The people and clubs don’t change; the posted rules for owner, group, and others do.",
+            "<strong>chown</strong> changes who is officially responsible for a file or directory by transferring its owner to a different user account. In the school picture, this is like handing the keys and responsibility for a room from one teacher to another; the room may keep the same posted rules, but the person who counts as “the owner” for permission checks is now different.",
+            "<strong>chgrp</strong> changes which team a file or directory is associated with by switching its group. In the school picture, this is like reassigning a room from the Chess Club to the Debate Team; the “group rules” on the door still say what that group may do, but they now apply to the new club rather than the old one.",
+          ],
+          [
+            "Sometimes you need elevated privileges to perform actions on files or directories you do not own. The <strong>sudo</strong> command temporarily runs a command with administrator (root) privileges. For example, if you try to change permissions on a directory owned by someone else, a normal <strong>chmod</strong> will fail with “Operation not permitted.” Prefixing the same command with <strong>sudo</strong> allows it—after authenticating—to proceed so you can, for example, grant <strong>read</strong> and <strong>execute</strong> access where appropriate.",
+          ],
+        ];
+
+        // ===== Unified Flow State =====
+        var sectionIndex = 0;
+        var paragraphIndex = -1; // start so first Enter shows the first sentence
+        var mode = "text"; // text | demo-cd | demo-ls | demo-ch | end
+
+        // Welcome lines (auto shown)
+        appendInstructionHtml(
+          "<strong>Welcome!</strong> This terminal will teach you <strong>file permissions</strong> step by step."
+        );
+        appendInstructionHtml("Press Enter to continue through the lesson.");
+
+        // ===== Demo 1: cd practice =====
+        var cd = (function () {
+          var path = ["Harvard-Westlake"];
+          function getNode(arr) {
+            return fsNodeByPath(arr);
+          }
+          function listCurrent() {
+            var node = getNode(path);
+            return Object.keys((node && node.children) || {}).sort();
+          }
+          function promptPath() {
+            return "~/" + path.join("/");
+          }
+          var step = 0;
+          var free = false;
+
+          function start() {
+            mode = "demo-cd";
+            activeDemoKey = "demo-cd";
+            saveFsBaseline(activeDemoKey);
+            appendInstructionHtml(
+              '<span class="title-line"><strong>cd practice</strong></span>'
+            );
+            appendInstructionHtml("Follow the prompts to practice cd and ls.");
+            updatePrompt("hwwolverine@DESKTOP-WSL", promptPath());
+            showNext();
+            suggestHint(
+              "hint-cd-path",
+              "Tip: Click the <strong>Filesystem</strong> tab to see the current directory highlighted on the campus map."
+            );
+          }
+          function showNext() {
+            var lines = [
+              "Try: cd ChalmersHall",
+              "Try: ls",
+              "Try: cd SecondFloor",
+              "Try: ls",
+              "Try: cd ..",
+              "Try: ls",
+              "Try: cd ~",
+              "Try: ls",
+              "Try: cd SeaverAcademicCenter",
+              "Try: ls",
+            ];
+            if (step < lines.length) {
+              appendInstructionHtml(lines[step]);
+            } else {
+              appendInstructionHtml(
+                "Free practice: use cd and ls to navigate the school tree and see what is inside each directory. Bonus challenge: try drawing out the file system tree on a piece of paper. Type <strong>q</strong> to exit."
+              );
+              free = true;
+            }
+          }
+          function onEnter(cmd) {
+            if (!free) {
+              // Developer bypass: 's' runs the expected next instruction
+              if (cmd === "s") {
+                if (step === 0) cmd = "cd ChalmersHall";
+                else if (step === 1) cmd = "ls";
+                else if (step === 2) cmd = "cd SecondFloor";
+                else if (step === 3) cmd = "ls";
+                else if (step === 4) cmd = "cd ..";
+                else if (step === 5) cmd = "ls";
+                else if (step === 6) cmd = "cd ~";
+                else if (step === 7) cmd = "ls";
+                else if (step === 8) cmd = "cd SeaverAcademicCenter";
+                else if (step === 9) cmd = "ls";
+              }
+              if (step === 0) {
+                if (cmd === "cd ChalmersHall") {
+                  path.push("ChalmersHall");
+                  updatePrompt("hwwolverine@DESKTOP-WSL", promptPath());
+                  step = 1;
+                  appendInstructionHtml(
+                    'Notice how the command line updated to show the new path of the working directory. Now type "ls" to see what is inside this folder.'
+                  );
+                } else appendInstructionHtml("Try: cd ChalmersHall");
+              } else if (step === 1) {
+                if (cmd === "ls") {
+                  listCurrent().forEach(function (n) {
+                    appendRawLine(
+                      '<span class="ls-dir">' + escapeHtml(n) + "</span>"
+                    );
+                  });
+                  step = 2;
+                  showNext();
+                } else appendInstructionHtml("Try: ls");
+              } else if (step === 2) {
+                if (cmd === "cd SecondFloor") {
+                  path.push("SecondFloor");
+                  updatePrompt("hwwolverine@DESKTOP-WSL", promptPath());
+                  step = 3;
+                  appendInstructionHtml(
+                    'Now type "ls" to see what is inside this folder.'
+                  );
+                } else appendInstructionHtml("Try: cd SecondFloor");
+              } else if (step === 3) {
+                if (cmd === "ls") {
+                  listCurrent().forEach(function (n) {
+                    appendRawLine(
+                      '<span class="ls-dir">' + escapeHtml(n) + "</span>"
+                    );
+                  });
+                  step = 4;
+                  showNext();
+                } else appendInstructionHtml("Try: ls");
+              } else if (step === 4) {
+                if (cmd === "cd ..") {
+                  if (path.length > 1) path.pop();
+                  updatePrompt("hwwolverine@DESKTOP-WSL", promptPath());
+                  step = 5;
+                  appendInstructionHtml(
+                    'Now type "ls" to see what is inside this folder.'
+                  );
+                } else appendInstructionHtml("Try: cd ..");
+              } else if (step === 5) {
+                if (cmd === "ls") {
+                  listCurrent().forEach(function (n) {
+                    appendRawLine(
+                      '<span class="ls-dir">' + escapeHtml(n) + "</span>"
+                    );
+                  });
+                  step = 6;
+                  showNext();
+                } else appendInstructionHtml("Try: ls");
+              } else if (step === 6) {
+                if (cmd === "cd ~") {
+                  path = ["Harvard-Westlake"];
+                  updatePrompt("hwwolverine@DESKTOP-WSL", promptPath());
+                  step = 7;
+                  appendInstructionHtml(
+                    'Now type "ls" to see what is inside this folder.'
+                  );
+                } else appendInstructionHtml("Try: cd ~");
+              } else if (step === 7) {
+                if (cmd === "ls") {
+                  listCurrent().forEach(function (n) {
+                    appendRawLine(
+                      '<span class="ls-dir">' + escapeHtml(n) + "</span>"
+                    );
+                  });
+                  step = 8;
+                  showNext();
+                } else appendInstructionHtml("Try: ls");
+              } else if (step === 8) {
+                if (cmd === "cd SeaverAcademicCenter") {
+                  path = ["Harvard-Westlake", "SeaverAcademicCenter"];
+                  updatePrompt("hwwolverine@DESKTOP-WSL", promptPath());
+                  step = 9;
+                  appendInstructionHtml(
+                    'Now type "ls" to see what is inside this folder.'
+                  );
+                } else appendInstructionHtml("Try: cd SeaverAcademicCenter");
+              } else if (step === 9) {
+                if (cmd === "ls") {
+                  listCurrent().forEach(function (n) {
+                    appendRawLine(
+                      '<span class="ls-dir">' + escapeHtml(n) + "</span>"
+                    );
+                  });
+                  step = 10;
+                  showNext();
+                } else appendInstructionHtml("Try: ls");
+              }
+            } else {
+              if (cmd === "q") {
+                appendInstructionHtml("Exiting demo...");
+                nextSection();
+                return;
+              }
+              if (cmd === "ls") {
+                listCurrent().forEach(function (n) {
+                  appendRawLine(
+                    '<span class="ls-dir">' + escapeHtml(n) + "</span>"
+                  );
+                });
+              } else if (cmd === "cd ..") {
+                if (path.length > 1) path.pop();
+                updatePrompt("hwwolverine@DESKTOP-WSL", promptPath());
+              } else if (cmd === "cd ~") {
+                path = ["Harvard-Westlake"];
+                updatePrompt("hwwolverine@DESKTOP-WSL", promptPath());
+              } else if (cmd.indexOf("cd ") === 0) {
+                var tgt = cmd.slice(3).trim();
+                if (listCurrent().indexOf(tgt) !== -1) {
+                  path.push(tgt);
+                  updatePrompt("hwwolverine@DESKTOP-WSL", promptPath());
+                }
+              }
+            }
+          }
+          return { start: start, onEnter: onEnter };
+        })();
+
+        // ===== Demo 2: ls -l practice =====
+        var lsDemo = (function () {
+          var path = ["Harvard-Westlake", "ChalmersHall", "SecondFloor"];
+          function getNode(arr) {
+            return fsNodeByPath(arr);
+          }
+          function updatePromptPath() {
+            var p = "~/" + path.join("/");
+            updatePrompt("hwwolverine@DESKTOP-WSL", p);
+          }
+          function lsLong() {
+            var node = getNode(path);
+            var entries = [];
+            if (node && node.children) {
+              var names = Object.keys(node.children).sort();
+              for (var i = 0; i < names.length; i++) {
+                var child = node.children[names[i]];
+                entries.push({
+                  type: child.type || "file",
+                  mode:
+                    child.mode ||
+                    (child.type === "dir" ? "drwxr-xr-x" : "-rw-r--r--"),
+                  nlink: child.nlink || 1,
+                  owner: child.owner || "hw_admin",
+                  group: child.group || "faculty",
+                  size: child.size || 4096,
+                  mtime: child.mtime || "Nov 16 12:00",
+                  name: child.name || names[i],
+                });
+              }
+            }
+            var total = entries.length * 4;
+            appendLine("total " + total);
+            for (var i = 0; i < entries.length; i++) {
+              var e = entries[i];
+              var nameHtml =
+                e.type === "dir"
+                  ? '<span class="ls-dir">' + escapeHtml(e.name) + "</span>"
+                  : escapeHtml(e.name);
+              appendRawLine(
+                escapeHtml(
+                  e.mode +
+                    " " +
+                    e.nlink +
+                    " " +
+                    e.owner +
+                    " " +
+                    e.group +
+                    " " +
+                    ("" + e.size).padStart(4, " ") +
+                    " " +
+                    e.mtime +
+                    " "
+                ) + nameHtml
+              );
+            }
+          }
+          var step = 0;
+          var free = false;
+          function start() {
+            mode = "demo-ls";
+            activeDemoKey = "demo-ls";
+            saveFsBaseline(activeDemoKey);
+            appendInstructionHtml(
+              '<span class="title-line"><strong>ls -l practice</strong></span>'
+            );
+            appendInstructionHtml(
+              "Follow the prompts. When free practice begins, type <strong>q</strong> and press Enter to continue the lesson."
+            );
+            updatePromptPath();
+            showNext();
+          }
+          function showNext() {
+            switch (step) {
+              case 0:
+                appendInstructionHtml("Try: ls -l");
+                break;
+              case 1:
+                appendInstructionHtml("Try: cd StudentLounge");
+                break;
+              case 2:
+                appendInstructionHtml("Try: ls -l");
+                break;
+              case 3:
+                appendInstructionHtml("Try: cd ..");
+                break;
+              case 4:
+                appendInstructionHtml("Try: cd Cafeteria");
+                break;
+              case 5:
+                appendInstructionHtml("Try: ls -l");
+                break;
+              default:
+                appendInstructionHtml(
+                  "All set! Free practice: use cd and ls -l. Type <strong>q</strong> to exit."
+                );
+                free = true;
+            }
+          }
+          function onEnter(cmd) {
+            if (!free) {
+              // Developer bypass: 's' runs the expected next instruction
+              if (cmd === "s") {
+                if (step === 0) cmd = "ls -l";
+                else if (step === 1) cmd = "cd StudentLounge";
+                else if (step === 2) cmd = "ls -l";
+                else if (step === 3) cmd = "cd ..";
+                else if (step === 4) cmd = "cd Cafeteria";
+                else if (step === 5) cmd = "ls -l";
+              }
+              if (step === 0) {
+                if (cmd === "ls -l") {
+                  lsLong();
+                  step = 1;
+                  showNext();
+                  suggestHint(
+                    "hint-ls-long",
+                    "Tip: Open the <strong>Filesystem</strong> tab to browse buildings and rooms while you read the long listing."
+                  );
+                } else appendInstructionHtml("Try: ls -l");
+              } else if (step === 1) {
+                if (cmd === "cd StudentLounge") {
+                  path.push("StudentLounge");
+                  updatePromptPath();
+                  step = 2;
+                  showNext();
+                } else appendInstructionHtml("Try: cd StudentLounge");
+              } else if (step === 2) {
+                if (cmd === "ls -l") {
+                  lsLong();
+                  step = 3;
+                  showNext();
+                } else appendInstructionHtml("Try: ls -l");
+              } else if (step === 3) {
+                if (cmd === "cd ..") {
+                  if (path.length > 1) path.pop();
+                  updatePromptPath();
+                  step = 4;
+                  showNext();
+                } else appendInstructionHtml("Try: cd ..");
+              } else if (step === 4) {
+                if (cmd === "cd Cafeteria") {
+                  path.push("Cafeteria");
+                  updatePromptPath();
+                  step = 5;
+                  showNext();
+                } else appendInstructionHtml("Try: cd Cafeteria");
+              } else if (step === 5) {
+                if (cmd === "ls -l") {
+                  lsLong();
+                  step = 6;
+                  showNext();
+                } else appendInstructionHtml("Try: ls -l");
+              }
+            } else {
+              if (cmd === "q") {
+                appendInstructionHtml("Exiting demo...");
+                nextSection();
+                return;
+              }
+              if (cmd === "ls -l") {
+                lsLong();
+              } else if (cmd === "cd ..") {
+                if (path.length > 1) path.pop();
+                updatePromptPath();
+              } else if (cmd === "cd ~") {
+                path = ["Harvard-Westlake"];
+                updatePromptPath();
+              } else if (/^cd\s+(\S+)$/.test(cmd)) {
+                var m = /^cd\s+(\S+)$/.exec(cmd);
+                var target = (m && m[1]) || "";
+                var node = getNode(path);
+                var names = Object.keys((node && node.children) || {});
+                if (names.indexOf(target) !== -1) {
+                  path.push(target);
+                  updatePromptPath();
+                }
+              }
+            }
+          }
+          return { start: start, onEnter: onEnter };
+        })();
+
+        // ===== Demo 3: chmod/chown/chgrp practice =====
+        var chDemo = (function () {
+          var file = {
+            mode: "-rw-r--r--",
+            nlink: 1,
+            owner: "hw_admin",
+            group: "students",
+            size: 1024,
+            mtime: "Nov 17 09:00",
+            name: "demo.sh",
+          };
+          var nav = {
+            name: "Harvard-Westlake",
+            children: {
+              ChalmersHall: { children: { SecondFloor: { children: {} } } },
+              SeaverAcademicCenter: { children: {} },
+            },
+          };
+          var navPath = ["Harvard-Westlake", "ChalmersHall"];
+          function listDirNames() {
+            var node = nav;
+            for (var i = 1; i < navPath.length; i++) {
+              var name = navPath[i];
+              if (!node.children || !node.children[name]) return [];
+              node = node.children[name];
+            }
+            return Object.keys(node.children || {}).sort();
+          }
+          function updatePromptPath() {
+            updatePrompt("hwwolverine@DESKTOP-WSL", "~/" + navPath.join("/"));
+          }
+          function lsLong() {
+            appendLine("total 4");
+            appendRawLine(
+              escapeHtml(
+                file.mode +
+                  " " +
+                  file.nlink +
+                  " " +
+                  file.owner +
+                  " " +
+                  file.group +
+                  " " +
+                  ("" + file.size).padStart(4, " ") +
+                  " " +
+                  file.mtime +
+                  " " +
+                  file.name
+              )
+            );
+          }
+          function applyChmod(spec) {
+            var m = /^([ugoa]+)([+\-=])([rwx]+)$/.exec(spec);
+            if (!m) return false;
+            var who = m[1];
+            var op = m[2];
+            var perms = m[3];
+            var current = file.mode.slice(1);
+            var parts = [
+              current.slice(0, 3).split(""),
+              current.slice(3, 6).split(""),
+              current.slice(6, 9).split(""),
+            ];
+            function idxs(w) {
+              var set = [];
+              if (w.indexOf("a") !== -1) return [0, 1, 2];
+              if (w.indexOf("u") !== -1) set.push(0);
+              if (w.indexOf("g") !== -1) set.push(1);
+              if (w.indexOf("o") !== -1) set.push(2);
+              return set.length ? set : [0];
+            }
+            function bits(p) {
+              return {
+                r: p.indexOf("r") !== -1,
+                w: p.indexOf("w") !== -1,
+                x: p.indexOf("x") !== -1,
+              };
+            }
+            var b = bits(perms);
+            var targets = idxs(who);
+            for (var t = 0; t < targets.length; t++) {
+              var tri = parts[targets[t]];
+              if (op === "+") {
+                if (b.r) tri[0] = "r";
+                if (b.w) tri[1] = "w";
+                if (b.x) tri[2] = "x";
+              } else if (op === "-") {
+                if (b.r) tri[0] = "-";
+                if (b.w) tri[1] = "-";
+                if (b.x) tri[2] = "-";
+              } else if (op === "=") {
+                tri[0] = b.r ? "r" : "-";
+                tri[1] = b.w ? "w" : "-";
+                tri[2] = b.x ? "x" : "-";
+              }
+            }
+            file.mode =
+              "-" + parts[0].join("") + parts[1].join("") + parts[2].join("");
+            return true;
+          }
+          var step = 0;
+          var free = false;
+          function start() {
+            mode = "demo-ch";
+            activeDemoKey = "demo-ch";
+            saveFsBaseline(activeDemoKey);
+            appendInstructionHtml(
+              '<span class="title-line"><strong>chmod, chown, chgrp practice</strong></span>'
+            );
+            appendInstructionHtml(
+              "Follow the prompts. When free practice begins, type <strong>q</strong> and press Enter to continue the lesson."
+            );
+            updatePromptPath();
+            showNext();
+          }
+          function showNext() {
+            switch (step) {
+              case 0:
+                appendInstructionHtml("Try: ls -l");
+                break;
+              case 1:
+                appendInstructionHtml("Try: chmod u+x demo.sh");
+                break;
+              case 2:
+                appendInstructionHtml("Try: chown teacher_lee demo.sh");
+                break;
+              case 3:
+                appendInstructionHtml("Try: chgrp faculty demo.sh");
+                break;
+              default:
+                appendInstructionHtml(
+                  "All set! Free practice. Type <strong>q</strong> to exit."
+                );
+                free = true;
+            }
+          }
+          function onEnter(cmd) {
+            if (!free) {
+              // Developer bypass: 's' runs the expected next instruction
+              if (cmd === "s") {
+                if (step === 0) cmd = "ls -l";
+                else if (step === 1) cmd = "chmod u+x demo.sh";
+                else if (step === 2) cmd = "chown teacher_lee demo.sh";
+                else if (step === 3) cmd = "chgrp faculty demo.sh";
+              }
+              if (step === 0) {
+                if (cmd === "ls -l") {
+                  lsLong();
+                  step = 1;
+                  showNext();
+                } else appendInstructionHtml("Try: ls -l");
+              } else if (step === 1) {
+                if (cmd === "chmod u+x demo.sh") {
+                  applyChmod("u+x");
+                  lsLong();
+                  if (typeof fsUpdateDemoFile === "function") {
+                    fsUpdateDemoFile(file.mode, file.owner, file.group);
+                  }
+                  suggestHint(
+                    "hint-chmod",
+                    "Notice the <strong>permissions</strong> changed. Peek at the <strong>Filesystem</strong> tab to see the rwx grid update."
+                  );
+                  step = 2;
+                  showNext();
+                } else appendInstructionHtml("Try: chmod u+x demo.sh");
+              } else if (step === 2) {
+                var m1 = /^chown\s+(\S+)\s+(\S+)$/.exec(cmd);
+                if (m1 && m1[1] === "teacher_lee" && m1[2] === file.name) {
+                  file.owner = "teacher_lee";
+                  lsLong();
+                  if (typeof fsUpdateDemoFile === "function") {
+                    fsUpdateDemoFile(file.mode, file.owner, file.group);
+                  }
+                  step = 3;
+                  showNext();
+                } else appendInstructionHtml("Try: chown teacher_lee demo.sh");
+              } else if (step === 3) {
+                var m2 = /^chgrp\s+(\S+)\s+(\S+)$/.exec(cmd);
+                if (m2 && m2[1] === "faculty" && m2[2] === file.name) {
+                  file.group = "faculty";
+                  lsLong();
+                  if (typeof fsUpdateDemoFile === "function") {
+                    fsUpdateDemoFile(file.mode, file.owner, file.group);
+                  }
+                  step = 4;
+                  showNext();
+                } else appendInstructionHtml("Try: chgrp faculty demo.sh");
+              }
+            } else {
+              if (cmd === "q") {
+                appendInstructionHtml("Exiting demo...");
+                nextSection();
+                return;
+              }
+              if (cmd === "ls -l") {
+                lsLong();
+              } else if (/^chmod\s+([ugoa][+\-=][rwx]+)\s+(\S+)$/.test(cmd)) {
+                var cm = /^chmod\s+([ugoa][+\-=][rwx]+)\s+(\S+)$/.exec(cmd);
+                if (cm && cm[2] === file.name) {
+                  if (applyChmod(cm[1])) {
+                    lsLong();
+                    if (typeof fsUpdateDemoFile === "function") {
+                      fsUpdateDemoFile(file.mode, file.owner, file.group);
+                    }
+                  }
+                }
+              } else if (/^chown\s+(\S+)\s+(\S+)$/.test(cmd)) {
+                var c1 = /^chown\s+(\S+)\s+(\S+)$/.exec(cmd);
+                if (c1 && c1[2] === file.name) {
+                  file.owner = c1[1];
+                  lsLong();
+                  if (typeof fsUpdateDemoFile === "function") {
+                    fsUpdateDemoFile(file.mode, file.owner, file.group);
+                  }
+                }
+              } else if (/^chgrp\s+(\S+)\s+(\S+)$/.test(cmd)) {
+                var c2 = /^chgrp\s+(\S+)\s+(\S+)$/.exec(cmd);
+                if (c2 && c2[2] === file.name) {
+                  file.group = c2[1];
+                  lsLong();
+                  if (typeof fsUpdateDemoFile === "function") {
+                    fsUpdateDemoFile(file.mode, file.owner, file.group);
+                  }
+                }
+              }
+            }
+          }
+          return { start: start, onEnter: onEnter };
+        })();
+
+        // ===== Demo 4: sudo scenario =====
+        var sudoDemo = (function () {
+          var sudoPassword = "r7Qx9Za"; // 7-char random-looking string
+          var nav = {
+            name: "Harvard-Westlake",
+            children: {
+              ChalmersHall: { children: { RestrictedArea: { children: {} } } },
+              SeaverAcademicCenter: { children: {} },
+            },
+          };
+          var navPath = ["Harvard-Westlake", "ChalmersHall"];
+          var restrictedPerm = { otherRead: false, otherExec: false };
+          var awaitingPassword = false;
+
+          function updatePromptPath() {
+            updatePrompt("hwwolverine@DESKTOP-WSL", "~/" + navPath.join("/"));
+          }
+          function canCdRestricted() {
+            return restrictedPerm.otherExec;
+          }
+          function sudoUserName() {
+            var at = (currentUserhost || "").indexOf("@");
+            return at !== -1
+              ? currentUserhost.slice(0, at)
+              : currentUserhost || "user";
+          }
+
+          var step = 0;
+          var free = false;
+
+          function start() {
+            mode = "demo-sudo";
+            activeDemoKey = "demo-sudo";
+            saveFsBaseline(activeDemoKey);
+            appendInstructionHtml(
+              '<span class="title-line"><strong>sudo practice</strong></span>'
+            );
+            appendInstructionHtml(
+              "Follow the prompts. When free practice begins, type <strong>q</strong> and press Enter to finish."
+            );
+            updatePromptPath();
+            showNext();
+          }
+          function showNext() {
+            switch (step) {
+              case 0:
+                appendInstructionHtml("Try: cd RestrictedArea");
+                break;
+              case 1:
+                appendInstructionHtml("Try: chmod o+r RestrictedArea");
+                break;
+              case 2:
+                appendInstructionHtml(
+                  "Try: sudo chmod o+rx RestrictedArea (password: " +
+                    sudoPassword +
+                    ")"
+                );
+                break;
+              case 3:
+                appendInstructionHtml("Try: cd RestrictedArea");
+                break;
+              default:
+                appendInstructionHtml(
+                  "All set! Free practice. Type <strong>q</strong> to exit."
+                );
+                free = true;
+            }
+          }
+          function onEnter(cmd) {
+            if (!free) {
+              // Developer bypass
+              if (cmd === "s") {
+                if (step === 0) cmd = "cd RestrictedArea";
+                else if (step === 1) cmd = "chmod o+r RestrictedArea";
+                else if (step === 2) cmd = "sudo chmod o+rx RestrictedArea";
+                else if (step === 3) cmd = "cd RestrictedArea";
+              }
+              // Handle password input if awaiting
+              if (awaitingPassword) {
+                if (cmd === sudoPassword) {
+                  restrictedPerm.otherRead = true;
+                  restrictedPerm.otherExec = true;
+                  awaitingPassword = false;
+                  hideInput = false;
+                  if (typeof fsUpdateRestrictedAreaPerms === "function") {
+                    fsUpdateRestrictedAreaPerms(
+                      restrictedPerm.otherRead,
+                      restrictedPerm.otherExec
+                    );
+                  }
+                  suggestHint(
+                    "hint-sudo",
+                    "Access granted. Check the <strong>Filesystem</strong> tab to see how <strong>RestrictedArea</strong> changed."
+                  );
+                  step = 3;
+                  showNext();
+                } else {
+                  appendLine("Sorry, try again.");
+                  appendLine("[sudo] password for " + sudoUserName() + ":");
+                  hideInput = true;
+                }
+                return;
+              }
+              if (step === 0) {
+                if (cmd === "cd RestrictedArea") {
+                  if (!canCdRestricted()) {
+                    appendLine("bash: cd: RestrictedArea: Permission denied");
+                    appendInstructionHtml(
+                      "You need execute permission to enter a directory; others don’t have it here."
+                    );
+                    step = 1;
+                    showNext();
+                  } else {
+                    navPath.push("RestrictedArea");
+                    updatePromptPath();
+                    step = 4;
+                    showNext();
+                  }
+                } else appendInstructionHtml("Try: cd RestrictedArea");
+              } else if (step === 1) {
+                if (cmd === "chmod o+r RestrictedArea") {
+                  appendLine(
+                    "chmod: changing permissions of 'RestrictedArea': Operation not permitted"
+                  );
+                  appendInstructionHtml(
+                    "You don’t own this directory. Use administrator privileges to change its permissions."
+                  );
+                  step = 2;
+                  showNext();
+                } else appendInstructionHtml("Try: chmod o+r RestrictedArea");
+              } else if (step === 2) {
+                if (cmd === "sudo chmod o+rx RestrictedArea") {
+                  appendLine("[sudo] password for " + sudoUserName() + ":");
+                  awaitingPassword = true;
+                  hideInput = true;
+                } else
+                  appendInstructionHtml(
+                    "Try: sudo chmod o+rx RestrictedArea (password: " +
+                      sudoPassword +
+                      ")"
+                  );
+              } else if (step === 3) {
+                if (cmd === "cd RestrictedArea") {
+                  if (canCdRestricted()) {
+                    navPath.push("RestrictedArea");
+                    updatePromptPath();
+                    appendInstructionHtml(
+                      "<strong>Great job!</strong> You elevated privileges appropriately and accessed the directory."
+                    );
+                    endLesson();
+                  } else {
+                    appendLine("bash: cd: RestrictedArea: Permission denied");
+                  }
+                } else appendInstructionHtml("Try: cd RestrictedArea");
+              }
+            } else {
+              if (cmd === "q") {
+                appendInstructionHtml("Exiting demo...");
+                endLesson();
+                return;
+              }
+            }
+          }
+          return { start: start, onEnter: onEnter };
+        })();
+
+        function nextSection() {
+          if (mode === "demo-cd") {
+            restoreFsBaseline(activeDemoKey);
+            activeDemoKey = null;
+            // After cd demo, show section 2 (ownership/rwx + ls -l text), then ls demo
+            sectionIndex = 1;
+            paragraphIndex = -1;
+            mode = "text";
+            appendInstructionHtml("Press Enter to continue the lesson.");
+          } else if (mode === "demo-ls") {
+            restoreFsBaseline(activeDemoKey);
+            activeDemoKey = null;
+            // After ls demo, show section 3 (chmod/chown/chgrp), then ch demo
+            sectionIndex = 2;
+            paragraphIndex = -1;
+            mode = "text";
+            appendInstructionHtml("Press Enter to continue the lesson.");
+          } else if (mode === "demo-ch") {
+            // After ch demo, show sudo explanation then sudo demo
+            restoreFsBaseline(activeDemoKey);
+            activeDemoKey = null;
+            sectionIndex = 3;
+            paragraphIndex = -1;
+            mode = "text";
+            appendInstructionHtml("Press Enter to continue the lesson.");
+          }
+        }
+
+        function endLesson() {
+          // Ensure we restore any demo-related mutations before ending
+          restoreFsBaseline(activeDemoKey);
+          activeDemoKey = null;
+          mode = "end";
+          appendInstructionHtml(
+            "The lesson is complete. You can keep practicing here or refresh to restart."
+          );
+        }
+
+        function startNextDemoForSection(idx) {
+          if (idx === 0) {
+            cd.start();
+          } else if (idx === 1) {
+            lsDemo.start();
+          } else if (idx === 2) {
+            chDemo.start();
+          } else if (idx === 3) {
+            sudoDemo.start();
+          }
+        }
+
+        // Handle input
+        function onKeyDown(e) {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          var raw = (input.textContent || "").replace(/\r?\n/g, "");
+          var cmd = raw.trim();
+
+          // finalize the current input line to look like a real terminal
+          finalizeCurrentInput(raw);
+
+          if (mode === "text") {
+            paragraphIndex++;
+            var group = textSections[sectionIndex] || [];
+            if (paragraphIndex < 0) {
+              // advancing through preface lines; no output
+            } else if (paragraphIndex < group.length) {
+              appendInstructionHtml(group[paragraphIndex]);
+              if (sectionIndex === 0 && paragraphIndex === group.length - 1) {
+                appendInstructionHtml(
+                  "Next: a guided <strong>cd</strong> demo will begin."
+                );
+              } else if (
+                sectionIndex === 1 &&
+                paragraphIndex === group.length - 1
+              ) {
+                appendInstructionHtml(
+                  "Next: a guided <strong>ls -l</strong> demo will begin."
+                );
+              } else if (
+                sectionIndex === 2 &&
+                paragraphIndex === group.length - 1
+              ) {
+                appendInstructionHtml(
+                  "Next: a guided <strong>chmod/chown/chgrp</strong> demo will begin."
+                );
+              }
+            } else {
+              // start corresponding demo
+              startNextDemoForSection(sectionIndex);
+            }
+          } else if (mode === "demo-cd") {
+            cd.onEnter(cmd);
+          } else if (mode === "demo-ls") {
+            lsDemo.onEnter(cmd);
+          } else if (mode === "demo-ch") {
+            chDemo.onEnter(cmd);
+          } else if (mode === "demo-sudo") {
+            sudoDemo.onEnter(cmd);
+          } else if (mode === "end") {
+            // free typing after lesson ends; no-op
+          }
+
+          // after processing, create a fresh prompt line
+          createInputLine();
+        }
+
+        // Initial prompt
+        updatePrompt("hwwolverine@DESKTOP-WSL", "~/Harvard-Westlake");
+        updateTabLabel();
+        fsSetCurrentPathFromPrompt();
+        createInputLine();
+
+        // Tabs behavior
+        var tabTermEl = document.getElementById("term-tab-label");
+        var tabFsEl = document.getElementById("term-tab-fs");
+        if (tabTermEl) {
+          tabTermEl.addEventListener("click", function () {
+            setView("terminal");
+          });
+        }
+        if (tabFsEl) {
+          tabFsEl.addEventListener("click", function () {
+            setView("fs");
+          });
+        }
+        // No additional FS controls; map is interactive via clicks & breadcrumbs
+
+        // Helpers to reflect demo changes into the shared FS model
+        function fsUpdateDemoFile(mode, owner, group) {
+          var ch = fsNodeByPath(["Harvard-Westlake", "ChalmersHall"]);
+          if (!ch) return;
+          if (!ch.children) ch.children = {};
+          if (!ch.children["demo.sh"]) {
+            ch.children["demo.sh"] = {
+              type: "file",
+              name: "demo.sh",
+              mode: "-rw-r--r--",
+              owner: "hw_admin",
+              group: "students",
+            };
+          }
+          var f = ch.children["demo.sh"];
+          if (mode) f.mode = mode;
+          if (owner) f.owner = owner;
+          if (group) f.group = group;
+          if (activeView === "fs") renderFsPane();
+        }
+        function fsUpdateRestrictedAreaPerms(oRead, oExec) {
+          var dir = fsNodeByPath([
+            "Harvard-Westlake",
+            "ChalmersHall",
+            "RestrictedArea",
+          ]);
+          if (!dir) return;
+          var base = dir.mode || "drwxr-x---";
+          if (base.length < 10) base = "drwxr-x---";
+          var prefix = base.slice(0, 7);
+          var last = (oRead ? "r" : "-") + "-" + (oExec ? "x" : "-");
+          dir.mode = prefix + last;
+          if (activeView === "fs") renderFsPane();
+        }
+
+        // Attempt to load external fakeFileSystem.md (ASCII tree as in the repo)
+        (function loadFakeFileSystem() {
+          function applyModel(model) {
+            if (!model || !model.name) return;
+            fsModel = model;
+            fsExpanded = {};
+            // Trim trivial one-file trees directly under root, keeping one exemplar
+            trimRootSingleFileDirs(1);
+            fsSetCurrentPathFromPrompt();
+            if (activeView === "fs") renderFsPane();
+          }
+          var paths = [
+            "fakeFileSystem.md",
+            "../fakeFileSystem.md",
+            "../../fakeFileSystem.md",
+          ];
+          (function next(i) {
+            if (i >= paths.length) {
+              // Fallback to embedded script content
+              var emb = document.getElementById("fake-fs-embedded");
+              if (emb && emb.textContent && emb.textContent.trim().length) {
+                var model = parseFakeFilesystemAscii(emb.textContent);
+                if (model) applyModel(model);
+              }
+              return;
+            }
+            fetch(paths[i])
+              .then(function (r) {
+                if (!r.ok) throw new Error("not found");
+                return r.text();
+              })
+              .then(function (txt) {
+                var model = parseFakeFilesystemAscii(txt);
+                if (model) applyModel(model);
+              })
+              .catch(function () {
+                next(i + 1);
+              });
+          })(0);
+        })();
+      })();
+    </script>
+  </body>
+</html>
+
