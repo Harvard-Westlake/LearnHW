@@ -1,18 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
-
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Math Learning Widgets</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;500;600;700&display=swap"
-      rel="stylesheet">
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"
+    />
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"
+    ></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"
+    ></script>
     <style>
       body {
-        font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         line-height: 1.6;
         margin: 0;
         padding: 2rem;
@@ -34,7 +47,7 @@
         color: #000000;
         margin: 2rem 0 1rem;
         padding-bottom: 0.5rem;
-        border-bottom: 2px solid #E60000;
+        border-bottom: 2px solid #e60000;
       }
 
       .widgets-grid {
@@ -84,7 +97,7 @@
       }
 
       .widget-card .function {
-        font-family: 'Times New Roman', serif;
+        font-family: "Times New Roman", serif;
         font-style: italic;
         color: #000000;
         font-weight: 600;
@@ -98,14 +111,14 @@
       }
 
       .widget-card:hover .function {
-        background: #F0B800;
+        background: #f0b800;
         border-color: rgba(0, 0, 0, 0.1);
         color: #000000;
       }
 
       .widget-card .button {
         display: block;
-        background-color: #E60000;
+        background-color: #e60000;
         color: white;
         padding: 0.75rem 1.5rem;
         text-decoration: none;
@@ -137,92 +150,153 @@
 
       <h2>Sequences</h2>
       <div class="widgets-grid">
-        <a href="widgets/linear-sequences/linear-sequences.html" class="widget-card">
+        <a
+          href="widgets/linear-sequences/linear-sequences.html"
+          class="widget-card"
+        >
           <div class="title-row">
             <h3>Linear Sequences Explorer</h3>
             <div class="function">t(n) = an + b</div>
           </div>
-          <p>Explore linear sequences with a difference table. See constant first differences (Δ = a), recursive form, interactive highlighting, and randomized practice.</p>
+          <p>
+            Explore linear sequences with a difference table. See constant first
+            differences (Δ = a), recursive form, interactive highlighting, and
+            randomized practice.
+          </p>
           <span class="button">Launch Widget</span>
         </a>
-        <a href="widgets/exponential-sequences/exponential-sequences.html" class="widget-card">
+        <a
+          href="widgets/exponential-sequences/exponential-sequences.html"
+          class="widget-card"
+        >
           <div class="title-row">
             <h3>Exponential Sequences Explorer</h3>
             <div class="function">t(n) = a·b^n</div>
           </div>
-          <p>Explore exponential sequences with tables and graphs. Adjust base and multiplier, compare growth vs decay, and see common ratios.</p>
+          <p>
+            Explore exponential sequences with tables and graphs. Adjust base
+            and multiplier, compare growth vs decay, and see common ratios.
+          </p>
           <span class="button">Launch Widget</span>
         </a>
-        <a href="widgets/quadratic-sequences/quadratic-differences.html" class="widget-card">
+        <a
+          href="widgets/quadratic-sequences/quadratic-differences.html"
+          class="widget-card"
+        >
           <div class="title-row">
             <h3>Quadratic Sequences Explorer</h3>
             <div class="function">t(n) = an² + bn + c</div>
           </div>
-          <p>Explore quadratic sequences with a difference table. See constant second differences (Δ² = 2a), recursive form, interactive highlighting, and randomized practice.</p>
+          <p>
+            Explore quadratic sequences with a difference table. See constant
+            second differences (Δ² = 2a), recursive form, interactive
+            highlighting, and randomized practice.
+          </p>
           <span class="button">Launch Widget</span>
         </a>
-        <a href="widgets/cubic-sequences/cubic-sequences.html" class="widget-card">
+        <a
+          href="widgets/cubic-sequences/cubic-sequences.html"
+          class="widget-card"
+        >
           <div class="title-row">
             <h3>Cubic Sequences Explorer</h3>
             <div class="function">t(n) = an³ + bn² + cn + d</div>
           </div>
-          <p>Explore cubic sequences with a difference table. See constant third differences (Δ³ = 6a), recursive form, interactive highlighting, and randomized practice.</p>
+          <p>
+            Explore cubic sequences with a difference table. See constant third
+            differences (Δ³ = 6a), recursive form, interactive highlighting, and
+            randomized practice.
+          </p>
           <span class="button">Launch Widget</span>
         </a>
       </div>
 
       <h2>Transformations</h2>
       <div class="widgets-grid">
-        <a href="widgets/exponential-explorer/exponential-transformations.html" class="widget-card">
+        <a
+          href="widgets/exponential-explorer/exponential-transformations.html"
+          class="widget-card"
+        >
           <div class="title-row">
             <h3>Exponential Explorer</h3>
             <div class="function">f(x) = b<sup>x</sup></div>
           </div>
-          <p>Explore how different parameters affect exponential functions. Learn about vertical and
-            horizontal stretches, shifts, and reflections.</p>
+          <p>
+            Explore how different parameters affect exponential functions. Learn
+            about vertical and horizontal stretches, shifts, and reflections.
+          </p>
           <span class="button">Launch Widget</span>
         </a>
-        <a href="widgets/logarithmic-explorer/logarithmic-transformations.html" class="widget-card">
+        <a
+          href="widgets/logarithmic-explorer/logarithmic-transformations.html"
+          class="widget-card"
+        >
           <div class="title-row">
             <h3>Logarithmic Explorer</h3>
             <div class="function">f(x) = log<sub>b</sub>(x)</div>
           </div>
-          <p>Explore how different parameters affect logarithmic functions. Learn about vertical and
-            horizontal stretches, shifts, and reflections.</p>
+          <p>
+            Explore how different parameters affect logarithmic functions. Learn
+            about vertical and horizontal stretches, shifts, and reflections.
+          </p>
           <span class="button">Launch Widget</span>
         </a>
-        <a href="widgets/quadratic-explorer/quadratic-transformations.html" class="widget-card">
+        <a
+          href="widgets/quadratic-explorer/quadratic-transformations.html"
+          class="widget-card"
+        >
           <div class="title-row">
             <h3>Quadratic Explorer</h3>
             <div class="function">f(x) = ax² + bx + c</div>
           </div>
-          <p>Explore quadratic functions in both standard and vertex form. Learn about
-            transformations, vertex location, and the effects of each parameter.</p>
+          <p>
+            Explore quadratic functions in both standard and vertex form. Learn
+            about transformations, vertex location, and the effects of each
+            parameter.
+          </p>
           <span class="button">Launch Widget</span>
         </a>
-        <a href="widgets/square-completer/square-completer.html" class="widget-card">
+        <a
+          href="widgets/square-completer/square-completer.html"
+          class="widget-card"
+        >
           <div class="title-row">
             <h3>Square Completer</h3>
             <div class="function">ax² + bx + c → a(x - h)² + k</div>
           </div>
-          <p>Learn how to complete the square geometrically. Visualize the process of converting
-            quadratic expressions from standard form to vertex form.</p>
+          <p>
+            Learn how to complete the square geometrically. Visualize the
+            process of converting quadratic expressions from standard form to
+            vertex form.
+          </p>
           <span class="button">Launch Widget</span>
         </a>
-        <a href="widgets/rectangle-rotator/rectangle-rotator.html" class="widget-card">
+        <a
+          href="widgets/rectangle-rotator/rectangle-rotator.html"
+          class="widget-card"
+        >
           <div class="title-row">
             <h3>Rectangle Symmetries</h3>
             <div class="function">Group D2</div>
           </div>
-          <p>Experiment with 180° rotation and flips on a rectangle, then build the Cayley table yourself to learn group structure.</p>
+          <p>
+            Experiment with 180° rotation and flips on a rectangle, then build
+            the Cayley table yourself to learn group structure.
+          </p>
           <span class="button">Explore Group</span>
         </a>
-        <a href="widgets/hexagon-rotator/hexagon-rotator.html" class="widget-card">
+        <a
+          href="widgets/hexagon-rotator/hexagon-rotator.html"
+          class="widget-card"
+        >
           <div class="title-row">
             <h3>Hexagon Rotator</h3>
             <div class="function">CCW 60° Steps</div>
           </div>
-          <p>Rotate a regular hexagon counter-clockwise in 60° increments using step buttons. Great for exploring rotational symmetry.</p>
+          <p>
+            Rotate a regular hexagon counter-clockwise in 60° increments using
+            step buttons. Great for exploring rotational symmetry.
+          </p>
           <span class="button">Launch Widget</span>
         </a>
         <a href="widgets/polar-graph-visualizer/graph.html" class="widget-card">
@@ -242,7 +316,11 @@
             <h3>Tower of Hanoi</h3>
             <div class="function">Classic Puzzle</div>
           </div>
-          <p>Solve the Tower of Hanoi puzzle. Move disks between towers, aiming for the optimal number of moves. Select the number of disks to challenge yourself!</p>
+          <p>
+            Solve the Tower of Hanoi puzzle. Move disks between towers, aiming
+            for the optimal number of moves. Select the number of disks to
+            challenge yourself!
+          </p>
           <span class="button">Play Game</span>
         </a>
         <a href="widgets/game-of-life/game-of-life.html" class="widget-card">
@@ -250,7 +328,11 @@
             <h3>Conway's Game of Life (BETA)</h3>
             <div class="function">Cellular Automaton</div>
           </div>
-          <p>Explore Conway's Game of Life. Set up initial patterns of cells and watch them evolve based on simple rules. Discover oscillators, spaceships, and other emergent behaviors.</p>
+          <p>
+            Explore Conway's Game of Life. Set up initial patterns of cells and
+            watch them evolve based on simple rules. Discover oscillators,
+            spaceships, and other emergent behaviors.
+          </p>
           <span class="button">Explore Life</span>
         </a>
         <a href="widgets/nonogram/nonogram.html" class="widget-card">
@@ -258,12 +340,114 @@
             <h3>Nonogram</h3>
             <div class="function">Picross Logic Puzzle</div>
           </div>
-          <p>Fill the grid using row and column clues to reveal a hidden picture. Includes timer, moves, hints, undo/redo, and shareable seeds.</p>
+          <p>
+            Fill the grid using row and column clues to reveal a hidden picture.
+            Includes timer, moves, hints, undo/redo, and shareable seeds.
+          </p>
           <span class="button">Solve Puzzle</span>
         </a>
       </div>
-
     </div>
   </body>
 
+  <script>
+    (function () {
+      document.addEventListener("DOMContentLoaded", function () {
+        var container = document.querySelector(".container");
+        if (!container) return;
+
+        function toLatex(expr) {
+          if (!expr) return "";
+          return expr.replace(/sqrt\(([^)]+)\)/g, "\\\\sqrt{$1}");
+        }
+
+        fetch("widgets/trigonometric-Sub/trig-sub.json")
+          .then(function (r) {
+            return r.ok ? r.json() : null;
+          })
+          .then(function (meta) {
+            if (!meta) return;
+
+            var calculusHeading = Array.prototype.find.call(
+              container.querySelectorAll("h2"),
+              function (h) {
+                return (
+                  h.textContent &&
+                  h.textContent.trim().toLowerCase() === "calculus"
+                );
+              }
+            );
+
+            var grid;
+            if (calculusHeading) {
+              grid = calculusHeading.nextElementSibling;
+              if (!grid || !grid.classList.contains("widgets-grid")) {
+                grid = document.createElement("div");
+                grid.className = "widgets-grid";
+                calculusHeading.insertAdjacentElement("afterend", grid);
+              }
+            } else {
+              var puzzlesHeading = Array.prototype.find.call(
+                container.querySelectorAll("h2"),
+                function (h) {
+                  return (
+                    h.textContent && h.textContent.indexOf("Puzzles") !== -1
+                  );
+                }
+              );
+              var heading = document.createElement("h2");
+              heading.textContent = "Calculus";
+              if (puzzlesHeading) {
+                puzzlesHeading.insertAdjacentElement("beforebegin", heading);
+                grid = document.createElement("div");
+                grid.className = "widgets-grid";
+                heading.insertAdjacentElement("afterend", grid);
+              } else {
+                grid = document.createElement("div");
+                grid.className = "widgets-grid";
+                container.appendChild(heading);
+                container.appendChild(grid);
+              }
+            }
+
+            var card = document.createElement("a");
+            card.className = "widget-card";
+            card.href = meta.entry || "widgets/trigonometric-Sub/trig-sub.html";
+            // Simplified cover text: just list the substitution families
+            // Requested: show compact names instead of full expressions
+            var functionText = "sin, tan, sec";
+            card.innerHTML =
+              '<div class="title-row">' +
+              "<h3>" +
+              (meta.title || "Trigonometric Substitution Explorer") +
+              "</h3>" +
+              '<div class="function">' +
+              functionText +
+              "</div>" +
+              "</div>" +
+              "<p>" +
+              (meta.description || "Explore trig substitutions and geometry.") +
+              "</p>" +
+              '<span class="button">Launch Widget</span>';
+
+            grid.appendChild(card);
+            // Render math in the newly created card if KaTeX auto-render is available
+            if (window.renderMathInElement) {
+              try {
+                window.renderMathInElement(card, {
+                  delimiters: [
+                    { left: "$$", right: "$$", display: true },
+                    { left: "\\(", right: "\\)", display: false },
+                  ],
+                  throwOnError: false,
+                });
+              } catch (e) {}
+            }
+          })
+          .catch(function () {
+            /* ignore errors */
+          });
+      });
+    })();
+  </script>
 </html>
