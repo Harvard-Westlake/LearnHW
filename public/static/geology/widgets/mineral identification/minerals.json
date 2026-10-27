@@ -1,0 +1,27 @@
+[
+  { "id": "pyrite", "name": "Pyrite", "hardness": 6.0, "luster": "metallic", "cleavagePlanes": 0, "color": "#caa11a", "colorName": "brassy yellow", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "magnetite", "name": "Magnetite", "hardness": 6.0, "luster": "submetallic", "cleavagePlanes": 0, "color": "#222629", "colorName": "black", "lamellae": false, "magnetism": "strong", "acid": "none" },
+  { "id": "hematite", "name": "Hematite", "hardness": 6.0, "luster": "metallic", "cleavagePlanes": 0, "color": "#6b3b2a", "colorName": "reddish-brown", "lamellae": false, "magnetism": "weak", "acid": "none" },
+  { "id": "galena", "name": "Galena", "hardness": 2.5, "luster": "metallic", "cleavagePlanes": 3, "color": "#6f7c8a", "colorName": "lead gray", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "graphite", "name": "Graphite", "hardness": 1.5, "luster": "submetallic", "cleavagePlanes": 1, "color": "#54595f", "colorName": "steel gray", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "malachite", "name": "Malachite", "hardness": 3.5, "luster": "earthy", "cleavagePlanes": 1, "color": "#189a62", "colorName": "green", "lamellae": false, "magnetism": "none", "acid": "strong" },
+  { "id": "plagioclase", "name": "Plagioclase Feldspar", "hardness": 6.0, "luster": "vitreous", "cleavagePlanes": 2, "color": "#cfd4da", "colorName": "white/gray", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "kfeldspar", "name": "Potassium Feldspar", "hardness": 6.0, "luster": "vitreous", "cleavagePlanes": 2, "color": "#f3a398", "colorName": "pink/orange", "lamellae": true, "magnetism": "none", "acid": "none" },
+  { "id": "quartz", "name": "Quartz", "hardness": 7.0, "luster": "vitreous", "cleavagePlanes": 0, "color": "#e9eef2", "colorName": "colorless/white", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "olivine", "name": "Olivine", "hardness": 7.0, "luster": "vitreous", "cleavagePlanes": 0, "color": "#6a8e29", "colorName": "olive green", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "halite", "name": "Halite", "hardness": 2.5, "luster": "vitreous", "cleavagePlanes": 3, "color": "#eef4fb", "colorName": "colorless", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "calcite", "name": "Calcite", "hardness": 3.0, "luster": "vitreous", "cleavagePlanes": 3, "color": "#f3f6f8", "colorName": "colorless/white", "lamellae": false, "magnetism": "none", "acid": "strong" },
+  { "id": "gypsum", "name": "Gypsum", "hardness": 2.0, "luster": "pearly", "cleavagePlanes": 1, "color": "#f1f5f9", "colorName": "white", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "kernite", "name": "Kernite", "hardness": 3.0, "luster": "pearly", "cleavagePlanes": 1, "color": "#e7ecef", "colorName": "white", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "fluorite", "name": "Fluorite", "hardness": 4.0, "luster": "vitreous", "cleavagePlanes": 4, "color": "#8273c7", "colorName": "purple", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "muscovite", "name": "Muscovite Mica", "hardness": 2.5, "luster": "pearly", "cleavagePlanes": 1, "color": "#e2e2da", "colorName": "silvery", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "biotite", "name": "Biotite Mica", "hardness": 2.5, "luster": "pearly", "cleavagePlanes": 1, "color": "#2b2a28", "colorName": "black/brown", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "sulfur", "name": "Sulfur", "hardness": 2.0, "luster": "resinous", "cleavagePlanes": 2, "color": "#ffee33", "colorName": "yellow", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "talc", "name": "Talc", "hardness": 1.0, "luster": "pearly", "cleavagePlanes": 1, "color": "#dfe7e1", "colorName": "white/green", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "clay", "name": "Clay", "hardness": 2.0, "luster": "earthy", "cleavagePlanes": 0, "color": "#a07b5b", "colorName": "brown", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "azurite", "name": "Azurite", "hardness": 3.5, "luster": "vitreous", "cleavagePlanes": 2, "color": "#2e63c5", "colorName": "blue", "lamellae": false, "magnetism": "none", "acid": "strong" },
+  { "id": "augite", "name": "Augite", "hardness": 6.0, "luster": "vitreous", "cleavagePlanes": 2, "color": "#1d2328", "colorName": "dark green/black", "lamellae": false, "magnetism": "none", "acid": "none" },
+  { "id": "hornblende", "name": "Hornblende", "hardness": 6.0, "luster": "vitreous", "cleavagePlanes": 2, "color": "#141a1f", "colorName": "dark green/black", "lamellae": false, "magnetism": "none", "acid": "none" }
+]
+
+
