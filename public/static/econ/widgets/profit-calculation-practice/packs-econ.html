@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Profit Calculation Practice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../math/widgets/shared/styles.css">
+  <style>
+    :root { --hw-border:#e5e7eb; }
+    .hidden { display:none; }
+    .lead { color:#000; font-size:1rem; }
+    .eyebrow-red { color:#E60000; font-weight:700; text-transform:uppercase; letter-spacing:.02em; font-size:.85rem; }
+    .right { margin-left:auto; }
+    .card { background:#fff; border:1px solid rgba(0,0,0,.06); border-radius:8px; padding:0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+    .cluster { display:flex; gap:8px; align-items:center; }
+    .row { display:flex; flex-wrap:wrap; gap:0.75rem; }
+    .col-6 { flex:1 1 320px; max-width:100%; }
+    .btn-small, .btn.btn-small, .btn-small.btn, .btn-sm { padding:0.35rem 0.7rem; font-size:0.9rem; }
+    .btn-primary { background:#E60000; color:#fff; }
+    .btn-ghost { background:transparent; color:#E60000; border:1px solid transparent; }
+    .btn-ghost:hover { text-decoration:underline; transform:none; box-shadow:none; }
+    .badge { display:inline-block; padding:0.2rem 0.5rem; border-radius:999px; font-size:0.8rem; font-weight:600; background:#e9ecef; color:#000; }
+    .badge.green { background:#e6f4ea; color:#0f5132; }
+    .badge.red { background:#fdecea; color:#842029; }
+    .alert.info { background:#ffe5e5; color:#000; border-left:4px solid #E60000; }
+    .stack-16 > * + * { margin-top:16px; }
+    .cards-grid { display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; }
+    @media (max-width: 768px) {
+      .cards-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .cards-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .card-item { border:1px solid var(--hw-border); border-radius:10px; background:#fff; overflow:hidden; display:flex; flex-direction:column; }
+    .card-item .thumb { background:#fafafa; display:block; padding:8px; border-bottom:1px solid var(--hw-border); position:static; }
+    .card-item .thumb img { width:100%; height:auto; object-fit:contain; display:block; }
+    .card-item .meta { padding:8px; position:static; background:#fff; display:flex; align-items:flex-start; justify-content:space-between; gap:6px; }
+    .card-item .name { font-weight:600; font-size:0.9rem; margin:0; position:static; display:block; flex:1 1 auto; white-space:normal; overflow:visible; word-break:break-word; }
+    .card-item .muted { position:static; display:inline-block; white-space:nowrap; flex:0 0 auto; }
+    .pack { border: 1px solid var(--hw-border); border-radius: 10px; padding: 10px; background: #fff; }
+    .pack-title { font-weight: 700; margin-bottom: 6px; }
+    .pack-total { font-weight: 600; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--hw-border); color: #000; }
+    .fade-in { animation: fade .25s ease both; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .tip { font-size: 12px; color: var(--hw-muted); }
+    /* Field correctness visuals */
+    .field.error .input, .field.error input { border-color: #dc3545; box-shadow: 0 0 0 3px rgba(220,53,69,0.12); }
+    .field.success .input, .field.success input { border-color: #198754; box-shadow: 0 0 0 3px rgba(25,135,84,0.12); }
+    /* Stack labels above inputs in fields */
+    .field label { display:block; margin-bottom:4px; }
+    .field .input, .field input { display:block; }
+    /* Narrow calculation inputs to ~2/3 width on larger screens */
+    #field-implicit .input,
+    #field-explicit .input,
+    #field-accounting .input,
+    #field-economic .input { width: 66.6667%; }
+    @media (max-width: 768px){
+      #field-implicit .input,
+      #field-explicit .input,
+      #field-accounting .input,
+      #field-economic .input { width: 100%; }
+    }
+    @media (max-width: 768px){ .col-6 { flex:1 1 100%; } }
+    
+    /* Header styling */
+    h2, h3 {
+      color: #000;
+      margin: 0 0 0.75rem 0;
+    }
+    
+    /* Pokeball cursor */
+    * { cursor: none !important; }
+    body { cursor: none !important; }
+    
+    #pokeball-cursor {
+      position: fixed;
+      width: 24px;
+      height: 24px;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.05s ease-out;
+    }
+    
+    #pokeball-cursor::before {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(to bottom, #E60000 0%, #E60000 45%, #000 45%, #000 55%, #fff 55%, #fff 100%);
+      border: 2px solid #000;
+      box-shadow: 0 0 0 1px #fff, 0 0 0 3px #000;
+    }
+    
+    #pokeball-cursor::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1.5px solid #000;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 0 1px #fff;
+    }
+    
+    /* Trail particles */
+    .trail-particle {
+      position: fixed;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      background: radial-gradient(circle, #00ffff 0%, #00b3b3 100%);
+      box-shadow: 0 0 6px rgba(0, 255, 255, 0.8);
+      opacity: 0.8;
+      animation: trailFade 0.6s ease-out forwards;
+    }
+    
+    @keyframes trailFade {
+      0% {
+        opacity: 0.7;
+        transform: scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0.3);
+      }
+    }
+  </style>
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Open 10 Pokémon packs, total revenue, and calculate implicit/explicit costs and profits.">
+  </head>
+<body>
+  <div id="pokeball-cursor"></div>
+  <div class="container">
+    <h1>Profit Calculation Practice</h1>
+    <p class="lead">Practice real-world economic thinking with chance and tradeoffs. <strong style="color: #E60000;">Open 10 Pokémon packs, total the card values (revenue), and then calculate implicit cost (forgone wage), explicit cost (pack spending), accounting profit, and total (economic) profit.</strong> This mirrors decisions people make when chasing collectibles or investing: comparing expected value to price and remembering opportunity cost. You'll reinforce AP Econ vocabulary and the actual calculations while experiencing risk and reward firsthand. We also track a global loss rate across all players and how many full runs are globally completed.</p>
+    <div id="loss-stats" class="alert info">Global win rate: —</div>
+    <div id="your-win" class="badge">Your win rate: 0% (0 of 0)</div>
+
+    <div class="card" id="set-stats-card">
+      <div class="cluster">
+        <h2 style="margin:0">Set Win Rates</h2>
+        <div class="right" style="display:flex; gap:8px; align-items:center;">
+          <button id="toggle-set-stats" class="btn btn-ghost btn-small" type="button">Hide</button>
+          <button id="refresh-set-stats" class="btn btn-outline btn-small" type="button">Refresh</button>
+        </div>
+      </div>
+      <div id="set-stats-content" class="hidden">
+        <table>
+          <thead>
+            <tr><th>Set</th><th>Win rate</th><th>Wins</th><th>Total</th></tr>
+          </thead>
+          <tbody id="set-stats-body"></tbody>
+        </table>
+        <div id="set-stats-hint" class="muted">Stats update live when runs complete. Click Refresh if needed.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>1) See the job you could've had</h2>
+      <div class="cluster">
+        <span class="badge" id="job-badge">Job: <strong>—</strong></span>
+        <span class="badge green" id="wage-badge">$—/hr</span>
+        <button class="btn btn-outline" id="reroll-job" type="button">Re-roll job</button>
+        <span class="muted">Assume <strong>1 hour</strong> of time for this activity.</span>
+      </div>
+    </div>
+
+    <div class="alert info" id="opportunity-explain">Opening packs uses time you could spend at your job. That tradeoff is part of your implicit cost.</div>
+
+    <div class="card">
+      <h2>2) Choose a set and open 10 packs</h2>
+      <div class="row">
+        <div class="col-6">
+          <div class="field">
+            <label for="set-select">Set</label>
+            <select class="select" id="set-select" aria-label="Choose a card set">
+              <option value="">Select a set…</option>
+            </select>
+            <div class="hint" id="pack-price-hint">Pack price: —</div>
+          </div>
+          <div class="cluster">
+            <button class="btn btn-primary" id="open-btn" type="button" disabled>Open 10 packs</button>
+            <button class="btn btn-outline" id="open-all-btn" type="button" disabled>Open all 10</button>
+            <button class="btn btn-outline" id="reset-top-btn" type="button" disabled>Reset</button>
+          </div>
+          <div class="alert info" role="status">Cards are simulated using rarity-based probabilities within the selected set.</div>
+        </div>
+        <div class="col-6">
+          <div class="card">
+            <h3>Opening progress</h3>
+            <div class="cluster">
+              <span class="badge" id="packs-opened-badge">Packs opened: 0 / 10</span>
+              <span class="badge" id="cards-count-badge">Cards: 0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="packs-area" class="stack-16"></div>
+    </div>
+
+    <div class="card">
+      <h2>3) Calculate costs and profits</h2>
+      <div class="row">
+        <div class="col-6">
+          <div class="field" id="field-implicit">
+            <label for="implicit-input">Implicit Cost (forgone income)</label>
+            <input class="input" id="implicit-input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-lpignore="true" data-form-type="other" placeholder="Enter amount" disabled>
+            <div class="tip hidden" id="tip-implicit"><strong>Definition:</strong> The opportunity cost of using resources you already own. In this case, it's the income you give up by spending time opening packs instead of working.<br><br><strong>Tip:</strong> hourly wage × 1 hour.</div>
+            <button class="btn btn-small btn-ghost" data-tip="tip-implicit" type="button">Show definition</button>
+          </div>
+          <div class="field" id="field-explicit">
+            <label for="explicit-input">Explicit Cost (packs bought)</label>
+            <input class="input" id="explicit-input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-lpignore="true" data-form-type="other" placeholder="Enter amount" disabled>
+            <div class="tip hidden" id="tip-explicit"><strong>Definition:</strong> The direct, out-of-pocket expenses you pay. In this case, it's the money spent buying the packs.<br><br><strong>Tip:</strong> number of packs × pack price.</div>
+            <button class="btn btn-small btn-ghost" data-tip="tip-explicit" type="button">Show definition</button>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="field" id="field-accounting">
+            <label for="accounting-input">Accounting Profit</label>
+            <input class="input" id="accounting-input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-lpignore="true" data-form-type="other" placeholder="Enter amount" disabled>
+            <div class="tip hidden" id="tip-accounting"><strong>Definition:</strong> Total revenue minus explicit costs only. This measures profit without considering opportunity costs.<br><br><strong>Tip:</strong> total card value − explicit cost.</div>
+            <button class="btn btn-small btn-ghost" data-tip="tip-accounting" type="button">Show definition</button>
+          </div>
+          <div class="field" id="field-economic">
+            <label for="economic-input">Total Profit (Economic Profit)</label>
+            <input class="input" id="economic-input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-lpignore="true" data-form-type="other" placeholder="Enter amount" disabled>
+            <div class="tip hidden" id="tip-economic"><strong>Definition:</strong> Total revenue minus both explicit and implicit costs. This is the true measure of profit that accounts for all opportunity costs.<br><br><strong>Tip:</strong> accounting profit − implicit cost.</div>
+            <button class="btn btn-small btn-ghost" data-tip="tip-economic" type="button">Show definition</button>
+          </div>
+        </div>
+      </div>
+      <div class="cluster">
+        <button class="btn btn-primary" id="submit-btn" type="button" disabled>Submit answers</button>
+        <button class="btn btn-outline" id="reveal-btn" type="button" disabled>Show answers</button>
+        <div id="result-summary" class="badge hidden"></div>
+      </div>
+      <div id="answers-box" class="alert info hidden"></div>
+    </div>
+    <div class="card">
+      <h2>Total Revenue</h2>
+      <h2 id="revenue-total">$0.00</h2>
+      <div class="muted">Sum of all pulled card prices.</div>
+    </div>
+    <div class="card no-print">
+      <div class="cluster">
+        <button class="btn btn-outline" id="reset-btn" type="button" disabled>Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const JOBS = [
+      { name: "McDonald’s Crew Member", wage: 16.00 },
+      { name: "Neurosurgeon", wage: 347.00 },
+      { name: "Starbucks Barista", wage: 17.00 },
+      { name: "Grocery Store Clerk", wage: 16.00 },
+      { name: "Retail Cashier", wage: 15.50 },
+      { name: "Movie Theater Attendant", wage: 15.00 },
+      { name: "Fast Food Worker", wage: 16.00 },
+      { name: "Library Page", wage: 15.50 },
+      { name: "Lifeguard", wage: 17.50 },
+      { name: "Warehouse Associate", wage: 18.00 }
+    ];
+
+    const HOURS_SPENT = 1;
+    const DEFAULT_PACK_PRICE = 4.99;
+    const PACKS_TO_OPEN = 10;
+    const SETS = {
+      "me01-mega-evolution": { label: "ME01: Mega Evolution", file: "me01-mega-evolution.json", packPrice: 7.00 },
+      "sm-team-up": { label: "SM: Team Up", file: "sm-team-up.json", packPrice: 160.00 },
+      "sv-paldean-fates": { label: "SV: Paldean Fates", file: "sv-paldean-fates.json", packPrice: 15.45 },
+      "sv-prismatic-evolutions": { label: "SV: Prismatic Evolutions", file: "sv-prismatic-evolutions.json", packPrice: 12.99 },
+      "sv-scarlet-and-violet-151": { label: "SV: Scarlet & Violet 151", file: "sv-scarlet-and-violet-151.json", packPrice: 9.99 },
+      "sv10-destined-rivals": { label: "SV10: Destined Rivals", file: "sv10-destined-rivals.json", packPrice: 14.99 },
+      "swsh01-sword-and-shield-base-set": { label: "SWSH: Sword & Shield Base", file: "swsh01-sword-and-shield-base-set.json", packPrice: 8.99 },
+      "swsh07-evolving-skies": { label: "SWSH: Evolving Skies", file: "swsh07-evolving-skies.json", packPrice: 41.99 },
+      "xy-base-set": { label: "XY: Base Set", file: "xy-base-set.json", packPrice: 35.99 }
+    };
+
+    let currentJob = null;
+    let selectedSetId = "";
+    let selectedSetData = null;
+    let openedPacks = [];
+    let revenueTotal = 0;
+    let buckets = null;
+    let packsOpened = 0;
+    let isRevealing = false;
+    let runRecorded = false;
+    let clientId = null;
+
+    const jobBadge = document.getElementById("job-badge");
+    const wageBadge = document.getElementById("wage-badge");
+    const rerollJobBtn = document.getElementById("reroll-job");
+
+    const setSelect = document.getElementById("set-select");
+    const packPriceHint = document.getElementById("pack-price-hint");
+    const openBtn = document.getElementById("open-btn");
+    const openAllBtn = document.getElementById("open-all-btn");
+    const resetTopBtn = document.getElementById("reset-top-btn");
+    const resetBtn = document.getElementById("reset-btn");
+    const packsArea = document.getElementById("packs-area");
+    const packsOpenedBadge = document.getElementById("packs-opened-badge");
+    const cardsCountBadge = document.getElementById("cards-count-badge");
+    const revenueTotalEl = document.getElementById("revenue-total");
+
+    const implicitInput = document.getElementById("implicit-input");
+    const explicitInput = document.getElementById("explicit-input");
+    const accountingInput = document.getElementById("accounting-input");
+    const economicInput = document.getElementById("economic-input");
+    const submitBtn = document.getElementById("submit-btn");
+    const revealBtn = document.getElementById("reveal-btn");
+    const resultSummary = document.getElementById("result-summary");
+    const answersBox = document.getElementById("answers-box");
+    const lossStatsEl = document.getElementById("loss-stats");
+    const yourWinEl = document.getElementById("your-win");
+    const setStatsBody = document.getElementById("set-stats-body");
+    const refreshSetStatsBtn = document.getElementById("refresh-set-stats");
+    const toggleSetStatsBtn = document.getElementById("toggle-set-stats");
+    const setStatsContent = document.getElementById("set-stats-content");
+
+    // Prevent browser extensions from interfering with calculation inputs
+    // This must run immediately after inputs are defined, before extensions attach listeners
+    function protectInputFromExtensions(input) {
+      if (!input) return;
+      
+      // Stop event propagation for focus events (capture phase to run before extensions)
+      input.addEventListener('focus', (e) => {
+        e.stopImmediatePropagation();
+      }, true);
+      
+      input.addEventListener('focusin', (e) => {
+        e.stopImmediatePropagation();
+      }, true);
+      
+      // Stop event propagation for input events
+      input.addEventListener('input', (e) => {
+        e.stopImmediatePropagation();
+      }, true);
+      
+      // Prevent extensions from accessing control property
+      try {
+        Object.defineProperty(input, 'control', {
+          get: function() { return undefined; },
+          configurable: false,
+          enumerable: false
+        });
+      } catch (e) {
+        // Ignore if property can't be defined (may already exist)
+      }
+    }
+
+    // Apply protection immediately to all calculation inputs
+    [implicitInput, explicitInput, accountingInput, economicInput].forEach(protectInputFromExtensions);
+
+    function pickRandomJob() {
+      const i = Math.floor(Math.random() * JOBS.length);
+      currentJob = JOBS[i];
+      jobBadge.innerHTML = 'Job: <strong>' + currentJob.name + '</strong>';
+      wageBadge.textContent = '$' + currentJob.wage.toFixed(2) + '/hr';
+      updateOpportunityText();
+    }
+
+    function initSetSelect() {
+      setSelect.innerHTML = '<option value="">Select a set…</option>' +
+        Object.keys(SETS).map(id => '<option value="' + id + '">' + SETS[id].label + '</option>').join('');
+    }
+
+    function fmt(n) { return '$' + n.toFixed(2); }
+
+    // Keep the explanation generic: no specific values, no explicit mention of forgone income
+    function updateOpportunityText(){
+      const el = document.getElementById('opportunity-explain');
+      if (!el) return;
+      el.textContent = 'Opening packs uses time you could spend at your job. That tradeoff is part of your implicit cost.';
+    }
+
+    // Cookie helpers for per-user stats
+    function setCookie(name, value, opts = {}) {
+      const days = opts.days ?? 3650; // ~10 years
+      const path = opts.path ?? '/';
+      const sameSite = opts.sameSite ?? 'Lax';
+      const secure = (opts.secure ?? (location.protocol === 'https:')) ? '; Secure' : '';
+      const maxAge = days ? ('; max-age=' + (days * 24 * 60 * 60)) : '';
+      document.cookie = encodeURIComponent(name) + '=' + encodeURIComponent(value) + maxAge + '; path=' + path + '; SameSite=' + sameSite + secure;
+    }
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp('(?:^|; )' + encodeURIComponent(name) + '=([^;]*)'));
+      return m ? decodeURIComponent(m[1]) : null;
+    }
+
+    function toggleTip(id) {
+      const el = document.getElementById(id);
+      el.classList.toggle('hidden');
+    }
+
+    document.querySelectorAll('button[data-tip]').forEach(btn => {
+      btn.addEventListener('click', () => toggleTip(btn.getAttribute('data-tip')));
+    });
+
+    rerollJobBtn.addEventListener('click', () => {
+      pickRandomJob();
+      if (openedPacks.length === 0) {
+        implicitInput.value = '';
+        economicInput.value = '';
+      }
+    });
+
+    setSelect.addEventListener('change', () => {
+      selectedSetId = setSelect.value;
+      const info = SETS[selectedSetId];
+      if (info) {
+        const pp = info.packPrice ?? DEFAULT_PACK_PRICE;
+        packPriceHint.textContent = 'Pack price: ' + fmt(pp);
+        openBtn.disabled = false;
+        openBtn.textContent = 'Open Pack ' + (packsOpened + 1) + ' of ' + PACKS_TO_OPEN;
+        openAllBtn.disabled = false;
+        openAllBtn.textContent = 'Open all ' + (PACKS_TO_OPEN - packsOpened);
+      } else {
+        packPriceHint.textContent = 'Pack price: —';
+        openBtn.disabled = true;
+        openAllBtn.disabled = true;
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      selectedSetData = null;
+      buckets = null;
+      openedPacks = [];
+      revenueTotal = 0;
+      packsOpened = 0;
+      isRevealing = false;
+      packsArea.innerHTML = '';
+      packsOpenedBadge.textContent = 'Packs opened: 0 / ' + PACKS_TO_OPEN;
+      cardsCountBadge.textContent = 'Cards: 0';
+      revenueTotalEl.textContent = fmt(0);
+      setSelect.disabled = false;
+      openBtn.textContent = 'Open Pack 1 of ' + PACKS_TO_OPEN;
+      openAllBtn.textContent = 'Open all ' + PACKS_TO_OPEN;
+      if (selectedSetId) {
+        const info = SETS[selectedSetId];
+        if (info) {
+          const pp = info.packPrice ?? DEFAULT_PACK_PRICE;
+          packPriceHint.textContent = 'Pack price: ' + fmt(pp);
+          openBtn.disabled = false;
+          openAllBtn.disabled = false;
+        } else {
+          packPriceHint.textContent = 'Pack price: —';
+          openBtn.disabled = true;
+          openAllBtn.disabled = true;
+        }
+      } else {
+        packPriceHint.textContent = 'Pack price: —';
+        openBtn.disabled = true;
+        openAllBtn.disabled = true;
+      }
+      resetBtn.disabled = true;
+      resetTopBtn.disabled = true;
+      runRecorded = false;
+      [implicitInput, explicitInput, accountingInput, economicInput].forEach(i => { i.value = ''; i.disabled = true; setFieldState(i.parentElement, null, ''); });
+      submitBtn.disabled = true;
+      revealBtn.disabled = true;
+      resultSummary.classList.add('hidden');
+      resultSummary.textContent = '';
+      answersBox.classList.add('hidden');
+      answersBox.textContent = '';
+      pickRandomJob();
+      refreshPersonalLossUI();
+    });
+
+    // Top reset mirrors the bottom reset
+    resetTopBtn.addEventListener('click', () => {
+      resetBtn.click();
+    });
+
+    openBtn.addEventListener('click', async () => {
+      const info = SETS[selectedSetId];
+      if (!info || isRevealing) return;
+      if (location.protocol === 'file:') {
+        alert('This page needs to be opened via a web server to load sets. Tip: use a simple static server in the public/ folder.');
+        return;
+      }
+      openBtn.disabled = true;
+      openAllBtn.disabled = true;
+      setSelect.disabled = true;
+      resetBtn.disabled = true;
+      resetTopBtn.disabled = true;
+
+      if (!selectedSetData) {
+        try {
+          const url = 'sets/' + info.file;
+          const res = await fetch(url, { cache: 'no-store' });
+          if (!res.ok) throw new Error('Failed to load set list: ' + res.status + ' ' + res.statusText + ' @ ' + url);
+          selectedSetData = await res.json();
+        } catch (e) {
+          alert('Could not load set data. Please try again. Check console for details.');
+          console.error('Set load error:', e);
+          openBtn.disabled = false;
+          setSelect.disabled = false;
+          return;
+        }
+      }
+      if (!buckets) buckets = buildBuckets(selectedSetData);
+
+      if (packsOpened >= PACKS_TO_OPEN) {
+        openBtn.disabled = true;
+        resetBtn.disabled = false;
+        resetTopBtn.disabled = false;
+        return;
+      }
+
+      isRevealing = true;
+      const packIndex = packsOpened + 1;
+      const packCards = simulatePack(buckets);
+      openedPacks.push(packCards);
+      await renderPackAnimated(packCards, packIndex);
+      packsOpened = packIndex;
+      updateStats();
+      isRevealing = false;
+
+      if (packsOpened >= PACKS_TO_OPEN) {
+        openBtn.textContent = 'All packs opened';
+        openBtn.disabled = true;
+        resetBtn.disabled = false;
+        resetTopBtn.disabled = false;
+        [implicitInput, explicitInput, accountingInput, economicInput].forEach(i => {
+          i.disabled = false;
+          protectInputFromExtensions(i);
+        });
+        submitBtn.disabled = false;
+        revealBtn.disabled = false;
+        openAllBtn.textContent = 'All packs opened';
+        openAllBtn.disabled = true;
+        // Record outcome once per completed run
+        const correct = computeCorrect();
+        if (correct) {
+          const isLoss = correct.economic < 0;
+          recordRunOutcome(isLoss);
+        }
+      } else {
+        openBtn.textContent = 'Open Pack ' + (packsOpened + 1) + ' of ' + PACKS_TO_OPEN;
+        openBtn.disabled = false;
+        resetBtn.disabled = false;
+        resetTopBtn.disabled = false;
+        openAllBtn.disabled = false;
+        openAllBtn.textContent = 'Open all ' + (PACKS_TO_OPEN - packsOpened);
+      }
+    });
+
+    submitBtn.addEventListener('click', () => {
+      const info = SETS[selectedSetId];
+      if (!info || !currentJob) return;
+
+      const correct = {
+        implicit: round2(currentJob.wage * HOURS_SPENT),
+        explicit: round2(PACKS_TO_OPEN * (info.packPrice ?? DEFAULT_PACK_PRICE)),
+        accounting: 0,
+        economic: 0
+      };
+      correct.accounting = round2(revenueTotal - correct.explicit);
+      correct.economic = round2(correct.accounting - correct.implicit);
+
+      const student = {
+        implicit: parseCurrency(implicitInput.value),
+        explicit: parseCurrency(explicitInput.value),
+        accounting: parseCurrency(accountingInput.value),
+        economic: parseCurrency(economicInput.value)
+      };
+
+      const results = {
+        implicit: nearlyEqual(student.implicit, correct.implicit),
+        explicit: nearlyEqual(student.explicit, correct.explicit),
+        accounting: nearlyEqual(student.accounting, correct.accounting),
+        economic: nearlyEqual(student.economic, correct.economic)
+      };
+
+      setFieldState(implicitInput.parentElement, results.implicit);
+      setFieldState(explicitInput.parentElement, results.explicit);
+      setFieldState(accountingInput.parentElement, results.accounting);
+      setFieldState(economicInput.parentElement, results.economic);
+
+      const allCorrect = results.implicit && results.explicit && results.accounting && results.economic;
+      if (allCorrect) {
+        const win = correct.economic > 0;
+        resultSummary.textContent = (win ? 'You gained ' : 'You lost ') + fmt(Math.abs(correct.economic)) + ' in economic profit.';
+        resultSummary.classList.remove('hidden');
+        if (win) { resultSummary.className = 'badge green'; } else { resultSummary.className = 'badge red'; }
+      } else {
+        resultSummary.classList.add('hidden');
+        resultSummary.textContent = '';
+      }
+    });
+
+    function setFieldState(fieldEl, ok) {
+      fieldEl.classList.remove('error', 'success');
+      if (ok === true) fieldEl.classList.add('success');
+      else if (ok === false) fieldEl.classList.add('error');
+      const msgEl = fieldEl.querySelector('.msg');
+      if (msgEl) msgEl.textContent = '';
+    }
+
+  const LOSS_STORAGE_KEY = 'pack_profit_loss_stats_v1';
+  function loadLossStats() {
+    try {
+      const s = JSON.parse(localStorage.getItem(LOSS_STORAGE_KEY) || '{}');
+      return { total: s.total || 0, losses: s.losses || 0 };
+    } catch (e) {
+      return { total: 0, losses: 0 };
+    }
+  }
+  function saveLossStats(stats) { localStorage.setItem(LOSS_STORAGE_KEY, JSON.stringify(stats)); }
+  function updateLossStatsUI() {
+    const s = loadLossStats();
+    const pct = s.total > 0 ? Math.round((s.losses / s.total) * 100) : 0;
+    if (lossStatsEl) lossStatsEl.textContent = 'All-time loss rate: ' + pct + '% (' + s.losses + ' of ' + s.total + ' runs)';
+  }
+  // (RecordRunOutcome is implemented later with Firestore + cookie update)
+
+    // Reveal correct answers (for students who need help)
+    document.getElementById('reveal-btn').addEventListener('click', () => {
+      const info = SETS[selectedSetId];
+      if (!info || !currentJob) return;
+      const implicit = round2(currentJob.wage * HOURS_SPENT);
+      const explicit = round2(PACKS_TO_OPEN * (info.packPrice ?? DEFAULT_PACK_PRICE));
+      const accounting = round2(revenueTotal - explicit);
+      const economic = round2(accounting - implicit);
+      answersBox.innerHTML = '<strong>Answers</strong>' +
+        '<div>Implicit cost: ' + fmt(implicit) + '</div>' +
+        '<div>Explicit cost: ' + fmt(explicit) + '</div>' +
+        '<div>Accounting profit: ' + fmt(accounting) + '</div>' +
+        '<div>Total (economic) profit: ' + fmt(economic) + '</div>';
+      answersBox.classList.remove('hidden');
+    });
+
+
+    function renderSetStats(map) {
+      if (!setStatsBody) return;
+      const rows = [];
+      const ids = Object.keys(SETS);
+      for (const id of ids) {
+        const info = SETS[id];
+        const d = map && map[id] ? map[id] : { total: 0, wins: 0 };
+        const total = d.total || 0;
+        const wins = typeof d.wins === 'number' ? d.wins : Math.max(0, total - (d.losses || 0));
+        const pct = total > 0 ? Math.round((wins / total) * 100) : 0;
+        rows.push('<tr><td>' + info.label + '</td><td>' + pct + '%</td><td>' + wins + '</td><td>' + total + '</td></tr>');
+      }
+      setStatsBody.innerHTML = rows.join('');
+    }
+
+    if (refreshSetStatsBtn) {
+      refreshSetStatsBtn.addEventListener('click', () => {
+        renderSetStats(null);
+      });
+    }
+
+    // Collapse/expand Set Win Rates (persist preference)
+    const SET_STATS_COLLAPSED_KEY = 'pack_set_stats_collapsed_v1';
+    function isSetStatsCollapsed() {
+      try {
+        const v = localStorage.getItem(SET_STATS_COLLAPSED_KEY);
+        return v === null ? true : v === '1'; // default: collapsed
+      } catch { return true; }
+    }
+    function applySetStatsCollapsedUI() {
+      const collapsed = isSetStatsCollapsed();
+      if (setStatsContent) setStatsContent.classList.toggle('hidden', collapsed);
+      if (toggleSetStatsBtn) toggleSetStatsBtn.textContent = collapsed ? 'Show' : 'Hide';
+    }
+    if (toggleSetStatsBtn) {
+      toggleSetStatsBtn.addEventListener('click', () => {
+        const current = isSetStatsCollapsed();
+        try { localStorage.setItem(SET_STATS_COLLAPSED_KEY, (!current) ? '1' : '0'); } catch {}
+        applySetStatsCollapsedUI();
+      });
+    }
+
+    function getClientId() {
+      if (clientId) return clientId;
+      try {
+        const key = 'pack_profit_client_id_v1';
+        let id = localStorage.getItem(key);
+        if (!id) {
+          id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+          localStorage.setItem(key, id);
+        }
+        clientId = id;
+      } catch (e) { clientId = 'anon'; }
+      return clientId;
+    }
+
+    // Local per-user run tracking removed from UI; using global completed runs instead.
+
+    function computeCorrect() {
+      const info = SETS[selectedSetId];
+      if (!info || !currentJob) return null;
+      const implicit = round2(currentJob.wage * HOURS_SPENT);
+      const explicit = round2(PACKS_TO_OPEN * (info.packPrice ?? DEFAULT_PACK_PRICE));
+      const accounting = round2(revenueTotal - explicit);
+      const economic = round2(accounting - implicit);
+      return { implicit, explicit, accounting, economic };
+    }
+
+    function recordRunOutcome(isLoss) {
+      if (runRecorded) return;
+      // Update and reflect personal cookie stats immediately
+      try {
+        const raw = getCookie('pack_user_win_stats_v1');
+        const s = raw ? JSON.parse(raw) : { total: 0, wins: 0 };
+        s.total += 1;
+        if (!isLoss) s.wins += 1;
+        setCookie('pack_user_win_stats_v1', JSON.stringify(s));
+      } catch {}
+      refreshPersonalLossUI();
+      runRecorded = true;
+    }
+
+    function updateStats() {
+      packsOpenedBadge.textContent = 'Packs opened: ' + openedPacks.length + ' / ' + PACKS_TO_OPEN;
+      const cardCount = openedPacks.reduce((n, p) => n + p.length, 0);
+      cardsCountBadge.textContent = 'Cards: ' + cardCount;
+      revenueTotalEl.textContent = fmt(round2(revenueTotal));
+    }
+
+    async function renderPackAnimated(cards, index) {
+      const pack = document.createElement('div');
+      pack.className = 'pack fade-in';
+      const title = document.createElement('div');
+      title.className = 'pack-title';
+      title.textContent = 'Pack ' + index;
+      const grid = document.createElement('div');
+      grid.className = 'cards-grid';
+      pack.appendChild(title);
+      pack.appendChild(grid);
+      packsArea.insertBefore(pack, packsArea.firstChild);
+      let packTotal = 0;
+      for (const c of cards) {
+        const item = document.createElement('div');
+        item.className = 'card-item fade-in';
+        const thumb = document.createElement('div');
+        thumb.className = 'thumb';
+        const img = document.createElement('img');
+        img.loading = 'lazy';
+        img.alt = c.name;
+        img.src = c.imageUrl;
+        thumb.appendChild(img);
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = c.name;
+        const price = document.createElement('div');
+        price.className = 'muted';
+        const priceNum = Number(c.price || 0);
+        price.textContent = fmt(priceNum);
+        meta.appendChild(name);
+        meta.appendChild(price);
+        item.appendChild(thumb);
+        item.appendChild(meta);
+        grid.appendChild(item);
+        packTotal += priceNum;
+        revenueTotal += priceNum;
+        updateStats();
+        await delay(150);
+      }
+      const totalDiv = document.createElement('div');
+      totalDiv.className = 'pack-total';
+      totalDiv.textContent = 'Total value of these cards: ' + fmt(packTotal);
+      pack.appendChild(totalDiv);
+    }
+
+    function renderPackQuick(cards, index) {
+      const pack = document.createElement('div');
+      pack.className = 'pack fade-in';
+      const title = document.createElement('div');
+      title.className = 'pack-title';
+      title.textContent = 'Pack ' + index;
+      const grid = document.createElement('div');
+      grid.className = 'cards-grid';
+      pack.appendChild(title);
+      pack.appendChild(grid);
+      packsArea.insertBefore(pack, packsArea.firstChild);
+      const frag = document.createDocumentFragment();
+      let inc = 0;
+      for (const c of cards) {
+        const item = document.createElement('div');
+        item.className = 'card-item';
+        const thumb = document.createElement('div');
+        thumb.className = 'thumb';
+        const img = document.createElement('img');
+        img.loading = 'lazy';
+        img.alt = c.name;
+        img.src = c.imageUrl;
+        thumb.appendChild(img);
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = c.name;
+        const price = document.createElement('div');
+        price.className = 'muted';
+        const priceNum = Number(c.price || 0);
+        price.textContent = fmt(priceNum);
+        inc += priceNum;
+        meta.appendChild(name);
+        meta.appendChild(price);
+        item.appendChild(thumb);
+        item.appendChild(meta);
+        frag.appendChild(item);
+      }
+      grid.appendChild(frag);
+      const totalDiv = document.createElement('div');
+      totalDiv.className = 'pack-total';
+      totalDiv.textContent = 'Total value of these cards: ' + fmt(inc);
+      pack.appendChild(totalDiv);
+      revenueTotal += inc;
+      updateStats();
+    }
+
+    function delay(ms) { return new Promise(res => setTimeout(res, ms)); }
+    function round2(n) { return Math.round((n + Number.EPSILON) * 100) / 100; }
+    function parseCurrency(s) { const n = parseFloat(String(s || '').replace(/[^0-9.-]/g, '')); return isFinite(n) ? round2(n) : NaN; }
+    function nearlyEqual(a, b, eps = 0.01) { if (Number.isNaN(a) || Number.isNaN(b)) return false; return Math.abs(a - b) <= eps; }
+
+    function buildBuckets(allCards) {
+      const cat = { common: [], uncommon: [], rare: [], ultra: [], secret: [] };
+      const secretKeys = ['Hyper Rare', 'Secret Rare', 'Gold Rare', 'Mega Hyper Rare'];
+      const ultraKeys = ['Ultra Rare', 'Double Rare', 'Special Illustration Rare', 'Illustration Rare'];
+      for (const card of allCards) {
+        const r = String(card.rarity || '').trim();
+        if (secretKeys.some(k => r.includes(k))) cat.secret.push(card);
+        else if (ultraKeys.some(k => r.includes(k))) cat.ultra.push(card);
+        else if (r.includes('Uncommon')) cat.uncommon.push(card);
+        else if (r.includes('Common')) cat.common.push(card);
+        else if (r.includes('Rare')) cat.rare.push(card);
+        else cat.rare.push(card);
+      }
+      return cat;
+    }
+
+    function sampleWithoutReplacement(arr, count) {
+      const out = [];
+      if (!arr || arr.length === 0) return out;
+      const pool = arr.slice();
+      for (let i = 0; i < count; i++) {
+        if (pool.length === 0) break;
+        const idx = Math.floor(Math.random() * pool.length);
+        out.push(pool[idx]);
+        pool.splice(idx, 1);
+      }
+      while (out.length < count && arr.length > 0) out.push(arr[Math.floor(Math.random() * arr.length)]);
+      return out;
+    }
+
+    function pickFrom(buckets, category) {
+      const pool = buckets[category];
+      if (pool && pool.length) return pool[Math.floor(Math.random() * pool.length)];
+      const order = ['secret', 'ultra', 'rare', 'uncommon', 'common'];
+      for (const cat of order) {
+        const p = buckets[cat];
+        if (p && p.length) return p[Math.floor(Math.random() * p.length)];
+      }
+      return null;
+    }
+
+    function simulatePack(buckets) {
+      const commons = sampleWithoutReplacement(buckets.common, 6);
+      const uncommons = sampleWithoutReplacement(buckets.uncommon, 3);
+      const roll = Math.random();
+      let rareCat = 'rare';
+      if (roll >= 0.95) rareCat = 'secret';
+      else if (roll >= 0.75) rareCat = 'ultra';
+      const rareCard = pickFrom(buckets, rareCat);
+      const cards = [...commons, ...uncommons];
+      if (rareCard) cards.push(rareCard);
+      return cards;
+    }
+
+    // Open all remaining packs at once (fast render)
+    openAllBtn.addEventListener('click', async () => {
+      const info = SETS[selectedSetId];
+      if (!info || isRevealing) return;
+      if (location.protocol === 'file:') {
+        alert('This page needs to be opened via a web server to load sets. Tip: use a simple static server in the public/ folder.');
+        return;
+      }
+      openBtn.disabled = true;
+      openAllBtn.disabled = true;
+      setSelect.disabled = true;
+      resetBtn.disabled = true;
+
+      if (!selectedSetData) {
+        try {
+          const url = 'sets/' + info.file;
+          const res = await fetch(url, { cache: 'no-store' });
+          if (!res.ok) throw new Error('Failed to load set list: ' + res.status + ' ' + res.statusText + ' @ ' + url);
+          selectedSetData = await res.json();
+        } catch (e) {
+          alert('Could not load set data. Please try again. Check console for details.');
+          console.error('Set load error:', e);
+          openBtn.disabled = false;
+          openAllBtn.disabled = false;
+          setSelect.disabled = false;
+          resetTopBtn.disabled = false;
+          return;
+        }
+      }
+      if (!buckets) buckets = buildBuckets(selectedSetData);
+
+      isRevealing = true;
+      while (packsOpened < PACKS_TO_OPEN) {
+        const packIndex = packsOpened + 1;
+        const packCards = simulatePack(buckets);
+        openedPacks.push(packCards);
+        renderPackQuick(packCards, packIndex);
+        packsOpened = packIndex;
+      }
+      isRevealing = false;
+      updateStats();
+
+      openBtn.textContent = 'All packs opened';
+      openBtn.disabled = true;
+      openAllBtn.textContent = 'All packs opened';
+      openAllBtn.disabled = true;
+      resetBtn.disabled = false;
+      resetTopBtn.disabled = false;
+      [implicitInput, explicitInput, accountingInput, economicInput].forEach(i => {
+        i.disabled = false;
+        protectInputFromExtensions(i);
+      });
+      submitBtn.disabled = false;
+      revealBtn.disabled = false;
+
+      const correct = computeCorrect();
+      if (correct) {
+        const isLoss = correct.economic < 0;
+        recordRunOutcome(isLoss);
+      }
+    });
+
+    pickRandomJob();
+    initSetSelect();
+    // Stats initial
+    function refreshPersonalLossUI() {
+      try {
+        // Migrate old cookie format {total, losses} -> new {total, wins}
+        let raw = getCookie('pack_user_win_stats_v1');
+        if (!raw) {
+          const legacy = getCookie('pack_user_stats_v1');
+          if (legacy) {
+            try {
+              const old = JSON.parse(legacy);
+              const wins = Math.max(0, (old.total || 0) - (old.losses || 0));
+              const obj = { total: old.total || 0, wins };
+              setCookie('pack_user_win_stats_v1', JSON.stringify(obj));
+              raw = JSON.stringify(obj);
+            } catch {}
+          }
+        }
+        const s = raw ? JSON.parse(raw) : { total: 0, wins: 0 };
+        const pct = s.total > 0 ? Math.round((s.wins / s.total) * 100) : 0;
+        if (yourWinEl) yourWinEl.textContent = 'Your win rate: ' + pct + '% (' + s.wins + ' of ' + s.total + ')';
+      } catch {}
+    }
+
+    (function(){
+      document.getElementById('packs-opened-badge').textContent = 'Packs opened: 0 / ' + PACKS_TO_OPEN;
+      document.getElementById('cards-count-badge').textContent = 'Cards: 0';
+      document.getElementById('revenue-total').textContent = fmt(0);
+      refreshPersonalLossUI();
+      // Always show rows for all sets even before Firestore responds
+      renderSetStats(null);
+      applySetStatsCollapsedUI();
+    })();
+
+    // Pokeball cursor and trail effect
+    (function() {
+      const cursor = document.getElementById('pokeball-cursor');
+      let mouseX = 0, mouseY = 0;
+      let cursorX = 0, cursorY = 0;
+      let lastTrailTime = 0;
+      const trailInterval = 8; // milliseconds between trail particles (more frequent = more particles)
+      
+      // Create trail particle
+      function createTrail(x, y) {
+        const particle = document.createElement('div');
+        particle.className = 'trail-particle';
+        particle.style.left = x + 'px';
+        particle.style.top = y + 'px';
+        document.body.appendChild(particle);
+        
+        // Remove after animation
+        setTimeout(() => {
+          if (particle.parentNode) {
+            particle.parentNode.removeChild(particle);
+          }
+        }, 600);
+      }
+      
+      // Update cursor position
+      function updateCursor() {
+        const dx = mouseX - cursorX;
+        const dy = mouseY - cursorY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Use adaptive smoothing: more responsive for fast movements, smoother for slow
+        const smoothing = distance > 50 ? 0.8 : 0.5; // Faster response for quick movements
+        cursorX += dx * smoothing;
+        cursorY += dy * smoothing;
+        cursor.style.left = cursorX + 'px';
+        cursor.style.top = cursorY + 'px';
+        
+        // Create trail particles at cursor position
+        const now = Date.now();
+        if (now - lastTrailTime >= trailInterval) {
+          createTrail(cursorX, cursorY);
+          lastTrailTime = now;
+        }
+        
+        requestAnimationFrame(updateCursor);
+      }
+      
+      // Track mouse movement
+      document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+      
+      // Hide cursor when mouse leaves window
+      document.addEventListener('mouseout', (e) => {
+        if (!e.relatedTarget && !e.toElement) {
+          cursor.style.opacity = '0';
+        }
+      });
+      
+      document.addEventListener('mouseover', () => {
+        cursor.style.opacity = '1';
+      });
+      
+      // Initialize cursor position
+      cursor.style.left = '50%';
+      cursor.style.top = '50%';
+      cursorX = window.innerWidth / 2;
+      cursorY = window.innerHeight / 2;
+      mouseX = cursorX;
+      mouseY = cursorY;
+      
+      // Start cursor animation
+      updateCursor();
+    })();
+  </script>
+</body>
+</html>
+
