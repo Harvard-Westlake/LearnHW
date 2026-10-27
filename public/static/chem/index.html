@@ -4,20 +4,72 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chemistry Learning Widgets</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="../math/widgets/shared/styles.css" />
     <style>
-      body { background-color: #f8f9fa; }
-      .widgets-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:2rem; padding:1rem; }
-      .widget-card { background:#fff; border-radius:12px; padding:1.75rem; box-shadow:0 4px 6px rgba(0,0,0,.05); border:1px solid rgba(0,0,0,.05); color:inherit; text-decoration:none; display:block; transition:.3s; }
-      .widget-card:hover { transform: translateY(-5px); box-shadow:0 8px 15px rgba(0,0,0,.1); border-color: rgba(230,0,0,.2); }
-      .widget-card .title-row { display:flex; flex-direction:column; margin-bottom:1rem; padding-bottom:.75rem; border-bottom:1px solid rgba(0,0,0,.05); }
-      .widget-card h3 { margin:0; font-size:1.25rem; font-weight:600; color:#000; }
-      .widget-card p { color:#666; margin-bottom:1.5rem; }
-      .widget-card .button { display:inline-block; background:#E60000; color:#fff; padding:.6rem 1.25rem; border-radius:8px; text-decoration:none; transition:.2s; font-weight:500; }
-      .widget-card:hover .button { background:#cc0000; transform: translateY(-2px); box-shadow:0 4px 8px rgba(230,0,0,.2); }
+      body {
+        background-color: #f8f9fa;
+      }
+      .widgets-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+        padding: 1rem;
+      }
+      .widget-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 1.75rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        color: inherit;
+        text-decoration: none;
+        display: block;
+        transition: 0.3s;
+      }
+      .widget-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        border-color: rgba(230, 0, 0, 0.2);
+      }
+      .widget-card .title-row {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      }
+      .widget-card h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #000;
+      }
+      .widget-card p {
+        color: #666;
+        margin-bottom: 1.5rem;
+      }
+      .widget-card .button {
+        display: inline-block;
+        background: #e60000;
+        color: #fff;
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: 0.2s;
+        font-weight: 500;
+      }
+      .widget-card:hover .button {
+        background: #cc0000;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(230, 0, 0, 0.2);
+      }
     </style>
   </head>
   <body>
@@ -31,13 +83,26 @@
             <h3>Crystallization Explorer</h3>
             <div class="function">Nucleation, growth, saturation</div>
           </div>
-          <p>Visualize crystal growth dynamics. Adjust parameters and observe nucleation vs growth under different saturation conditions.</p>
+          <p>
+            Visualize crystal growth dynamics. Adjust parameters and observe
+            nucleation vs growth under different saturation conditions.
+          </p>
+          <span class="button">Launch Widget</span>
+        </a>
+        <a href="imfs/imfs.html" class="widget-card">
+          <div class="title-row">
+            <h3>Intermolecular Forces (IMFs)</h3>
+            <div class="function">
+              Hydrogen bonding, dipole-dipole, dispersion
+            </div>
+          </div>
+          <p>
+            Explore hydrogen bonding, dipole-dipole, and London dispersion
+            forces through interactive particle simulation.
+          </p>
           <span class="button">Launch Widget</span>
         </a>
       </div>
     </div>
   </body>
-  
 </html>
-
-
