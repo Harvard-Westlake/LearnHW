@@ -1,0 +1,2814 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trig Substitution Study Widget</title>
+    <meta
+      name="description"
+      content="Interactive widget teaching trigonometric substitution for integrals (Calculus C)"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- KaTeX for math rendering in substitution panel -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"
+      crossorigin="anonymous"
+    />
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"
+      crossorigin="anonymous"
+    ></script>
+
+    <style>
+      :root {
+        --hw-red: #b31b1b; /* Harvard-Westlake crimson-like */
+        --hw-dark: #111;
+        --hw-gray-900: #1f2937;
+        --hw-gray-700: #374151;
+        --hw-gray-600: #4b5563;
+        --hw-gray-200: #e5e7eb;
+        --hw-gray-100: #f3f4f6;
+        --bg: #ffffff;
+        --text: #111827;
+        --link: var(--hw-red);
+        --card: #ffffff;
+        --accent: var(--hw-red);
+      }
+      /* Dark mode variable overrides */
+      body[data-theme="dark"] {
+        --bg: #0f172a; /* slate-900 */
+        --text: #e5e7eb; /* slate-200 */
+        --card: #111827; /* slate-900-ish */
+        --hw-gray-200: #334155; /* slate-700 */
+        --hw-gray-100: #1f2937; /* slate-800 */
+        --hw-gray-600: #94a3b8; /* slate-400 */
+        --hw-gray-700: #cbd5e1; /* slate-300 for strokes on dark */
+      }
+      body[data-theme="dark"] .tsw-grid {
+        stroke: #1e293b;
+      }
+      body[data-theme="dark"] .tsw-area {
+        fill: rgba(230, 0, 0, 0.18);
+      }
+      body[data-theme="dark"] .widget-grid .card,
+      body[data-theme="dark"] .card {
+        border-color: var(--hw-gray-200);
+        background: var(--card);
+        color: var(--text);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto,
+          Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        color: var(--text);
+        background: var(--bg);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 0 24px 0;
+        border-bottom: 1px solid var(--hw-gray-200);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: inherit;
+      }
+      .brand-mark {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        background: var(--accent);
+        position: relative;
+        box-shadow: 0 4px 16px rgba(179, 27, 27, 0.35);
+      }
+      .brand h1 {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: 0.2px;
+      }
+
+      .nav a {
+        color: var(--link);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .hero {
+        padding: 24px 0;
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        gap: 24px;
+      }
+      .hero h2 {
+        margin: 0 0 8px 0;
+        font-size: 28px;
+        line-height: 1.25;
+      }
+      .hero p {
+        margin: 8px 0 0 0;
+        color: var(--hw-gray-700);
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--hw-gray-200);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      }
+      .card h3 {
+        margin: 0 0 8px 0;
+      }
+      /* Collapsible card header */
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .collapse-btn {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+      }
+      .collapsible.collapsed #tsw-body {
+        display: none;
+      }
+
+      /* Yellow helper box (Quick Reference) */
+      .helper-box {
+        background: linear-gradient(180deg, #fff9c2 0%, #fff3a6 100%);
+        border: 1px solid #facc15; /* amber-400 */
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 10px 24px rgba(245, 158, 11, 0.25);
+      }
+      .helper-box h3 {
+        margin: 0 0 12px 0;
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--hw-gray-900);
+      }
+      .helper-box .row > div:first-child {
+        border-right: 1px solid rgba(245, 158, 11, 0.35);
+        padding-right: 16px;
+      }
+      .helper-box .row > div:last-child {
+        padding-left: 16px;
+      }
+      /* Neutral version for live trig substitution panel (no yellow) */
+      .subpanel-box {
+        background: #fff;
+        border: 1px solid var(--hw-gray-200);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      }
+      .subpanel-box h3 {
+        margin: 0 0 12px 0;
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--hw-gray-900);
+      }
+      .subpanel-box .row > div:first-child {
+        border-right: 1px solid rgba(0, 0, 0, 0.08);
+        padding-right: 16px;
+      }
+      .subpanel-box .row > div:last-child {
+        padding-left: 16px;
+      }
+      .helper-list {
+        margin: 8px 0 0 18px;
+        padding: 0;
+        line-height: 1.8;
+      }
+      .helper-list li {
+        margin: 8px 0;
+      }
+      .helper-list .subline {
+        display: inline;
+        font-weight: 700;
+        margin-left: 4px;
+      }
+
+      .widget-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .tab {
+        border: 1px solid var(--hw-gray-200);
+        background: #fff;
+        color: var(--hw-gray-700);
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .tab.active {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+        box-shadow: 0 6px 16px rgba(179, 27, 27, 0.25);
+      }
+
+      .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--hw-gray-900);
+        margin: 16px 0 8px 0;
+      }
+
+      .hint {
+        font-size: 13px;
+        color: var(--hw-gray-600);
+      }
+
+      label {
+        font-weight: 600;
+      }
+      input[type="text"],
+      select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--hw-gray-200);
+        border-radius: 8px;
+        font-size: 14px;
+      }
+      input[type="radio"] {
+        transform: translateY(1px);
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .row-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 6px 20px rgba(179, 27, 27, 0.25);
+      }
+      .btn.secondary {
+        background: #fff;
+        color: var(--hw-gray-900);
+        border: 1px solid var(--hw-gray-200);
+        box-shadow: none;
+      }
+
+      .pill {
+        display: inline-block;
+        padding: 2px 8px;
+        background: var(--hw-gray-100);
+        color: var(--hw-gray-700);
+        border: 1px solid var(--hw-gray-200);
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .output {
+        min-height: 120px;
+        background: #fff;
+        border: 1px dashed var(--hw-gray-200);
+        border-radius: 10px;
+        padding: 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        white-space: pre-wrap;
+      }
+
+      /* Steps guide box */
+      .steps-box h3 {
+        margin: 0 0 10px 0;
+      }
+      .steps {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .steps li {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 10px 0;
+        border-top: 1px solid var(--hw-gray-200);
+      }
+      .steps li:first-child {
+        border-top: none;
+      }
+      .step-num {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+      }
+
+      footer {
+        margin-top: 28px;
+        color: var(--hw-gray-600);
+        font-size: 13px;
+      }
+      footer a {
+        color: var(--link);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      @media (max-width: 900px) {
+        .hero {
+          grid-template-columns: 1fr;
+        }
+        .widget-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* Trig Substitution Widget minimal styles */
+      .tsw-curve {
+        stroke: var(--hw-gray-700);
+        stroke-width: 2;
+        fill: none;
+      }
+      .tsw-area {
+        fill: rgba(179, 27, 27, 0.15);
+      }
+      .tsw-bound {
+        stroke: var(--accent);
+        stroke-dasharray: 4 3;
+      }
+      .tsw-asymptote {
+        stroke: var(--hw-gray-700);
+        stroke-dasharray: 6 5;
+        stroke-width: 1.5;
+        opacity: 0.8;
+      }
+      .tsw-handle {
+        fill: var(--accent);
+        cursor: ew-resize;
+      }
+      .tsw-axis {
+        stroke: var(--hw-gray-200);
+      }
+      .tsw-grid {
+        stroke: #f1f5f9;
+      }
+      .tsw-overlay {
+        stroke: var(--accent);
+        stroke-dasharray: 6 4;
+        fill: none;
+        opacity: 0.7;
+      }
+      .tsw-geom-diagram {
+        stroke: #000;
+        fill: none;
+      }
+      .tsw-geom-text {
+        fill: #000;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      /* Cookie banner */
+      .cookie-banner {
+        position: fixed;
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+        z-index: 1000;
+        background: var(--card);
+        border: 1px solid var(--hw-gray-200);
+        border-radius: 12px;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      }
+      .cookie-banner p {
+        margin: 0;
+        flex: 1;
+        font-size: 14px;
+        color: var(--hw-gray-700);
+      }
+      .cookie-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .cookie-btn {
+        padding: 8px 12px;
+      }
+      .cookie-btn.secondary {
+        background: #fff;
+        color: var(--hw-gray-900);
+        border: 1px solid var(--hw-gray-200);
+        box-shadow: none;
+      }
+
+      /* Interactive Tutorial Styles */
+      .tutorial-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        display: none;
+      }
+      .tutorial-overlay.active {
+        display: block;
+      }
+      .tutorial-highlight {
+        position: relative;
+        z-index: 1001;
+        transition: all 0.3s ease;
+      }
+      .tutorial-highlight.active {
+        box-shadow: 0 0 0 4px rgba(179, 27, 27, 0.3),
+          0 0 20px rgba(179, 27, 27, 0.5);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 4px 8px;
+        margin: -4px -8px;
+      }
+      .tutorial-highlight.active label {
+        padding: 0;
+        margin: 0;
+      }
+      .tutorial-card {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: 600px;
+        width: calc(100% - 48px);
+        background: var(--card);
+        border: 2px solid var(--accent);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        z-index: 1002;
+        display: none;
+      }
+      .tutorial-card.active {
+        display: block;
+        animation: slideUp 0.3s ease;
+      }
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+      .tutorial-card h4 {
+        margin: 0 0 12px 0;
+        font-size: 20px;
+        color: var(--accent);
+      }
+      .tutorial-card .step-content {
+        margin: 0 0 20px 0;
+        line-height: 1.6;
+        color: var(--text);
+      }
+      .tutorial-card .step-content strong {
+        color: var(--accent);
+      }
+      .tutorial-card .step-content ul {
+        margin: 8px 0 0 20px;
+        padding: 0;
+      }
+      .tutorial-card .step-content li {
+        margin: 6px 0;
+      }
+      .tutorial-progress {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+      .tutorial-progress-dot {
+        flex: 1;
+        height: 4px;
+        background: var(--hw-gray-200);
+        border-radius: 2px;
+        transition: background 0.3s ease;
+      }
+      .tutorial-progress-dot.active {
+        background: var(--accent);
+      }
+      .tutorial-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      .tutorial-nav-buttons {
+        display: flex;
+        gap: 8px;
+      }
+      .tutorial-step-counter {
+        font-size: 14px;
+        color: var(--hw-gray-600);
+        font-weight: 600;
+      }
+      .tutorial-start-btn {
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <a class="brand" href="#" aria-label="Harvard-Westlake Learning">
+          <div class="brand-mark"></div>
+          <h1>Harvard‑Westlake Study Widget</h1>
+        </a>
+        <nav class="nav">
+          <a href="https://learnhw.web.app/admin" target="_blank" rel="noopener"
+            >Admin</a
+          >
+          <button
+            class="btn secondary"
+            id="theme-toggle"
+            style="margin-left: 12px"
+          >
+            Dark
+          </button>
+        </nav>
+      </header>
+
+      <section class="hero">
+        <div>
+          <h2>Trigonometric Substitution (Calculus C)</h2>
+          <p>
+            Trigonometric substitution is an extension of your integration
+            toolkit. It targets a specific class of integrals whose algebraic
+            structure suggests a trig change of variables—typically when a
+            quadratic expression appears under a square root or in a
+            denominator. Use this widget to choose the right substitution, build
+            a reference triangle, and carry the integral through to a clean
+            back‑substituted result.
+          </p>
+        </div>
+        <div class="helper-box" role="region" aria-labelledby="quickref-title">
+          <h3 id="quickref-title">Quick Reference</h3>
+          <div class="row">
+            <div>
+              <div class="section-title">Patterns</div>
+              <ul class="helper-list">
+                <li>
+                  √(a² − x²) → x = a
+                  <span class="subline">sin θ</span>
+                </li>
+                <li>
+                  √(a² + x²) → x = a
+                  <span class="subline">tan θ</span>
+                </li>
+                <li>
+                  √(x² − a²) → x = a
+                  <span class="subline">sec θ</span>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <div class="section-title">Identities</div>
+              <ul class="helper-list">
+                <li>1 − sin²θ = cos²θ</li>
+                <li>1 + tan²θ = sec²θ</li>
+                <li>sec²θ − 1 = tan²θ</li>
+              </ul>
+            </div>
+          </div>
+          
+        </div>
+      </section>
+
+      <!-- Interactive Tutorial Section -->
+      <section class="card" style="margin-bottom: 20px">
+        <h3>Interactive Tutorial</h3>
+        <p style="margin: 8px 0; line-height: 1.6; color: var(--hw-gray-700)">
+          Learn how to use all the features of this widget with our step-by-step
+          interactive guide. We'll highlight each feature as we go!
+        </p>
+        <button class="btn tutorial-start-btn" id="tutorial-start">
+          Start Interactive Tutorial
+        </button>
+      </section>
+
+      <!-- Tutorial Overlay and Card -->
+      <div class="tutorial-overlay" id="tutorial-overlay"></div>
+      <div class="tutorial-card" id="tutorial-card">
+        <div class="tutorial-progress" id="tutorial-progress"></div>
+        <h4 id="tutorial-title"></h4>
+        <div class="step-content" id="tutorial-content"></div>
+        <div class="tutorial-nav">
+          <div class="tutorial-nav-buttons">
+            <button
+              class="btn secondary"
+              id="tutorial-prev"
+              style="display: none"
+            >
+              ← Previous
+            </button>
+            <button class="btn" id="tutorial-next">Next →</button>
+            <button
+              class="btn secondary"
+              id="tutorial-finish"
+              style="display: none"
+            >
+              Finish
+            </button>
+          </div>
+          <div class="tutorial-step-counter">
+            <span id="tutorial-step-num">1</span> of
+            <span id="tutorial-total">10</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Old Tutorial Section (hidden, kept for reference) -->
+      <section class="card" style="margin-bottom: 20px; display: none">
+        <h3>How to Use This Widget — Step-by-Step Guide</h3>
+        <div style="margin-top: 16px">
+          <div class="section-title">1. Selecting a Function</div>
+          <p style="margin: 8px 0; line-height: 1.6">
+            Use the <strong>Function</strong> dropdown to choose which
+            trigonometric substitution pattern you want to explore. Available
+            options include:
+          </p>
+          <ul style="margin: 8px 0 16px 20px; line-height: 1.8">
+            <li>
+              Square root functions: <code>sqrt(a² - x²)</code>,
+              <code>sqrt(a² + x²)</code>, <code>sqrt(x² - a²)</code>
+            </li>
+            <li>
+              Inverse square root functions: <code>1/sqrt(a² - x²)</code>,
+              <code>1/sqrt(a² + x²)</code>, <code>1/sqrt(x² - a²)</code>
+            </li>
+            <li>
+              Rational functions: <code>1/(a² - x²)</code>,
+              <code>1/(a² + x²)</code>, <code>1/(x² - a²)</code>
+            </li>
+          </ul>
+
+          <div class="section-title">2. Adjusting the Parameter 'a'</div>
+          <p style="margin: 8px 0; line-height: 1.6">
+            The <strong>a</strong> input controls the shape of the function.
+            When you change 'a', the function curve updates automatically. The
+            bounds (L and R) remain unchanged unless they become invalid for the
+            new function domain.
+          </p>
+
+          <div class="section-title">3. Setting Integration Bounds</div>
+          <p style="margin: 8px 0; line-height: 1.6">
+            Enter values for <strong>Left bound L</strong> and
+            <strong>Right bound R</strong>
+            to define your integration interval. You can:
+          </p>
+          <ul style="margin: 8px 0 16px 20px; line-height: 1.8">
+            <li>Type values directly into the input fields</li>
+            <li>
+              Drag the circular handles on the graph to adjust bounds visually
+            </li>
+            <li>The shaded area shows the region being integrated</li>
+            <li>The approximate area value appears below the graph</li>
+          </ul>
+
+          <div class="section-title">4. Show Trig Substitution Checkbox</div>
+          <p style="margin: 8px 0; line-height: 1.6">
+            When checked, displays a panel below the graph showing:
+          </p>
+          <ul style="margin: 8px 0 16px 20px; line-height: 1.8">
+            <li>
+              <strong>Mapping:</strong> The substitution formulas (x = ..., dx =
+              ..., y = ...)
+            </li>
+            <li>
+              <strong>θ-bounds and integrand:</strong> The transformed integral
+              in terms of θ
+            </li>
+          </ul>
+          <p style="margin: 8px 0 16px 0; line-height: 1.6">
+            This helps you see how the integral transforms from x-space to
+            θ-space.
+          </p>
+
+          <div class="section-title">5. Show Geometry Checkbox</div>
+          <p style="margin: 8px 0; line-height: 1.6">
+            When enabled, overlays reference geometry on the graph to visualize
+            the trigonometric substitution:
+          </p>
+          <ul style="margin: 8px 0 16px 20px; line-height: 1.8">
+            <li>
+              <strong>For sin substitutions:</strong> Shows a reference circle
+              and right triangle with angle θ labeled
+            </li>
+            <li>
+              <strong>For tan substitutions:</strong> Shows a reference right
+              triangle demonstrating the relationship
+            </li>
+            <li>
+              <strong>For sec substitutions:</strong> Shows a reference right
+              triangle for the secant substitution
+            </li>
+          </ul>
+          <p style="margin: 8px 0 16px 0; line-height: 1.6">
+            The geometry helps you understand how to back-substitute after
+            integrating in terms of θ. <strong>Note:</strong> Geometry only
+            appears when bounds are set (not in indefinite integral mode).
+          </p>
+
+          <div class="section-title">6. Indefinite Integral Checkbox</div>
+          <p style="margin: 8px 0; line-height: 1.6">When checked:</p>
+          <ul style="margin: 8px 0 16px 20px; line-height: 1.8">
+            <li>Hides the bounds input fields (L and R)</li>
+            <li>Removes the shaded area from the graph</li>
+            <li>Shows only the function curve</li>
+            <li>
+              Updates the trig substitution panel to show the indefinite
+              integral form
+            </li>
+            <li>Disables geometry overlay (since it requires bounds)</li>
+          </ul>
+          <p style="margin: 8px 0 16px 0; line-height: 1.6">
+            Use this mode when you want to explore the general form of the
+            integral without specific bounds.
+          </p>
+
+          <div class="section-title">7. Collapse Button</div>
+          <p style="margin: 8px 0; line-height: 1.6">
+            The <strong>Collapse</strong> button in the top-right corner of the
+            widget allows you to:
+          </p>
+          <ul style="margin: 8px 0 16px 20px; line-height: 1.8">
+            <li>Hide/show the entire widget content</li>
+            <li>Save screen space when you're not actively using the widget</li>
+            <li>
+              Your preference is saved and will persist when you reload the page
+            </li>
+          </ul>
+          <p style="margin: 8px 0 16px 0; line-height: 1.6">
+            Click "Collapse" to hide, or "Expand" to show the widget again.
+          </p>
+
+          <div class="section-title">8. Copy Shareable Link Button</div>
+          <p style="margin: 8px 0; line-height: 1.6">
+            Click <strong>Copy shareable link</strong> to copy a URL that
+            includes all your current settings:
+          </p>
+          <ul style="margin: 8px 0 16px 20px; line-height: 1.8">
+            <li>Selected function type</li>
+            <li>Parameter 'a' value</li>
+            <li>Integration bounds (L and R)</li>
+            <li>
+              Checkbox states (Show trig substitution, Show geometry, Indefinite
+              integral)
+            </li>
+          </ul>
+          <p style="margin: 8px 0 16px 0; line-height: 1.6">
+            Share this link with others or bookmark it to return to the same
+            configuration.
+          </p>
+
+          <div class="section-title">9. Interacting with the Graph</div>
+          <p style="margin: 8px 0; line-height: 1.6">
+            The graph is interactive:
+          </p>
+          <ul style="margin: 8px 0 16px 20px; line-height: 1.8">
+            <li>
+              <strong>Drag the circular handles</strong> on the x-axis to adjust
+              integration bounds
+            </li>
+            <li>
+              <strong>Vertical dashed lines</strong> show your current bounds
+            </li>
+            <li>
+              <strong>Shaded area</strong> represents the region being
+              integrated
+            </li>
+            <li>
+              <strong>Grid lines</strong> help you read approximate values
+            </li>
+            <li><strong>Axis labels</strong> show the scale</li>
+          </ul>
+
+          <div class="section-title">10. Reading the Output</div>
+          <p style="margin: 8px 0; line-height: 1.6">
+            Below the graph, you'll see:
+          </p>
+          <ul style="margin: 8px 0 16px 20px; line-height: 1.8">
+            <li>
+              <strong>Area estimate:</strong> The approximate numerical value of
+              the definite integral
+            </li>
+            <li>
+              <strong>Trig Substitution panel:</strong> (if enabled) Shows the
+              mathematical transformation
+            </li>
+            <li>
+              <strong>Metrics box:</strong> Displays the integration interval
+              and calculated area
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Trig Substitution Explorer (interactive) -->
+      <section class="card collapsible" id="tsw">
+        <div class="card-header">
+          <h3>Area Under the Curve — Trig Substitution Explorer</h3>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <button class="btn" id="tsw-copy">Copy shareable link</button>
+            <button
+              class="btn secondary collapse-btn"
+              id="tsw-toggle"
+              aria-expanded="true"
+              aria-controls="tsw-body"
+            >
+              Collapse
+            </button>
+          </div>
+        </div>
+        <div id="tsw-body">
+          <div class="row">
+            <div>
+              <label for="tsw-function">Function</label>
+              <select id="tsw-function" aria-label="function">
+                <option value="sqrt_minus">√(a² − x²)</option>
+                <option value="sqrt_plus">√(a² + x²)</option>
+                <option value="sqrt_x2_minus">√(x² − a²)</option>
+                <option value="inv_sqrt_minus">1/√(a² − x²)</option>
+                <option value="inv_sqrt_plus">1/√(a² + x²)</option>
+                <option value="inv_sqrt_x2_minus">1/√(x² − a²)</option>
+                <option value="inv_minus">1/(a² − x²)</option>
+                <option value="inv_plus">1/(a² + x²)</option>
+                <option value="inv_x2_minus">1/(x² − a²)</option>
+              </select>
+              <div id="tsw-function-preview" aria-live="polite" style="margin-top: 8px; font-size: 22px;"></div>
+
+              <div style="margin-top: 8px">
+                <label for="tsw-a">a</label>
+                <input
+                  id="tsw-a"
+                  type="number"
+                  step="0.1"
+                  min="0.5"
+                  value="2"
+                  aria-label="parameter a"
+                />
+              </div>
+
+              <div id="tsw-bounds-row" style="margin-top: 8px">
+                <div>
+                  <label for="tsw-L">Left bound L</label>
+                  <input
+                    id="tsw-L"
+                    type="number"
+                    step="0.1"
+                    aria-label="left bound"
+                  />
+                </div>
+                <div style="margin-top: 8px">
+                  <label for="tsw-R">Right bound R</label>
+                  <input
+                    id="tsw-R"
+                    type="number"
+                    step="0.1"
+                    aria-label="right bound"
+                  />
+                  <div class="output" id="tsw-metrics" aria-live="polite" style="margin-top: 8px"></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label>&nbsp;</label>
+              <div style="display: flex; gap: 12px; align-items: center">
+                <label style="display: flex; gap: 6px; align-items: center"
+                  ><input type="checkbox" id="tsw-show-sub" checked /> Show trig
+                  substitution</label
+                >
+                <label style="display: flex; gap: 6px; align-items: center"
+                  ><input type="checkbox" id="tsw-show-geom" /> Show
+                  geometry</label
+                >
+                <label style="display: flex; gap: 6px; align-items: center"
+                  ><input type="checkbox" id="tsw-indef" /> Indefinite
+                  integral</label
+                >
+              </div>
+              <div
+                id="tsw-geompanel"
+                class="subpanel-box"
+                style="margin-top: 18px; margin-left: auto; display: none; padding: 14px; max-width: 380px; width: fit-content"
+              ></div>
+            </div>
+          </div>
+
+          
+
+          <div style="margin-top: 12px">
+            <svg
+              id="tsw-svg"
+              viewBox="0 0 800 420"
+              style="
+                width: 100%;
+                height: auto;
+                border: 1px solid var(--hw-gray-200);
+                border-radius: 10px;
+                background: #fff;
+              "
+            ></svg>
+          </div>
+
+          <div
+            id="tsw-subpanel"
+            class="subpanel-box"
+            style="margin-top: 12px; display: none"
+          >
+            <h3>Trig Substitution</h3>
+            <div class="row">
+              <div>
+                <div class="section-title">Mapping</div>
+                <div id="tsw-map"></div>
+              </div>
+              <div>
+                <div class="section-title">θ‑bounds and integrand</div>
+                <div id="tsw-theta"></div>
+              </div>
+            </div>
+            <div class="hint" style="margin-top: 8px">
+              We show the θ‑space setup and transformed integrand only — no
+              closed‑form solutions.
+            </div>
+            <div class="section-title" style="margin-top: 10px">Answer</div>
+            <div id="tsw-answer"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Trig Substitution Explorer (interactive) -->
+
+      <section class="widget-grid">
+        <div class="card steps-box">
+          <h3>How to Solve a Trig Substitution</h3>
+          <ol class="steps">
+            <li>
+              <span class="step-num">1</span>
+              <div>
+                Read the yellow Quick Reference box and match your pattern to
+                choose the substitution (sin / tan / sec).
+              </div>
+            </li>
+            <li>
+              <span class="step-num">2</span>
+              <div>
+                Identify the trig identity to simplify to θ (e.g., 1 − sin²θ =
+                cos²θ, 1 + tan²θ = sec²θ).
+              </div>
+            </li>
+            <li>
+              <span class="step-num">3</span>
+              <div>
+                Integrate in θ, then use the reference triangle to back‑sub and
+                express the answer in x.
+              </div>
+            </li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>Detect Pattern</h3>
+
+          <div id="tab-detect">
+            <div class="section-title">
+              Expression under the root or denominator
+            </div>
+            <input
+              id="expr"
+              type="text"
+              placeholder="e.g. sqrt(9 - x^2) or 1/(x^2+4)"
+              aria-label="expression"
+            />
+            <div class="hint" style="margin-top: 6px">
+              We’ll try to match it to √(a² − x²), √(a² + x²), or √(x² − a²). If
+              needed, we’ll complete the square first.
+            </div>
+            <div style="margin-top: 12px; display: flex; gap: 8px">
+              <button class="btn" id="analyzeBtn">Analyze pattern</button>
+              <button class="btn secondary" id="clearBtn">Clear</button>
+            </div>
+            <div class="output" id="detectOut" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        Built in Harvard‑Westlake style. Admin link:
+        <a href="https://learnhw.web.app/admin" target="_blank" rel="noopener"
+          >learnhw.web.app/admin</a
+        >. &nbsp;·&nbsp;
+        <a href="#" id="open-privacy">Privacy settings</a>
+      </footer>
+    </div>
+
+    <script>
+      (function () {
+        function applyTheme(theme) {
+          try {
+            document.body.setAttribute("data-theme", theme);
+          } catch (e) {}
+          var btn = document.getElementById("theme-toggle");
+          if (btn) btn.textContent = theme === "dark" ? "Light" : "Dark";
+          try {
+            localStorage.setItem("tsw_theme", theme);
+          } catch (e) {}
+        }
+        function initTheme() {
+          var saved = null;
+          try {
+            saved = localStorage.getItem("tsw_theme");
+          } catch (e) {}
+          var theme =
+            saved ||
+            (window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light");
+          applyTheme(theme);
+          var btn = document.getElementById("theme-toggle");
+          if (btn) {
+            btn.addEventListener("click", function () {
+              var next =
+                document.body.getAttribute("data-theme") === "dark"
+                  ? "light"
+                  : "dark";
+              applyTheme(next);
+            });
+          }
+        }
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", initTheme);
+        } else {
+          initTheme();
+        }
+      })();
+    </script>
+
+    <div
+      id="cookie-banner"
+      class="cookie-banner"
+      role="dialog"
+      aria-live="polite"
+      aria-label="Cookie consent"
+      style="display: none"
+    >
+      <p>
+        We use functional storage to remember your widget settings and optional
+        analytics to count visits. You can change this anytime.
+      </p>
+      <div class="cookie-actions">
+        <button class="btn secondary cookie-btn" id="cookie-reject">
+          Reject analytics
+        </button>
+        <button class="btn cookie-btn" id="cookie-accept">
+          Accept analytics
+        </button>
+      </div>
+    </div>
+
+    <!-- Optional: provide your Firebase config here (replace with real values) -->
+    <script>
+      // Your Firebase config for this site (used by the consent-aware module below)
+      // We only initialize Firebase after consent is granted.
+      window.FIREBASE_CONFIG = {
+        apiKey: "AIzaSyDBgs41zkelOSkCaeu4YlSNAOjBzbaudMY",
+        authDomain: "pixelflame57.firebaseapp.com",
+        projectId: "pixelflame57",
+        storageBucket: "pixelflame57.firebasestorage.app",
+        messagingSenderId: "599021595167",
+        appId: "1:599021595167:web:c11cd8c7bab20694ee032a",
+        measurementId: "G-GL8D054WMD",
+      };
+    </script>
+
+    <script>
+      // Tabs removed: only Detect Pattern is shown now.
+
+      // Detect pattern and suggest substitution
+      const exprEl = document.getElementById("expr");
+      const detectOut = document.getElementById("detectOut");
+      const analyzeBtn = document.getElementById("analyzeBtn");
+      const clearBtn = document.getElementById("clearBtn");
+
+      function analyzeExpression(raw) {
+        if (!raw) return { summary: "Enter an expression to analyze." };
+        const s = raw.replace(/\s+/g, "").toLowerCase();
+        // Support sqrt(expr) or 1/(expr) (we only examine the inner expr)
+        let inside = s;
+        const sqrtMatch = s.match(/^sqrt\((.+)\)$/);
+        const invMatch = s.match(/^1\/\((.+)\)$/);
+        if (sqrtMatch) inside = sqrtMatch[1];
+        else if (invMatch) inside = invMatch[1];
+
+        // Detect canonical numeric forms and capture the constant a^2:
+        //   a^2 - x^2, a^2 + x^2, x^2 - a^2, x^2 + a^2
+        const mMinus = inside.match(/^\(?([0-9.]+)\)?-x\^2$/);
+        const mPlus = inside.match(/^\(?([0-9.]+)\)?\+x\^2$/);
+        const mXMinus = inside.match(/^x\^2-\(?([0-9.]+)\)?$/);
+        const mXPlus = inside.match(/^x\^2\+\(?([0-9.]+)\)?$/);
+
+        let a = null;
+        let rec = "";
+        const fmt = (v) =>
+          Math.abs(v - Math.round(v)) < 1e-9
+            ? String(Math.round(v))
+            : v
+                .toFixed(3)
+                .replace(/\\.0+$/, "")
+                .replace(/(\\.\\d*?)0+$/, "$1");
+
+        if (mMinus) {
+          const a2 = parseFloat(mMinus[1]);
+          a = Number.isFinite(a2) && a2 >= 0 ? Math.sqrt(a2) : null;
+          rec = `Detected √(a² − x²). Use x = a sin θ. a ≈ ${
+            a != null ? fmt(a) : "a"
+          }.`;
+        } else if (mPlus || mXPlus) {
+          const a2 = parseFloat((mPlus || mXPlus)[1]);
+          a = Number.isFinite(a2) && a2 >= 0 ? Math.sqrt(a2) : null;
+          rec = `Detected √(a² + x²). Use x = a tan θ. a ≈ ${
+            a != null ? fmt(a) : "a"
+          }.`;
+        } else if (mXMinus) {
+          const a2 = parseFloat(mXMinus[1]);
+          a = Number.isFinite(a2) && a2 >= 0 ? Math.sqrt(a2) : null;
+          rec = `Detected √(x² − a²). Use x = a sec θ. a ≈ ${
+            a != null ? fmt(a) : "a"
+          }.`;
+        } else {
+          rec =
+            "Pattern not immediately recognized. Consider completing the square or factoring.";
+        }
+        return { inside, a, rec };
+      }
+
+      analyzeBtn.addEventListener("click", () => {
+        const res = analyzeExpression(exprEl.value);
+        detectOut.textContent = res.rec || res.summary;
+        if (res.a) {
+          const aValEl = document.getElementById("aValue");
+          if (aValEl) aValEl.value = String(res.a);
+          const subSel = document.getElementById("subChoice");
+          if (subSel) {
+            if (/\-x\^2/.test(res.inside)) {
+              subSel.value = "sin";
+            } else if (/\+x\^2/.test(res.inside) || /x\^2\+/.test(res.inside)) {
+              subSel.value = "tan";
+            } else if (/x\^2\-/.test(res.inside)) {
+              subSel.value = "sec";
+            }
+          }
+        }
+      });
+      clearBtn.addEventListener("click", () => {
+        exprEl.value = "";
+        detectOut.textContent = "";
+      });
+
+      // Triangle generator
+      const subChoice = document.getElementById("subChoice");
+      const aValue = document.getElementById("aValue");
+      const triangleOut = document.getElementById("triangleOut");
+
+      function updateTriangle() {
+        const a = parseFloat(aValue.value);
+        if (!a || a <= 0) {
+          triangleOut.textContent = "Enter a positive a.";
+          return;
+        }
+        const sub = subChoice.value;
+        if (sub === "sin") {
+          triangleOut.textContent =
+            "x = a sin θ ⇒ opposite = x, hypotenuse = a, adjacent = √(a² − x²).";
+        } else if (sub === "tan") {
+          triangleOut.textContent =
+            "x = a tan θ ⇒ opposite = x, adjacent = a, hypotenuse = √(a² + x²).";
+        } else {
+          triangleOut.textContent =
+            "x = a sec θ ⇒ hypotenuse = x, adjacent = a, opposite = √(x² − a²).";
+        }
+      }
+      if (subChoice && aValue && triangleOut) {
+        subChoice.addEventListener("change", updateTriangle);
+        aValue.addEventListener("input", updateTriangle);
+      }
+
+      // Integration helper (guidance only)
+      const subIntegrand = document.getElementById("subIntegrand");
+      const dxFormula = document.getElementById("dxFormula");
+      const integrateOut = document.getElementById("integrateOut");
+      function updateIntegrate() {
+        const f = subIntegrand.value.trim();
+        const dx = dxFormula.value.trim();
+        if (!f || !dx) {
+          integrateOut.textContent = "Enter integrand and substitution/dx.";
+          return;
+        }
+        integrateOut.textContent =
+          "Replace x and dx, simplify using identities, integrate in θ, then back‑sub using your triangle.";
+      }
+      if (subIntegrand && dxFormula && integrateOut) {
+        subIntegrand.addEventListener("input", updateIntegrate);
+        dxFormula.addEventListener("input", updateIntegrate);
+      }
+
+      // Practice Q1
+      const q1Out = document.getElementById("q1Out");
+      if (
+        q1Out &&
+        document.getElementById("checkQ1") &&
+        document.getElementById("showSolQ1")
+      ) {
+        document.getElementById("checkQ1").addEventListener("click", () => {
+          const choice = (
+            document.querySelector('input[name="q1"]:checked') || {}
+          ).value;
+          if (!choice) {
+            q1Out.textContent = "Select an option.";
+            return;
+          }
+          if (choice === "sin") {
+            q1Out.textContent = "Correct: √(a² − x²) ⇒ x = a sin θ with a = 4.";
+          } else {
+            q1Out.textContent =
+              "Not quite. For √(a² − x²), use sin. Try again!";
+          }
+        });
+        document.getElementById("showSolQ1").addEventListener("click", () => {
+          q1Out.textContent =
+            "Let x = 4 sin θ. Then dx = 4 cos θ dθ, √(16 − x²) = 4 cos θ. Integral becomes ∫ 4 cos θ · 4 cos θ dθ = 16 ∫ cos²θ dθ = 16 · (θ/2 + sin(2θ)/4) + C. Back‑sub: θ = arcsin(x/4).";
+        });
+      }
+
+      // Practice Q2 hint/solution
+      const q2Out = document.getElementById("q2Out");
+      if (
+        q2Out &&
+        document.getElementById("hintQ2") &&
+        document.getElementById("showSolQ2")
+      ) {
+        document.getElementById("hintQ2").addEventListener("click", () => {
+          q2Out.textContent =
+            "Hint: Let x = 3 tan θ. Then √(x²+9) = 3 sec θ, dx = 3 sec²θ dθ.";
+        });
+        document.getElementById("showSolQ2").addEventListener("click", () => {
+          q2Out.textContent =
+            "Let x = 3 tan θ ⇒ dx = 3 sec²θ dθ and √(x²+9) = 3 sec θ. Integral becomes ∫ (3 tan θ · 3 sec²θ)/(3 sec θ) dθ = ∫ 3 tan θ sec θ dθ = 3 sec θ + C. Back‑sub: sec θ = √(x²+9)/3, so answer is √(x²+9) + C.";
+        });
+      }
+
+      // --- Trig Substitution Widget implementation ---
+      (function () {
+        const svg = document.getElementById("tsw-svg");
+        if (!svg) return; // Widget not present
+
+        // UI elements
+        const funcSel = document.getElementById("tsw-function");
+        const aInput = document.getElementById("tsw-a");
+        const LInput = document.getElementById("tsw-L");
+        const RInput = document.getElementById("tsw-R");
+        const copyBtn = document.getElementById("tsw-copy");
+        const metrics = document.getElementById("tsw-metrics");
+        const showSub = document.getElementById("tsw-show-sub");
+        const showGeom = document.getElementById("tsw-show-geom");
+        const indefToggle = document.getElementById("tsw-indef");
+        const boundsRow = document.getElementById("tsw-bounds-row");
+        const subPanel = document.getElementById("tsw-subpanel");
+        const mapBox = document.getElementById("tsw-map");
+        const thetaBox = document.getElementById("tsw-theta");
+        const answerBox = document.getElementById("tsw-answer");
+        const funcPreview = document.getElementById("tsw-function-preview");
+        const geomPanel = document.getElementById("tsw-geompanel");
+
+        const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+        const configs = {
+          sqrt_minus: {
+            label: "sqrt(a^2 - x^2)",
+            f: (x, a) => {
+              const t = a * a - x * x;
+              return t >= 0 ? Math.sqrt(t) : NaN;
+            },
+            domain: (a) => [-a, a],
+            singular: false,
+            sub: {
+              name: "sin",
+              xTex: "x = a\\,\\sin\\theta",
+              dxTex: "dx = a\\,\\cos\\theta\\,d\\theta",
+              yTex: "y = a\\,\\cos\\theta",
+              gTex: (a) => "a^2\\,\\cos^2\\theta",
+              thetaOfX: (x, a) => Math.asin(clamp(x / a, -1, 1)),
+            },
+          },
+          sqrt_plus: {
+            label: "sqrt(a^2 + x^2)",
+            f: (x, a) => Math.sqrt(a * a + x * x),
+            domain: (a) => [-Math.max(4 * a, 4), Math.max(4 * a, 4)],
+            singular: false,
+            sub: {
+              name: "tan",
+              xTex: "x = a\\,\\tan\\theta",
+              dxTex: "dx = a\\,\\sec^2\\theta\\,d\\theta",
+              yTex: "y = a\\,\\sec\\theta",
+              gTex: (a) => "a^2\\,\\sec^3\\theta",
+              thetaOfX: (x, a) => Math.atan(x / a),
+            },
+          },
+          sqrt_x2_minus: {
+            label: "sqrt(x^2 - a^2)",
+            f: (x, a) => {
+              const t = x * x - a * a;
+              return t >= 0 ? Math.sqrt(t) : NaN;
+            },
+            domain: (a) => [-Math.max(4 * a, 4), Math.max(4 * a, 4)],
+            singular: false,
+            sub: {
+              name: "sec",
+              xTex: "x = a\\,\\sec\\theta",
+              dxTex: "dx = a\\,\\sec\\theta\\,\\tan\\theta\\,d\\theta",
+              yTex: "y = a\\,\\tan\\theta",
+              gTex: (a) => "a^2\\,\\sec\\theta\\,\\tan^2\\theta",
+              thetaOfX: (x, a) => Math.acos(clamp(a / x, -1, 1)),
+            },
+          },
+          inv_sqrt_minus: {
+            label: "1/sqrt(a^2 - x^2)",
+            f: (x, a) => {
+              const t = a * a - x * x;
+              return t > 0 ? 1 / Math.sqrt(t) : NaN;
+            },
+            domain: (a) => [-a * 0.99, a * 0.99],
+            singular: true,
+            sub: {
+              name: "sin",
+              xTex: "x = a\\,\\sin\\theta",
+              dxTex: "dx = a\\,\\cos\\theta\\,d\\theta",
+              yTex: "y = 1/(a\\,\\cos\\theta)",
+              gTex: (a) => "1",
+              thetaOfX: (x, a) => Math.asin(clamp(x / a, -1, 1)),
+            },
+          },
+          inv_sqrt_plus: {
+            label: "1/sqrt(a^2 + x^2)",
+            f: (x, a) => 1 / Math.sqrt(a * a + x * x),
+            domain: (a) => [-Math.max(4 * a, 4), Math.max(4 * a, 4)],
+            singular: false,
+            sub: {
+              name: "tan",
+              xTex: "x = a\\,\\tan\\theta",
+              dxTex: "dx = a\\,\\sec^2\\theta\\,d\\theta",
+              yTex: "y = 1/(a\\,\\sec\\theta)",
+              gTex: (a) => "1",
+              thetaOfX: (x, a) => Math.atan(x / a),
+            },
+          },
+          inv_sqrt_x2_minus: {
+            label: "1/sqrt(x^2 - a^2)",
+            f: (x, a) => {
+              const t = x * x - a * a;
+              return t > 0 ? 1 / Math.sqrt(t) : NaN;
+            },
+            domain: (a) => {
+              const min = Math.max(a * 1.01, a + 0.1);
+              return [min, Math.max(4 * a, 4)];
+            },
+            singular: true,
+            sub: {
+              name: "sec",
+              xTex: "x = a\\,\\sec\\theta",
+              dxTex: "dx = a\\,\\sec\\theta\\,\\tan\\theta\\,d\\theta",
+              yTex: "y = 1/(a\\,\\tan\\theta)",
+              gTex: (a) => "1",
+              thetaOfX: (x, a) => Math.acos(clamp(a / x, -1, 1)),
+            },
+          },
+          inv_minus: {
+            label: "1/(a^2 - x^2)",
+            f: (x, a) => {
+              const t = a * a - x * x;
+              return Math.abs(t) > 1e-10 ? 1 / t : NaN;
+            },
+            domain: (a) => [-a * 0.99, a * 0.99],
+            singular: true,
+            sub: {
+              name: "sin",
+              xTex: "x = a\\,\\sin\\theta",
+              dxTex: "dx = a\\,\\cos\\theta\\,d\\theta",
+              yTex: "y = 1/(a^2\\,\\cos^2\\theta)",
+              gTex: (a) => "\\sec^2\\theta",
+              thetaOfX: (x, a) => Math.asin(clamp(x / a, -1, 1)),
+            },
+          },
+          inv_plus: {
+            label: "1/(a^2 + x^2)",
+            f: (x, a) => 1 / (a * a + x * x),
+            domain: (a) => [-Math.max(4 * a, 4), Math.max(4 * a, 4)],
+            singular: false,
+            sub: {
+              name: "tan",
+              xTex: "x = a\\,\\tan\\theta",
+              dxTex: "dx = a\\,\\sec^2\\theta\\,d\\theta",
+              yTex: "y = 1/(a^2\\,\\sec^2\\theta)",
+              gTex: (a) => "1",
+              thetaOfX: (x, a) => Math.atan(x / a),
+            },
+          },
+          inv_x2_minus: {
+            label: "1/(x^2 - a^2)",
+            f: (x, a) => {
+              const t = x * x - a * a;
+              return Math.abs(t) > 1e-10 ? 1 / t : NaN;
+            },
+            domain: (a) => {
+              const min = Math.max(a * 1.01, a + 0.1);
+              return [min, Math.max(4 * a, 4)];
+            },
+            singular: true,
+            sub: {
+              name: "sec",
+              xTex: "x = a\\,\\sec\\theta",
+              dxTex: "dx = a\\,\\sec\\theta\\,\\tan\\theta\\,d\\theta",
+              yTex: "y = 1/(a^2\\,\\tan^2\\theta)",
+              gTex: (a) => "\\csc^2\\theta",
+              thetaOfX: (x, a) => Math.acos(clamp(a / x, -1, 1)),
+            },
+          },
+        };
+
+        // Vertical asymptotes for each function (x = constant)
+        const asymptotes = {
+          sqrt_minus: (a) => [],
+          sqrt_plus: (a) => [],
+          sqrt_x2_minus: (a) => [],
+          inv_sqrt_minus: (a) => [-a, a],
+          inv_sqrt_plus: (a) => [],
+          inv_sqrt_x2_minus: (a) => [-a, a],
+          inv_minus: (a) => [-a, a],
+          inv_plus: (a) => [],
+          inv_x2_minus: (a) => [-a, a],
+        };
+
+        // TeX for the original f(x) shown under the Function select
+        const funcTex = {
+          sqrt_minus: "\\sqrt{a^2 - x^2}",
+          sqrt_plus: "\\sqrt{a^2 + x^2}",
+          sqrt_x2_minus: "\\sqrt{x^2 - a^2}",
+          inv_sqrt_minus: "\\frac{1}{\\sqrt{a^2 - x^2}}",
+          inv_sqrt_plus: "\\frac{1}{\\sqrt{a^2 + x^2}}",
+          inv_sqrt_x2_minus: "\\frac{1}{\\sqrt{x^2 - a^2}}",
+          inv_minus: "\\frac{1}{a^2 - x^2}",
+          inv_plus: "\\frac{1}{a^2 + x^2}",
+          inv_x2_minus: "\\frac{1}{x^2 - a^2}",
+        };
+
+        const W = 800;
+        const H = 420;
+        const m = { left: 54, right: 18, top: 18, bottom: 38 };
+        const innerW = W - m.left - m.right;
+        const innerH = H - m.top - m.bottom;
+
+        let state = {
+          funcId: "sqrt_minus",
+          a: 2,
+          L: -2,
+          R: 2,
+          showSub: true,
+          showGeom: false,
+          indef: false,
+        };
+
+        // Load saved widget preferences (URL params take precedence later)
+        try {
+          const saved = JSON.parse(localStorage.getItem("tsw_prefs") || "null");
+          if (saved && typeof saved === "object") {
+            state = { ...state, ...saved };
+          }
+        } catch {}
+
+        function parseParams() {
+          const url = new URL(window.location.href);
+          const f = url.searchParams.get("f");
+          const a = parseFloat(url.searchParams.get("a"));
+          const L = parseFloat(url.searchParams.get("L"));
+          const R = parseFloat(url.searchParams.get("R"));
+          const ss = url.searchParams.get("showSub");
+          const sg = url.searchParams.get("showGeom");
+          const si = url.searchParams.get("indef");
+          if (f && configs[f]) state.funcId = f;
+          if (Number.isFinite(a) && a > 0) state.a = a;
+          if (Number.isFinite(L)) state.L = L;
+          if (Number.isFinite(R)) state.R = R;
+          if (ss != null) state.showSub = ss === "1" || ss === "true";
+          if (sg != null) state.showGeom = sg === "1" || sg === "true";
+          if (si != null) state.indef = si === "1" || si === "true";
+        }
+
+        function writeParams() {
+          const url = new URL(window.location.href);
+          url.searchParams.set("f", state.funcId);
+          url.searchParams.set("a", String(state.a));
+          url.searchParams.set("L", String(state.L));
+          url.searchParams.set("R", String(state.R));
+          url.searchParams.set("showSub", state.showSub ? "1" : "0");
+          url.searchParams.set("showGeom", state.showGeom ? "1" : "0");
+          url.searchParams.set("indef", state.indef ? "1" : "0");
+          history.replaceState(null, "", url.toString());
+        }
+
+        function savePrefs() {
+          const prefs = {
+            funcId: state.funcId,
+            a: state.a,
+            L: state.L,
+            R: state.R,
+            showSub: state.showSub,
+            showGeom: state.showGeom,
+            indef: state.indef,
+          };
+          try {
+            localStorage.setItem("tsw_prefs", JSON.stringify(prefs));
+          } catch {}
+          // Optional cloud backup (defined after Firebase init if consented)
+          try {
+            if (window.__tswCloudBackup) window.__tswCloudBackup(prefs);
+          } catch {}
+        }
+
+        function syncUI() {
+          funcSel.value = state.funcId;
+          aInput.value = String(state.a);
+          LInput.value = String(state.L);
+          RInput.value = String(state.R);
+          showSub.checked = state.showSub;
+          showGeom.checked = state.showGeom;
+          if (indefToggle) indefToggle.checked = state.indef;
+          if (boundsRow) boundsRow.style.display = state.indef ? "none" : "";
+          renderFunctionPreview();
+        }
+
+        function linspace(lo, hi, n) {
+          const out = new Array(n);
+          const step = (hi - lo) / (n - 1);
+          for (let i = 0; i < n; i++) out[i] = lo + i * step;
+          return out;
+        }
+
+        function computeRanges(cfg, a) {
+          // Suggested view window from the config (may depend on a)
+          let [vMin, vMax] = cfg.domain(a);
+
+          // Preserve user-selected bounds; do not clamp them to the suggested view
+          const Lc = Math.min(state.L, state.R);
+          const Rc = Math.max(state.L, state.R);
+
+          // Ensure the view includes the user-selected bounds, even if outside suggested view
+          const xMin = Math.min(vMin, Lc);
+          const xMax = Math.max(vMax, Rc);
+
+          // Sample to estimate y-range over the visible window
+          const n = 200;
+          let yMax = 0;
+          const xs = linspace(xMin, xMax, n);
+          for (const x of xs) {
+            const y = cfg.f(x, a);
+            if (Number.isFinite(y)) yMax = Math.max(yMax, y);
+          }
+          if (!Number.isFinite(yMax) || yMax <= 0) yMax = 1;
+          const yMin = 0;
+          return { xMin, xMax, yMin, yMax: yMax * 1.08, _boundsL: Lc, _boundsR: Rc };
+        }
+
+        function clearSvg() {
+          while (svg.firstChild) svg.removeChild(svg.firstChild);
+        }
+
+        function make(tag) {
+          return document.createElementNS("http://www.w3.org/2000/svg", tag);
+        }
+
+        function drawAxes(range) {
+          const { xMin, xMax, yMin, yMax } = range;
+          const xToPx = (x) => m.left + ((x - xMin) / (xMax - xMin)) * innerW;
+          const yToPx = (y) => m.top + ((yMax - y) / (yMax - yMin)) * innerH;
+
+          const gx = make("g");
+          gx.setAttribute("class", "tsw-grid");
+          const gy = make("g");
+          gy.setAttribute("class", "tsw-grid");
+          const xticks = 6,
+            yticks = 5;
+          for (let i = 0; i <= xticks; i++) {
+            const x = xMin + (i / xticks) * (xMax - xMin);
+            const line = make("line");
+            line.setAttribute("x1", String(xToPx(x)));
+            line.setAttribute("x2", String(xToPx(x)));
+            line.setAttribute("y1", String(m.top));
+            line.setAttribute("y2", String(H - m.bottom));
+            line.setAttribute("stroke", "#f1f5f9");
+            gx.appendChild(line);
+          }
+          for (let j = 0; j <= yticks; j++) {
+            const y = yMin + (j / yticks) * (yMax - yMin);
+            const line = make("line");
+            line.setAttribute("x1", String(m.left));
+            line.setAttribute("x2", String(W - m.right));
+            line.setAttribute("y1", String(yToPx(y)));
+            line.setAttribute("y2", String(yToPx(y)));
+            line.setAttribute("stroke", "#f1f5f9");
+            gy.appendChild(line);
+          }
+          svg.appendChild(gx);
+          svg.appendChild(gy);
+
+          const xAxis = make("line");
+          xAxis.setAttribute("x1", String(m.left));
+          xAxis.setAttribute("x2", String(W - m.right));
+          xAxis.setAttribute("y1", String(yToPx(0)));
+          xAxis.setAttribute("y2", String(yToPx(0)));
+          xAxis.setAttribute("class", "tsw-axis");
+          svg.appendChild(xAxis);
+
+          const yAxis = make("line");
+          yAxis.setAttribute("x1", String(xToPx(0)));
+          yAxis.setAttribute("x2", String(xToPx(0)));
+          yAxis.setAttribute("y1", String(m.top));
+          yAxis.setAttribute("y2", String(H - m.bottom));
+          yAxis.setAttribute("class", "tsw-axis");
+          svg.appendChild(yAxis);
+
+          const tf = (v) => {
+            if (Math.abs(v) >= 1000) return v.toExponential(1);
+            if (Math.abs(v) < 1) return v.toFixed(2);
+            return v.toFixed(1);
+          };
+          for (let i = 0; i <= 6; i++) {
+            const x = xMin + (i / 6) * (xMax - xMin);
+            const text = make("text");
+            text.setAttribute("x", String(xToPx(x)));
+            text.setAttribute("y", String(H - m.bottom + 16));
+            text.setAttribute("text-anchor", "middle");
+            text.setAttribute("font-size", "11");
+            text.setAttribute("fill", "#6b7280");
+            text.textContent = tf(x);
+            svg.appendChild(text);
+          }
+          for (let j = 0; j <= 5; j++) {
+            const y = yMin + (j / 5) * (yMax - yMin);
+            const text = make("text");
+            text.setAttribute("x", String(m.left - 6));
+            text.setAttribute("y", String(yToPx(y) + 4));
+            text.setAttribute("text-anchor", "end");
+            text.setAttribute("font-size", "11");
+            text.setAttribute("fill", "#6b7280");
+            text.textContent = tf(y);
+            svg.appendChild(text);
+          }
+
+          return { xToPx, yToPx };
+        }
+
+        function renderAsymptotes(cfg, a, range) {
+          const list = asymptotes[state.funcId]
+            ? asymptotes[state.funcId](a)
+            : [];
+          if (!list || !list.length) return;
+          const { xMin, xMax, yMin, yMax } = range;
+          const { xToPx, yToPx } = range._scales;
+          for (const x0 of list) {
+            if (!Number.isFinite(x0)) continue;
+            if (x0 <= xMin || x0 >= xMax) continue;
+            const line = make("line");
+            const xp = xToPx(x0);
+            line.setAttribute("x1", String(xp));
+            line.setAttribute("x2", String(xp));
+            line.setAttribute("y1", String(yToPx(yMin)));
+            line.setAttribute("y2", String(yToPx(yMax)));
+            line.setAttribute("class", "tsw-asymptote");
+            svg.appendChild(line);
+          }
+        }
+
+        function hasAsymptoteInInterval(funcId, a, L, R) {
+          const list = asymptotes[funcId] ? asymptotes[funcId](a) : [];
+          if (!list || !list.length) return false;
+          const l = Math.min(L, R);
+          const r = Math.max(L, R);
+          const eps = 1e-12;
+          for (const x0 of list) {
+            if (!Number.isFinite(x0)) continue;
+            if (l - eps <= x0 && x0 <= r + eps) return true;
+          }
+          return false;
+        }
+
+        function renderGeomPanel() {
+          if (!geomPanel) return;
+          geomPanel.style.display = state.showGeom ? "block" : "none";
+          if (!state.showGeom) {
+            geomPanel.innerHTML = "";
+            return;
+          }
+          const cfg = configs[state.funcId];
+          const sub = cfg.sub;
+          const subName = sub.name; // 'sin' | 'tan' | 'sec'
+          // Side labels by substitution type
+          let baseLabel = "", vertLabel = "", hypLabel = "";
+          if (subName === "sin") {
+            // x = a sin θ ⇒ opposite = x, adjacent = √(a² − x²), hypotenuse = a
+            baseLabel = "√(a² − x²)";
+            vertLabel = "x";
+            hypLabel = "a";
+          } else if (subName === "tan") {
+            // x = a tan θ ⇒ opposite = x, adjacent = a, hypotenuse = √(x² + a²)
+            baseLabel = "a";
+            vertLabel = "x";
+            hypLabel = "√(x² + a²)";
+          } else {
+            // sec: x = a sec θ ⇒ adjacent = a, opposite = √(x² − a²), hypotenuse = x
+            baseLabel = "a";
+            vertLabel = "√(x² − a²)";
+            hypLabel = "x";
+          }
+          // Draw a right triangle with right angle at bottom-right; θ at bottom-left
+          const BLx = 20, BLy = 180; // bottom-left
+          const BRx = 220, BRy = 180; // bottom-right (right angle)
+          const TRx = 220, TRy = 60;  // top-right
+          const rightMark = `
+            <path class="tsw-geom-diagram" d="M ${BRx-10} ${BRy} L ${BRx-10} ${BRy-10} L ${BRx} ${BRy-10}" stroke-width="2" />
+          `;
+          // Small theta arc at bottom-left (approximate)
+          const arc = `
+            <path class="tsw-geom-diagram" d="M ${BLx+24} ${BLy} A 24 24 0 0 0 ${BLx+18} ${BLy-14}" stroke-width="2" />
+          `;
+          // Labels
+          const baseMidX = (BLx + BRx) / 2, baseMidY = BLy + 16;
+          const vertMidX = BRx + 12, vertMidY = (BRy + TRy) / 2;
+          const hypMidX = (BLx + TRx) / 2 - 14, hypMidY = (BLy + TRy) / 2 - 8;
+          const svg = `
+            <svg width="360" height="300" viewBox="0 0 240 200" role="img" aria-label="Reference right triangle">
+              <path class="tsw-geom-diagram" d="M ${BLx} ${BLy} L ${BRx} ${BRy} L ${TRx} ${TRy} Z" stroke-width="2" />
+              ${rightMark}
+              ${arc}
+              <text class="tsw-geom-text" x="${BLx + 28}" y="${BLy - 12}">θ</text>
+              <text class="tsw-geom-text" x="${baseMidX}" y="${baseMidY}" text-anchor="middle">${baseLabel}</text>
+              <text class="tsw-geom-text" x="${vertMidX}" y="${vertMidY}" writing-mode="tb" glyph-orientation-vertical="auto">${vertLabel}</text>
+              <text class="tsw-geom-text" x="${hypMidX}" y="${hypMidY}">${hypLabel}</text>
+            </svg>
+          `;
+          geomPanel.innerHTML = svg;
+        }
+
+        function buildCurvePath(cfg, a, range) {
+          const { xMin, xMax } = range;
+          const n = 400;
+          const xs = linspace(xMin, xMax, n);
+          const ds = [];
+          const { xToPx, yToPx } = range._scales;
+          for (let i = 0; i < xs.length; i++) {
+            const x = xs[i];
+            const y = cfg.f(x, a);
+            if (!Number.isFinite(y)) continue;
+            ds.push(`${i === 0 ? "M" : "L"} ${xToPx(x)} ${yToPx(y)}`);
+          }
+          return ds.join(" ");
+        }
+
+        function buildAreaPath(cfg, a, range) {
+          const { yMin } = range;
+          const n = 300;
+          // Use the user-provided bounds for shaded area
+          const L = range._boundsL != null ? range._boundsL : state.L;
+          const R = range._boundsR != null ? range._boundsR : state.R;
+          const xs = linspace(L, R, n);
+          const { xToPx, yToPx } = range._scales;
+          const parts = [];
+          parts.push(`M ${xToPx(L)} ${yToPx(yMin)}`);
+          parts.push(`L ${xToPx(L)} ${yToPx(cfg.f(L, a) || 0)}`);
+          for (const x of xs) {
+            const y = cfg.f(x, a);
+            if (!Number.isFinite(y)) continue;
+            parts.push(`L ${xToPx(x)} ${yToPx(y)}`);
+          }
+          parts.push(`L ${xToPx(R)} ${yToPx(yMin)}`);
+          parts.push("Z");
+          return parts.join(" ");
+        }
+
+        function simpson(f, a, b) {
+          const c = 0.5 * (a + b);
+          return ((b - a) / 6) * (f(a) + 4 * f(c) + f(b));
+        }
+        function adaptiveSimpson(f, a, b, eps, depth, whole) {
+          const c = 0.5 * (a + b);
+          const left = simpson(f, a, c);
+          const right = simpson(f, c, b);
+          if (whole === undefined) whole = simpson(f, a, b);
+          if (depth <= 0 || !Number.isFinite(left + right)) return left + right;
+          if (Math.abs(left + right - whole) <= 15 * eps) {
+            return left + right + (left + right - whole) / 15;
+          }
+          return (
+            adaptiveSimpson(f, a, c, eps / 2, depth - 1, left) +
+            adaptiveSimpson(f, c, b, eps / 2, depth - 1, right)
+          );
+        }
+
+        function integrate(cfg, a, L, R) {
+          if (R === L) return 0;
+          const sign = R > L ? 1 : -1;
+          const l = Math.min(L, R);
+          const r = Math.max(L, R);
+          const f = (x) => {
+            const y = cfg.f(x, a);
+            return Number.isFinite(y) ? y : NaN;
+          };
+          try {
+            return sign * adaptiveSimpson(f, l, r, 1e-6, 18);
+          } catch (e) {
+            return NaN;
+          }
+        }
+
+        function renderGeomOverlay(cfg, a, range) {
+          if (!state.showGeom) return;
+          const { xToPx, yToPx } = range._scales;
+
+          const sub = cfg.sub;
+          const subName = sub.name;
+
+          // Draw reference circle for sin substitution (sqrt(a^2 - x^2) pattern)
+          if (subName === "sin" && state.funcId === "sqrt_minus") {
+            const parts = [];
+            const n = 240;
+            for (let i = 0; i <= n; i++) {
+              const theta = (i / n) * 2 * Math.PI;
+              const x = a * Math.cos(theta);
+              const y = a * Math.sin(theta);
+              const cmd = i === 0 ? "M" : "L";
+              parts.push(`${cmd} ${xToPx(x)} ${yToPx(y)}`);
+            }
+            const path = make("path");
+            path.setAttribute("d", parts.join(" "));
+            path.setAttribute("class", "tsw-overlay");
+            path.setAttribute("stroke-width", "2");
+            svg.appendChild(path);
+          }
+
+          // Draw reference triangles for all functions
+          if (!state.indef && state.L !== state.R) {
+            let xVal, yVal, theta;
+            let drawTriangle = false;
+
+            if (subName === "sin") {
+              // For sin substitution: x = a sin θ
+              xVal = (state.L + state.R) / 2;
+              if (Math.abs(xVal) < a * 0.99) {
+                yVal = cfg.f(xVal, a);
+                if (Number.isFinite(yVal)) {
+                  theta = Math.asin(clamp(xVal / a, -1, 1));
+                  drawTriangle = true;
+                }
+              }
+            } else if (subName === "tan") {
+              // For tan substitution: x = a tan θ
+              xVal = (state.L + state.R) / 2;
+              yVal = cfg.f(xVal, a);
+              if (Number.isFinite(yVal)) {
+                theta = Math.atan(xVal / a);
+                drawTriangle = true;
+              }
+            } else if (subName === "sec") {
+              // For sec substitution: x = a sec θ
+              xVal = Math.max(Math.abs(state.L), Math.abs(state.R));
+              if (xVal > a * 1.01) {
+                yVal = cfg.f(xVal, a);
+                if (Number.isFinite(yVal)) {
+                  theta = Math.acos(clamp(a / xVal, -1, 1));
+                  drawTriangle = true;
+                }
+              }
+            }
+
+            if (drawTriangle) {
+              const originX = xToPx(0);
+              const originY = yToPx(0);
+              const xPx = xToPx(xVal);
+              const yPx = yToPx(yVal);
+              const xPx0 = xToPx(xVal);
+              const yPx0 = yToPx(0);
+
+              // Draw triangle based on substitution type
+              const triPath = make("path");
+              if (subName === "sin") {
+                // Triangle: origin to (x, y) to (x, 0)
+                triPath.setAttribute(
+                  "d",
+                  `M ${originX} ${originY} L ${xPx} ${yPx} L ${xPx0} ${yPx0} Z`
+                );
+              } else {
+                // Triangle: origin to (x, 0) to (x, y) for tan and sec
+                triPath.setAttribute(
+                  "d",
+                  `M ${originX} ${originY} L ${xPx0} ${yPx0} L ${xPx} ${yPx} Z`
+                );
+              }
+              triPath.setAttribute("class", "tsw-overlay");
+              triPath.setAttribute("fill", "rgba(179, 27, 27, 0.1)");
+              triPath.setAttribute("stroke-width", "1.5");
+              svg.appendChild(triPath);
+
+              // Label theta angle
+              const arcRadius = Math.min(a * 0.3, 30);
+              const arcPath = make("path");
+              const arcStartX = originX + arcRadius;
+              const arcStartY = originY;
+              const arcEndX = originX + arcRadius * Math.cos(theta);
+              const arcEndY = originY - arcRadius * Math.sin(theta);
+              const largeArc = subName === "sin" && theta > Math.PI ? 1 : 0;
+              arcPath.setAttribute(
+                "d",
+                `M ${arcStartX} ${arcStartY} A ${arcRadius} ${arcRadius} 0 ${largeArc} 0 ${arcEndX} ${arcEndY}`
+              );
+              arcPath.setAttribute("class", "tsw-overlay");
+              arcPath.setAttribute("stroke-width", "1.5");
+              arcPath.setAttribute("fill", "none");
+              svg.appendChild(arcPath);
+
+              // Label theta
+              const thetaLabel = make("text");
+              thetaLabel.setAttribute("x", String(originX + arcRadius * 0.6));
+              thetaLabel.setAttribute(
+                "y",
+                String(originY - arcRadius * (subName === "sin" ? 0.4 : 0.3))
+              );
+              thetaLabel.setAttribute("font-size", "12");
+              thetaLabel.setAttribute("fill", "#b31b1b");
+              thetaLabel.setAttribute("font-weight", "600");
+              thetaLabel.textContent = "θ";
+              svg.appendChild(thetaLabel);
+            }
+          }
+        }
+
+        function render() {
+          const cfg = configs[state.funcId];
+          const range = computeRanges(cfg, state.a);
+          range._scales = drawAxes(range);
+
+          const curve = make("path");
+          curve.setAttribute("d", buildCurvePath(cfg, state.a, range));
+          curve.setAttribute("class", "tsw-curve");
+          svg.appendChild(curve);
+
+          const undefinedAcrossAsym =
+            !state.indef &&
+            hasAsymptoteInInterval(state.funcId, state.a, state.L, state.R);
+
+          if (!state.indef && !undefinedAcrossAsym) {
+            const area = make("path");
+            area.setAttribute("d", buildAreaPath(cfg, state.a, range));
+            area.setAttribute("class", "tsw-area");
+            svg.appendChild(area);
+          }
+
+          // Draw vertical asymptotes (on top of area, below bounds/handles)
+          renderAsymptotes(cfg, state.a, range);
+
+          const { xToPx, yToPx } = range._scales;
+          const y0 = yToPx(0);
+          let lh, rh;
+          if (!state.indef) {
+            const lline = make("line");
+            lline.setAttribute("x1", String(xToPx(state.L)));
+            lline.setAttribute("x2", String(xToPx(state.L)));
+            lline.setAttribute("y1", String(m.top));
+            lline.setAttribute("y2", String(H - m.bottom));
+            lline.setAttribute("class", "tsw-bound");
+            svg.appendChild(lline);
+            const rline = make("line");
+            rline.setAttribute("x1", String(xToPx(state.R)));
+            rline.setAttribute("x2", String(xToPx(state.R)));
+            rline.setAttribute("y1", String(m.top));
+            rline.setAttribute("y2", String(H - m.bottom));
+            rline.setAttribute("class", "tsw-bound");
+            svg.appendChild(rline);
+
+            lh = make("circle");
+            lh.setAttribute("cx", String(xToPx(state.L)));
+            lh.setAttribute("cy", String(y0));
+            lh.setAttribute("r", "6");
+            lh.setAttribute("class", "tsw-handle");
+            svg.appendChild(lh);
+            rh = make("circle");
+            rh.setAttribute("cx", String(xToPx(state.R)));
+            rh.setAttribute("cy", String(y0));
+            rh.setAttribute("r", "6");
+            rh.setAttribute("class", "tsw-handle");
+            svg.appendChild(rh);
+          }
+
+          // Geometry is now displayed in a separate panel, not overlaid on the graph.
+
+          let dragging = null;
+          function onMove(ev) {
+            if (!dragging) return;
+            const pt = svg.createSVGPoint();
+            pt.x = ev.clientX;
+            pt.y = ev.clientY;
+            const ctm = svg.getScreenCTM();
+            if (!ctm) return;
+            const inv = ctm.inverse();
+            const loc = pt.matrixTransform(inv);
+            const x = loc.x;
+            const xVal =
+              ((x - m.left) / innerW) * (range.xMax - range.xMin) + range.xMin;
+            const nx = xVal;
+            if (dragging === "L") {
+              state.L = Math.min(nx, state.R - 1e-6);
+              LInput.value = String(state.L);
+            } else {
+              state.R = Math.max(nx, state.L + 1e-6);
+              RInput.value = String(state.R);
+            }
+            clearSvg();
+            render();
+            updateMetrics();
+            writeParams();
+          }
+          function onUp() {
+            dragging = null;
+            window.removeEventListener("pointermove", onMove);
+            window.removeEventListener("pointerup", onUp);
+          }
+          if (!state.indef && lh && rh) {
+            lh.addEventListener("pointerdown", (ev) => {
+              dragging = "L";
+              lh.setPointerCapture(ev.pointerId);
+              window.addEventListener("pointermove", onMove);
+              window.addEventListener("pointerup", onUp);
+            });
+            rh.addEventListener("pointerdown", (ev) => {
+              dragging = "R";
+              rh.setPointerCapture(ev.pointerId);
+              window.addEventListener("pointermove", onMove);
+              window.addEventListener("pointerup", onUp);
+            });
+          }
+        }
+
+        function renderSubPanel() {
+          subPanel.style.display = state.showSub ? "block" : "none";
+          if (!state.showSub) return;
+          const cfg = configs[state.funcId];
+          const sub = cfg.sub;
+          let thL = sub.thetaOfX(state.L, state.a);
+          let thR = sub.thetaOfX(state.R, state.a);
+          const fmt = (x) => (Math.abs(x) < 1e-3 ? "0" : x.toFixed(3));
+          const mapTex = `${sub.xTex},\\quad ${sub.dxTex},\\quad ${sub.yTex}`;
+          const gTex = sub.gTex(state.a);
+          const thetaTex = state.indef
+            ? `\\int ${gTex}\\,d\\theta`
+            : `\\theta_L = ${fmt(thL)},\\ \n\\theta_R = ${fmt(
+                thR
+              )}\\qquad\\text{and}\\qquad \\int_{${fmt(thL)}}^{${fmt(
+                thR
+              )}} ${gTex}\\,d\\theta`;
+          if (window.katex) {
+            katex.render(mapTex, mapBox, { throwOnError: false });
+            katex.render(thetaTex, thetaBox, {
+              throwOnError: false,
+              displayMode: true,
+            });
+          } else {
+            mapBox.textContent = mapTex;
+            thetaBox.textContent = thetaTex;
+          }
+          if (answerBox) {
+            if (state.indef) {
+              const F = (() => {
+                switch (state.funcId) {
+                  case "sqrt_minus":
+                    return "\\tfrac{1}{2}\\left(x\\sqrt{a^2 - x^2} + a^2\\,\\arcsin\\!\\left(\\tfrac{x}{a}\\right)\\right) + C";
+                  case "sqrt_plus":
+                    return "\\tfrac{1}{2}\\left(x\\sqrt{a^2 + x^2} + a^2\\,\\ln\\!\\left(x + \\sqrt{x^2 + a^2}\\right)\\right) + C";
+                  case "sqrt_x2_minus":
+                    return "\\tfrac{1}{2}\\left(x\\sqrt{x^2 - a^2} - a^2\\,\\ln\\!\\left|x + \\sqrt{x^2 - a^2}\\right|\\right) + C";
+                  case "inv_sqrt_minus":
+                    return "\\arcsin\\!\\left(\\tfrac{x}{a}\\right) + C";
+                  case "inv_sqrt_plus":
+                    return "\\ln\\!\\left(x + \\sqrt{x^2 + a^2}\\right) + C";
+                  case "inv_sqrt_x2_minus":
+                    return "\\ln\\!\\left|x + \\sqrt{x^2 - a^2}\\right| + C";
+                  case "inv_minus":
+                    return "\\tfrac{1}{2a}\\,\\ln\\!\\left|\\tfrac{a + x}{a - x}\\right| + C";
+                  case "inv_plus":
+                    return "\\tfrac{1}{a}\\,\\arctan\\!\\left(\\tfrac{x}{a}\\right) + C";
+                  case "inv_x2_minus":
+                    return "\\tfrac{1}{2a}\\,\\ln\\!\\left|\\tfrac{x - a}{x + a}\\right| + C";
+                  default:
+                    return null;
+                }
+              })();
+              const tex = F
+                ? `F(x) = ${F}`
+                : "Antiderivative not available for this function.";
+              if (window.katex && F) {
+                katex.render(tex, answerBox, { throwOnError: false, displayMode: true });
+              } else {
+                answerBox.textContent = tex;
+              }
+            } else {
+              if (hasAsymptoteInInterval(state.funcId, state.a, state.L, state.R)) {
+                answerBox.textContent =
+                  "Definite integral is undefined (vertical asymptote inside bounds).";
+              } else {
+                const val = integrate(cfg, state.a, state.L, state.R);
+                if (Number.isFinite(val)) {
+                  const s = val.toFixed(6);
+                  if (window.katex) {
+                    const tex = `\\text{Definite integral} \\;\\approx\\; ${s}`;
+                    katex.render(tex, answerBox, { throwOnError: false, displayMode: true });
+                  } else {
+                    answerBox.textContent = `Definite integral ≈ ${s}`;
+                  }
+                } else {
+                  answerBox.textContent = "Area estimate unavailable (numerical issue).";
+                }
+              }
+            }
+          }
+        }
+
+        function updateMetrics() {
+          const cfg = configs[state.funcId];
+          if (state.indef) {
+            metrics.textContent = "Indefinite integral mode: no numeric area.";
+            return;
+          }
+          if (hasAsymptoteInInterval(state.funcId, state.a, state.L, state.R)) {
+            metrics.textContent =
+              "Integral undefined on the selected interval (vertical asymptote inside bounds).";
+            return;
+          }
+          const val = integrate(cfg, state.a, state.L, state.R);
+          if (!Number.isFinite(val)) {
+            metrics.textContent =
+              "Area estimate unavailable (numerical issue).";
+            return;
+          }
+          metrics.textContent = `Approximate area on [${state.L.toFixed(
+            3
+          )}, ${state.R.toFixed(3)}] = ${val.toFixed(6)}`;
+        }
+
+        function updateAll() {
+          clearSvg();
+          render();
+          renderSubPanel();
+          renderGeomPanel();
+          updateMetrics();
+          writeParams();
+          savePrefs();
+          renderFunctionPreview();
+        }
+
+        function renderFunctionPreview() {
+          if (!funcPreview) return;
+          const tex = funcTex[state.funcId] || "";
+          if (window.katex) {
+            try {
+              katex.render(tex, funcPreview, { throwOnError: false });
+            } catch {
+              funcPreview.textContent = tex;
+            }
+          } else {
+            funcPreview.textContent = tex;
+          }
+        }
+
+        funcSel.addEventListener("change", () => {
+          state.funcId = funcSel.value;
+          const dom = configs[state.funcId].domain(state.a);
+          state.L = dom[0];
+          state.R = dom[1];
+          syncUI();
+          updateAll();
+        });
+        aInput.addEventListener("input", () => {
+          const v = parseFloat(aInput.value);
+          if (!Number.isFinite(v) || v <= 0) return;
+          state.a = v;
+          // Keep bounds the same - only adjust if they're invalid (L >= R)
+          if (state.L >= state.R) {
+            const dom = configs[state.funcId].domain(state.a);
+            state.L = dom[0];
+            state.R = dom[1];
+          }
+          syncUI();
+          updateAll();
+        });
+        LInput.addEventListener("input", () => {
+          const v = parseFloat(LInput.value);
+          if (!Number.isFinite(v)) return;
+          state.L = v;
+          syncUI();
+          updateAll();
+        });
+        RInput.addEventListener("input", () => {
+          const v = parseFloat(RInput.value);
+          if (!Number.isFinite(v)) return;
+          state.R = v;
+          syncUI();
+          updateAll();
+        });
+        showSub.addEventListener("change", () => {
+          state.showSub = showSub.checked;
+          updateAll();
+        });
+        showGeom.addEventListener("change", () => {
+          state.showGeom = showGeom.checked;
+          updateAll();
+        });
+        if (indefToggle) {
+          indefToggle.addEventListener("change", () => {
+            state.indef = indefToggle.checked;
+            syncUI();
+            updateAll();
+          });
+        }
+        copyBtn.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(window.location.href);
+            metrics.textContent =
+              (metrics.textContent || "") + "  (Link copied)";
+          } catch {}
+        });
+
+        parseParams();
+        syncUI();
+        clearSvg();
+        render();
+        renderSubPanel();
+        renderGeomPanel();
+        updateMetrics();
+        writeParams();
+        savePrefs();
+
+        // If KaTeX script loads later (defer), re-render the math once DOM is ready
+        document.addEventListener("DOMContentLoaded", function () {
+          if (window.katex) {
+            try {
+              renderSubPanel();
+              renderGeomPanel();
+              renderFunctionPreview();
+            } catch (e) {}
+          }
+        });
+        // Extra safety: poll briefly for KaTeX, then render once available
+        if (!window.katex) {
+          let tries = 0;
+          const timer = setInterval(function () {
+            if (window.katex || tries > 20) {
+              clearInterval(timer);
+              if (window.katex) {
+                try {
+                  renderSubPanel();
+                  renderGeomPanel();
+                  renderFunctionPreview();
+                } catch (e) {}
+              }
+            }
+            tries += 1;
+          }, 150);
+        }
+        // Collapsible card behavior for the main explorer
+        const tswEl = document.getElementById("tsw");
+        const tswToggle = document.getElementById("tsw-toggle");
+        function setCollapsed(collapsed) {
+          if (!tswEl || !tswToggle) return;
+          tswEl.classList.toggle("collapsed", collapsed);
+          tswToggle.setAttribute("aria-expanded", (!collapsed).toString());
+          tswToggle.textContent = collapsed ? "Expand" : "Collapse";
+          try {
+            localStorage.setItem("tsw_collapsed", collapsed ? "1" : "0");
+          } catch {}
+        }
+        if (tswEl && tswToggle) {
+          let init = null;
+          try {
+            init = localStorage.getItem("tsw_collapsed");
+          } catch {}
+          setCollapsed(init === "1");
+          tswToggle.addEventListener("click", function () {
+            setCollapsed(!tswEl.classList.contains("collapsed"));
+          });
+        }
+      })();
+
+      // Interactive Tutorial
+      (function () {
+        const tutorialSteps = [
+          {
+            title: "1. Selecting a Function",
+            content: `Use the <strong>Function</strong> dropdown to choose which trigonometric substitution pattern you want to explore. Available options include:<ul><li>Square root functions: sqrt(a² - x²), sqrt(a² + x²), sqrt(x² - a²)</li><li>Inverse square root functions: 1/sqrt(a² - x²), 1/sqrt(a² + x²), 1/sqrt(x² - a²)</li><li>Rational functions: 1/(a² - x²), 1/(a² + x²), 1/(x² - a²)</li></ul>`,
+            highlight: "#tsw-function",
+          },
+          {
+            title: "2. Adjusting the Parameter 'a'",
+            content: `The <strong>a</strong> input controls the shape of the function. When you change 'a', the function curve updates automatically. The bounds (L and R) remain unchanged unless they become invalid for the new function domain.`,
+            highlight: "#tsw-a",
+          },
+          {
+            title: "3. Setting Integration Bounds",
+            content: `Enter values for <strong>Left bound L</strong> and <strong>Right bound R</strong> to define your integration interval. You can:<ul><li>Type values directly into the input fields</li><li>Drag the circular handles on the graph to adjust bounds visually</li><li>The shaded area shows the region being integrated</li><li>The approximate area value appears below the graph</li></ul>`,
+            highlight: "#tsw-bounds-row",
+          },
+          {
+            title: "4. Show Trig Substitution Checkbox",
+            content: `When checked, displays a panel below the graph showing:<ul><li><strong>Mapping:</strong> The substitution formulas (x = ..., dx = ..., y = ...)</li><li><strong>θ-bounds and integrand:</strong> The transformed integral in terms of θ</li></ul>This helps you see how the integral transforms from x-space to θ-space.`,
+            highlight: "#tsw-show-sub",
+          },
+          {
+            title: "5. Show Geometry Checkbox",
+            content: `When enabled, overlays reference geometry on the graph to visualize the trigonometric substitution:<ul><li><strong>For sin substitutions:</strong> Shows a reference circle and right triangle with angle θ labeled</li><li><strong>For tan substitutions:</strong> Shows a reference right triangle demonstrating the relationship</li><li><strong>For sec substitutions:</strong> Shows a reference right triangle for the secant substitution</li></ul><strong>Note:</strong> Geometry only appears when bounds are set (not in indefinite integral mode).`,
+            highlight: "#tsw-show-geom",
+          },
+          {
+            title: "6. Indefinite Integral Checkbox",
+            content: `When checked:<ul><li>Hides the bounds input fields (L and R)</li><li>Removes the shaded area from the graph</li><li>Shows only the function curve</li><li>Updates the trig substitution panel to show the indefinite integral form</li><li>Disables geometry overlay (since it requires bounds)</li></ul>Use this mode when you want to explore the general form of the integral without specific bounds.`,
+            highlight: "#tsw-indef",
+          },
+          {
+            title: "7. Collapse Button",
+            content: `The <strong>Collapse</strong> button in the top-right corner of the widget allows you to:<ul><li>Hide/show the entire widget content</li><li>Save screen space when you're not actively using the widget</li><li>Your preference is saved and will persist when you reload the page</li></ul>Click "Collapse" to hide, or "Expand" to show the widget again.`,
+            highlight: "#tsw-toggle",
+          },
+          {
+            title: "8. Copy Shareable Link Button",
+            content: `Click <strong>Copy shareable link</strong> to copy a URL that includes all your current settings:<ul><li>Selected function type</li><li>Parameter 'a' value</li><li>Integration bounds (L and R)</li><li>Checkbox states (Show trig substitution, Show geometry, Indefinite integral)</li></ul>Share this link with others or bookmark it to return to the same configuration.`,
+            highlight: "#tsw-copy",
+          },
+          {
+            title: "9. Interacting with the Graph",
+            content: `The graph is interactive:<ul><li><strong>Drag the circular handles</strong> on the x-axis to adjust integration bounds</li><li><strong>Vertical dashed lines</strong> show your current bounds</li><li><strong>Shaded area</strong> represents the region being integrated</li><li><strong>Grid lines</strong> help you read approximate values</li><li><strong>Axis labels</strong> show the scale</li></ul>`,
+            highlight: "#tsw-svg",
+          },
+          {
+            title: "10. Reading the Output",
+            content: `Below the graph, you'll see:<ul><li><strong>Area estimate:</strong> The approximate numerical value of the definite integral</li><li><strong>Trig Substitution panel:</strong> (if enabled) Shows the mathematical transformation</li><li><strong>Metrics box:</strong> Displays the integration interval and calculated area</li></ul>`,
+            highlight: "#tsw-metrics",
+          },
+        ];
+
+        let currentStep = 0;
+        let highlightedElement = null;
+
+        const overlay = document.getElementById("tutorial-overlay");
+        const card = document.getElementById("tutorial-card");
+        const title = document.getElementById("tutorial-title");
+        const content = document.getElementById("tutorial-content");
+        const progress = document.getElementById("tutorial-progress");
+        const stepNum = document.getElementById("tutorial-step-num");
+        const totalSteps = document.getElementById("tutorial-total");
+        const prevBtn = document.getElementById("tutorial-prev");
+        const nextBtn = document.getElementById("tutorial-next");
+        const finishBtn = document.getElementById("tutorial-finish");
+        const startBtn = document.getElementById("tutorial-start");
+
+        totalSteps.textContent = tutorialSteps.length;
+
+        function updateProgress() {
+          progress.innerHTML = "";
+          for (let i = 0; i < tutorialSteps.length; i++) {
+            const dot = document.createElement("div");
+            dot.className =
+              "tutorial-progress-dot" + (i <= currentStep ? " active" : "");
+            progress.appendChild(dot);
+          }
+        }
+
+        function highlightElement(selector) {
+          // Remove previous highlight
+          if (highlightedElement) {
+            highlightedElement.classList.remove("tutorial-highlight", "active");
+          }
+
+          const element = document.querySelector(selector);
+          if (element) {
+            // For checkboxes, highlight the parent label instead
+            if (element.type === "checkbox") {
+              const label = element.closest("label");
+              if (label) {
+                label.classList.add("tutorial-highlight", "active");
+                highlightedElement = label;
+              } else {
+                element.classList.add("tutorial-highlight", "active");
+                highlightedElement = element;
+              }
+            } else {
+              element.classList.add("tutorial-highlight", "active");
+              highlightedElement = element;
+            }
+
+            // Ensure widget is expanded
+            const tswEl = document.getElementById("tsw");
+            if (tswEl && tswEl.classList.contains("collapsed")) {
+              tswEl.classList.remove("collapsed");
+              const toggle = document.getElementById("tsw-toggle");
+              if (toggle) {
+                toggle.textContent = "Collapse";
+                toggle.setAttribute("aria-expanded", "true");
+              }
+            }
+
+            // Scroll element into view
+            setTimeout(() => {
+              (highlightedElement || element).scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
+            }, 300);
+          }
+        }
+
+        function showStep(stepIndex) {
+          if (stepIndex < 0 || stepIndex >= tutorialSteps.length) return;
+
+          currentStep = stepIndex;
+          const step = tutorialSteps[stepIndex];
+
+          title.textContent = step.title;
+          content.innerHTML = step.content;
+          stepNum.textContent = stepIndex + 1;
+
+          // Update buttons
+          prevBtn.style.display = stepIndex === 0 ? "none" : "inline-flex";
+          nextBtn.style.display =
+            stepIndex === tutorialSteps.length - 1 ? "none" : "inline-flex";
+          finishBtn.style.display =
+            stepIndex === tutorialSteps.length - 1 ? "inline-flex" : "none";
+
+          updateProgress();
+          highlightElement(step.highlight);
+        }
+
+        function startTutorial() {
+          overlay.classList.add("active");
+          card.classList.add("active");
+          showStep(0);
+        }
+
+        function endTutorial() {
+          overlay.classList.remove("active");
+          card.classList.remove("active");
+          if (highlightedElement) {
+            highlightedElement.classList.remove("tutorial-highlight", "active");
+            highlightedElement = null;
+          }
+        }
+
+        startBtn.addEventListener("click", startTutorial);
+        prevBtn.addEventListener("click", () => showStep(currentStep - 1));
+        nextBtn.addEventListener("click", () => showStep(currentStep + 1));
+        finishBtn.addEventListener("click", endTutorial);
+        overlay.addEventListener("click", endTutorial);
+      })();
+    </script>
+
+    <!-- Data layer: cookies/localStorage + Firebase/Firestore (consent-aware) -->
+    <script type="module">
+      // --- Cookie helpers ---
+      function setCookie(name, value, days) {
+        try {
+          const expires = days
+            ? "; expires=" + new Date(Date.now() + days * 864e5).toUTCString()
+            : "";
+          document.cookie =
+            encodeURIComponent(name) +
+            "=" +
+            encodeURIComponent(value) +
+            expires +
+            "; path=/; SameSite=Lax";
+        } catch {}
+      }
+      function getCookie(name) {
+        try {
+          return document.cookie
+            .split("; ")
+            .map((v) => v.split("="))
+            .reduce(
+              (acc, [k, val]) => ({
+                ...acc,
+                [decodeURIComponent(k)]: decodeURIComponent(val || ""),
+              }),
+              {}
+            )[name];
+        } catch {
+          return undefined;
+        }
+      }
+      function deleteCookie(name) {
+        try {
+          document.cookie =
+            encodeURIComponent(name) +
+            "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
+        } catch {}
+      }
+
+      // --- Consent management ---
+      const CONSENT_COOKIE = "site_consent";
+      function readConsent() {
+        try {
+          const raw = getCookie(CONSENT_COOKIE);
+          if (!raw) return { analytics: null };
+          const obj = JSON.parse(decodeURIComponent(raw));
+          return {
+            analytics:
+              typeof obj.analytics === "boolean" ? obj.analytics : null,
+          };
+        } catch {
+          return { analytics: null };
+        }
+      }
+      function writeConsent(consent) {
+        try {
+          setCookie(
+            CONSENT_COOKIE,
+            encodeURIComponent(JSON.stringify(consent)),
+            365
+          );
+        } catch {}
+      }
+
+      // --- Visitor ID ---
+      const VISITOR_ID_LS = "visitor_id";
+      const VISITOR_ID_COOKIE = "visitor_id";
+      function getOrCreateVisitorId(allowCookie) {
+        let id = null;
+        try {
+          id = localStorage.getItem(VISITOR_ID_LS);
+        } catch {}
+        if (!id) {
+          id =
+            (crypto && crypto.randomUUID
+              ? crypto.randomUUID()
+              : String(Math.random()).slice(2)) + "-w";
+          try {
+            localStorage.setItem(VISITOR_ID_LS, id);
+          } catch {}
+        }
+        if (allowCookie) setCookie(VISITOR_ID_COOKIE, id, 365);
+        return id;
+      }
+
+      // --- Visits counters (local) ---
+      function bumpVisits() {
+        try {
+          const now = Date.now();
+          const first = localStorage.getItem("first_visit_ts");
+          if (!first) localStorage.setItem("first_visit_ts", String(now));
+          localStorage.setItem("last_visit_ts", String(now));
+          const n =
+            parseInt(localStorage.getItem("visit_count") || "0", 10) || 0;
+          localStorage.setItem("visit_count", String(n + 1));
+        } catch {}
+      }
+
+      // --- UI: banner + open link ---
+      const banner = document.getElementById("cookie-banner");
+      const acceptBtn = document.getElementById("cookie-accept");
+      const rejectBtn = document.getElementById("cookie-reject");
+      const openPrivacyLink = document.getElementById("open-privacy");
+
+      function showBanner() {
+        if (banner) banner.style.display = "flex";
+      }
+      function hideBanner() {
+        if (banner) banner.style.display = "none";
+      }
+      if (openPrivacyLink) {
+        openPrivacyLink.addEventListener("click", (e) => {
+          e.preventDefault();
+          showBanner();
+        });
+      }
+      if (acceptBtn) {
+        acceptBtn.addEventListener("click", () => {
+          writeConsent({ analytics: true });
+          hideBanner();
+          try {
+            localStorage.setItem("analytics_enabled", "1");
+          } catch {}
+          void initAndSync();
+        });
+      }
+      if (rejectBtn) {
+        rejectBtn.addEventListener("click", () => {
+          writeConsent({ analytics: false });
+          hideBanner();
+          deleteCookie(VISITOR_ID_COOKIE);
+          try {
+            localStorage.setItem("analytics_enabled", "0");
+          } catch {}
+        });
+      }
+
+      // --- Firebase init + Firestore sync ---
+      async function initFirebase() {
+        const cfg = window.FIREBASE_CONFIG;
+        if (!cfg || !cfg.apiKey || !cfg.projectId) return null;
+        try {
+          const [{ initializeApp }, firestoreMod, authMod] = await Promise.all([
+            import(
+              "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"
+            ),
+            import(
+              "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"
+            ),
+            import(
+              "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"
+            ),
+          ]);
+          const app = initializeApp(cfg);
+          const {
+            getFirestore,
+            doc,
+            setDoc,
+            serverTimestamp,
+            enableIndexedDbPersistence,
+          } = firestoreMod;
+          const db = getFirestore(app);
+          try {
+            await enableIndexedDbPersistence(db);
+          } catch {}
+          const { getAuth, signInAnonymously, onAuthStateChanged } = authMod;
+          const auth = getAuth(app);
+          await signInAnonymously(auth).catch(() => {});
+          return { db, auth, doc, setDoc, serverTimestamp };
+        } catch (e) {
+          return null;
+        }
+      }
+
+      async function syncVisitorRecord(ctx) {
+        if (!ctx) return;
+        const consent = readConsent();
+        if (consent.analytics !== true) return; // respect choice
+        const visitorId = getOrCreateVisitorId(true);
+        const docId =
+          (ctx.auth && ctx.auth.currentUser && ctx.auth.currentUser.uid) ||
+          visitorId;
+        let visitCount = 1;
+        let firstTs = Date.now();
+        let lastTs = Date.now();
+        try {
+          visitCount =
+            parseInt(localStorage.getItem("visit_count") || "1", 10) || 1;
+          firstTs =
+            parseInt(
+              localStorage.getItem("first_visit_ts") || String(Date.now()),
+              10
+            ) || Date.now();
+          lastTs =
+            parseInt(
+              localStorage.getItem("last_visit_ts") || String(Date.now()),
+              10
+            ) || Date.now();
+        } catch {}
+        const { db, doc, setDoc, serverTimestamp } = ctx;
+        try {
+          const dref = doc(db, "visitors", docId);
+          await setDoc(
+            dref,
+            {
+              visitCount,
+              firstVisitAtMs: firstTs,
+              lastVisitAtMs: lastTs,
+              lastSeen: serverTimestamp(),
+              userAgent: (navigator.userAgent || "").slice(0, 180),
+              referrer: (document.referrer || "").slice(0, 180),
+              page: location.pathname + location.search,
+              siteVersion: "tsw-1",
+            },
+            { merge: true }
+          );
+        } catch {}
+      }
+
+      function bindCloudBackup(ctx) {
+        if (!ctx) return;
+        window.__tswCloudBackup = async function (prefs) {
+          const consent = readConsent();
+          if (consent.analytics !== true) return;
+          try {
+            const docId =
+              (ctx.auth && ctx.auth.currentUser && ctx.auth.currentUser.uid) ||
+              getOrCreateVisitorId(true);
+            const dref = ctx.doc(ctx.db, "visitors", docId, "state", "tsw");
+            await ctx.setDoc(
+              dref,
+              {
+                prefs: prefs || null,
+                updatedAt: ctx.serverTimestamp(),
+              },
+              { merge: true }
+            );
+          } catch {}
+        };
+      }
+
+      async function initAndSync() {
+        const consent = readConsent();
+        const ctx = await initFirebase();
+        if (ctx) bindCloudBackup(ctx);
+        if (consent.analytics === true) {
+          await syncVisitorRecord(ctx);
+          try {
+            const prefs = JSON.parse(
+              localStorage.getItem("tsw_prefs") || "null"
+            );
+            if (prefs && window.__tswCloudBackup)
+              window.__tswCloudBackup(prefs);
+          } catch {}
+        }
+      }
+
+      // --- Boot ---
+      const consent = readConsent();
+      if (consent.analytics === null) showBanner();
+      bumpVisits();
+      // Defer init to not block main thread
+      setTimeout(() => {
+        void initAndSync();
+      }, 0);
+    </script>
+  </body>
+</html>
