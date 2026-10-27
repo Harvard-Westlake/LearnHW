@@ -1,0 +1,350 @@
+:root {
+  --bg: #ffffff;
+  --text: #0f172a;
+  --muted: #475569;
+  --accent: #0ea5e9;
+  --strand-a: #1565c0; /* blue */
+  --strand-b: #d32f2f; /* red */
+  --basepair: #64748b; /* blue-gray */
+  --junction: #94a3b8;
+  --control-bg: #f1f5f9;
+  --control-border: #cbd5e1;
+}
+
+/* === Shared Style Guide (HTCS) === */
+body {
+  font-family: 'Source Sans 3', Arial, sans-serif;
+  line-height: 1.6;
+}
+
+h1, h2, h3 { font-weight: 900; }
+h4, h5, h6 { font-weight: 600; }
+
+.h1 {
+  font-size: 2.25rem;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.lead {
+  font-size: 1.125rem;
+  color: var(--muted);
+  margin: 0 0 0.5rem 0;
+}
+
+.red { color: #B1001A; text-transform: uppercase; }
+a:hover { text-decoration: underline; color: #B1001A; }
+
+input, select, textarea {
+  min-height: 44px;
+  border: 1px solid #ccc;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #B1001A; /* Focus ring */
+  outline-offset: 1px;
+}
+
+/* Button base (match HW guide: 44px min height, clear focus) */
+.controls button {
+  appearance: none;
+  padding: 10px 14px;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.controls button:focus-visible {
+  outline: 2px solid #B1001A;
+  outline-offset: 2px;
+}
+
+button.primary {
+  background: #B1001A;
+  color: #ffffff;
+  border-radius: 6px;
+}
+button.primary:hover { background: #8f0015; }
+button.outline {
+  border: 1px solid #B1001A;
+  color: #B1001A;
+  background: transparent;
+  border-radius: 6px;
+}
+button.ghost {
+  background: none;
+  color: #B1001A;
+  border: none;
+}
+.controls button:disabled {
+  cursor: not-allowed;
+}
+.controls button.primary:disabled {
+  background: #cbd5e1; /* gray */
+  color: #ffffff;
+}
+.controls button.outline:disabled {
+  background: #f8fafc; /* light gray fill */
+  color: #94a3b8;      /* gray text */
+  border-color: #cbd5e1;
+}
+.controls button.ghost:disabled {
+  color: #94a3b8; /* gray text only */
+}
+.badge.primary { background: #B1001A; color: #ffffff; }
+.badge.accent { background: #F4C542; color: #000000; }
+.alert.info { background: #e3f4fd; color: #0c3a53; }
+.alert.success { background: #d4fdd6; color: #237a27; }
+.alert.warning { background: #fff4db; color: #a35e00; }
+
+/* Light panel chrome to match app cards */
+.panel {
+  background: #ffffff;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+}
+.container {
+  margin: 0 auto;
+}
+.container--narrow {
+  max-width: 900px;
+}
+/* === End Shared Style Guide === */
+
+* { box-sizing: border-box; }
+
+#replication-demo {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+/* Widen the inner container specifically for this replication widget */
+#replication-demo .container--narrow {
+  max-width: 1120px;
+}
+
+.stage {
+  padding: 12px; /* visual padding; chrome comes from .panel */
+}
+
+svg#replication-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* DNA visuals */
+.backbone {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+.backbone-a { stroke: var(--strand-a); }
+.backbone-b { stroke: var(--strand-b); }
+
+.basepairs line {
+  stroke: var(--basepair);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.template {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+.template-a { stroke: var(--strand-a); }
+.template-b { stroke: var(--strand-b); }
+
+.junction {
+  fill: var(--junction);
+}
+
+.helicase {
+  fill: var(--accent);
+  stroke: #0c4a6e;
+  stroke-width: 2;
+}
+
+.topoisomerase {
+  fill: #ec4899;
+  stroke: #be185d;
+  stroke-width: 2;
+}
+
+.primer {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+.primer-leading { stroke: #f59e0b; }
+.primer-lagging { stroke: #f97316; }
+
+/* Filled block-style primers (rectangles) */
+.primer-block {
+  stroke: none;
+}
+.primer-block-leading { fill: #f59e0b; }
+.primer-block-lagging { fill: #f97316; }
+
+/* Primase enzyme (cyan oval) */
+.primase {
+  fill: #06b6d4; /* cyan */
+  stroke: #0891b2;
+  stroke-width: 2;
+}
+
+/* DNA Pol III synthesized leading strand visuals */
+.pol3-block {
+  stroke: none;
+}
+.pol3-path {
+  fill: none;
+  stroke: #10b981;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+/* Lagging strand visuals (Okazaki fragments) */
+.pol3-lag-block {
+  stroke: none;
+}
+.pol3-lag-path {
+  fill: none;
+  stroke: #10b981; /* match leading green for merged path */
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+.pol3-lag-enzyme {
+  fill: #8b5cf6; /* purple */
+  stroke: #6d28d9;
+  stroke-width: 2;
+}
+
+.ligase-enzyme {
+  fill: #f59e0b;
+  stroke: #b45309;
+  stroke-width: 2;
+}
+
+.ligase-weld {
+  fill: none;
+  stroke: #10b981;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.label.prime {
+  font-size: 14px;
+  fill: var(--muted);
+  user-select: none;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 10px 12px; /* spacing; chrome comes from .panel */
+}
+
+.controls #step-indicator {
+  margin-left: auto;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Title spacing – tighten gap above the panel */
+#replication-demo .h1 {
+  margin-bottom: 0.25rem;
+}
+
+.controls #order-notice {
+  margin-left: 8px;
+  font-size: 0.9rem;
+}
+
+#caption {
+  margin: 10px 2px 0 2px;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+
+
+
+/* Cookie banner */
+#cookie-banner {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  background: #0f172a;
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  z-index: 1000;
+}
+
+#cookie-banner .cookie-text {
+  margin-right: 8px;
+}
+
+#cookie-banner .cookie-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+#cookie-banner button {
+  appearance: none;
+  border: 1px solid var(--control-border);
+  background: #ffffff;
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#cookie-banner #cookie-accept {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+/* (Auth UI removed) */
+
+/* Glossary layout */
+.glossary {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 16px 24px;
+  text-align: center;
+}
+.glossary dl {
+  margin: 0;
+  padding: 0;
+}
+.glossary dt,
+.glossary dd {
+  margin: 0;
+}
+.glossary dd {
+  margin-left: 0;
+}
+.glossary dt {
+  text-decoration: underline;
+}
