@@ -1,0 +1,18 @@
+0 verbose cli /usr/local/Cellar/node/24.10.0/bin/node /usr/local/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@11.6.0
+2 info using node@v24.10.0
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/laurendaub/.npmrc
+5 silly config load:file:/usr/local/etc/npmrc
+6 verbose title npm exec prettier --write main.js style.css index.html
+7 verbose argv "exec" "--" "prettier" "--write" "main.js" "style.css" "index.html"
+8 verbose logfile logs-max:10 dir:/Users/laurendaub/Desktop/Programming/html/random html website project/public/educational-widgit/.npm-cache/_logs/2025-11-11T11_25_03_970Z-
+9 verbose logfile /Users/laurendaub/Desktop/Programming/html/random html website project/public/educational-widgit/.npm-cache/_logs/2025-11-11T11_25_03_970Z-debug-0.log
+10 silly logfile done cleaning log files
+11 verbose cwd /Users/laurendaub/Desktop/Programming/html/random html website project/public/educational-widgit
+12 verbose os Darwin 24.6.0
+13 verbose node v24.10.0
+14 verbose npm  v11.6.0
+15 verbose exit 1
+16 verbose code 1
+17 error A complete log of this run can be found in: /Users/laurendaub/Desktop/Programming/html/random html website project/public/educational-widgit/.npm-cache/_logs/2025-11-11T11_25_03_970Z-debug-0.log

@@ -1,0 +1,3265 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Electrochemical Cell Explorer | Harvard-Westlake</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', Arial, sans-serif;
+      background: #f4f5f7;
+      color: #1f2430;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    #app-layout {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 320px;
+      min-width: 300px;
+      padding: 40px 32px;
+      box-sizing: border-box;
+      background: rgba(255, 255, 255, 0.96);
+      border-right: 1px solid rgba(15, 23, 42, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      overflow-y: auto;
+    }
+
+    #control-panel {
+      width: 100%;
+      padding: 24px 26px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    #control-panel .panel-title {
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    #control-panel .cell-config {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    #control-panel .cell-config h4 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: #1f2937;
+    }
+
+    #control-panel label {
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+      color: #6b7280;
+      text-transform: uppercase;
+    }
+
+    #control-panel select,
+    #control-panel input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(248, 250, 252, 0.96);
+      font-size: 0.98rem;
+      color: #1f2937;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    #control-panel select:focus,
+    #control-panel input:focus {
+      outline: none;
+      border-color: rgba(59, 130, 246, 0.9);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+    }
+
+    #control-panel small {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    #swap-cells {
+      align-self: flex-start;
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      background: #f5f7ff;
+      color: #1f2937;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      transition: background 0.18s ease, border-color 0.18s ease;
+    }
+
+    #swap-cells:hover {
+      border-color: rgba(15, 23, 42, 0.18);
+      background: #e0e7ff;
+    }
+
+    .primary-button {
+      padding: 10px 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      background: #3451d1;
+      color: #f8fafc;
+      font-size: 0.98rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      box-shadow: none;
+      transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .primary-button:hover {
+      background: #2b45b8;
+      box-shadow: 0 10px 20px rgba(52, 81, 209, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .primary-button:disabled {
+      cursor: default;
+      opacity: 0.55;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .primary-button:focus-visible,
+    #swap-cells:focus-visible {
+      outline: 3px solid rgba(59, 130, 246, 0.45);
+      outline-offset: 2px;
+    }
+
+    #main-stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 40px 48px;
+      box-sizing: border-box;
+      gap: 32px;
+    }
+
+    #header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+    }
+
+    #title-text {
+      font-size: 2.35rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    #canvas-wrapper {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      border-radius: 26px;
+      background: linear-gradient(145deg, #ebeff5, #ffffff);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65), 0 24px 48px rgba(15, 23, 42, 0.15);
+      overflow: hidden;
+    }
+
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+    }
+
+    #info-overlay {
+      display: flex;
+      gap: 24px;
+      justify-content: space-between;
+      align-items: stretch;
+      pointer-events: auto;
+      position: relative;
+      z-index: 30;
+    }
+
+    .cell-info,
+    .summary-card {
+      flex: 1;
+      padding: 22px 26px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.82);
+      color: #e2e8f0;
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.24);
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .cell-info h3 {
+      margin: 0;
+      font-size: 0.95rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: #eef2ff;
+    }
+
+    .electrode-name {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .potential,
+    .concentration {
+      font-size: 0.92rem;
+      color: rgba(226, 232, 240, 0.8);
+      letter-spacing: 0.02em;
+    }
+
+    .half-reaction {
+      font-family: 'Menlo', 'Roboto Mono', monospace;
+      font-size: 0.9rem;
+      letter-spacing: 0.02em;
+      line-height: 1.45;
+      color: #f8fafc;
+    }
+
+    .summary-card {
+      flex: 0.95;
+      text-align: center;
+      gap: 10px;
+    }
+
+    .summary-card h3 {
+      margin: 0;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 600;
+      color: #cbd5f5;
+    }
+
+    .summary-card .metric {
+      font-size: 1.12rem;
+      font-weight: 700;
+      color: #fcd34d;
+    }
+
+    .summary-card .flow-line {
+      font-size: 0.92rem;
+      color: rgba(226, 232, 240, 0.82);
+      letter-spacing: 0.02em;
+    }
+
+    #instruction-text {
+      text-align: center;
+      font-size: 1rem;
+      color: #6b7280;
+      padding: 12px 0 0;
+    }
+
+    @media (max-width: 1200px) {
+      #app-layout {
+        flex-direction: column;
+        height: auto;
+      }
+
+      #sidebar {
+        width: 100%;
+        min-width: 0;
+        border-right: none;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+      }
+
+      #main-stage {
+        padding: 32px 28px;
+      }
+
+      #canvas-wrapper {
+        min-height: 480px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      #header-bar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      #info-overlay {
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 640px) {
+      #main-stage {
+        padding: 24px 18px;
+      }
+
+      #canvas-wrapper {
+        min-height: 380px;
+        border-radius: 20px;
+      }
+
+      #instruction-text {
+        padding-bottom: 24px;
+      }
+    }
+    /* Harvard-Westlake theme overrides */
+    :root {
+      --hw-black: #231f20;
+      --hw-red: #c8102e;
+      --hw-gold: #f0b323;
+      --hw-neutral-900: #1f2937;
+      --hw-neutral-800: #374151;
+      --hw-neutral-700: #4b5563;
+      --hw-neutral-600: #6b7280;
+      --hw-neutral-500: #9ca3af;
+      --hw-neutral-400: #cbd5e1;
+      --hw-neutral-300: #e5e7eb;
+      --hw-neutral-200: #edf0f3;
+      --hw-neutral-100: #f6f7f9;
+      --hw-surface: #ffffff;
+      --hw-border: rgba(35, 31, 32, 0.14);
+      --hw-shadow-sm: 0 1px 3px rgba(35, 31, 32, 0.08);
+      --hw-shadow-md: 0 16px 32px rgba(35, 31, 32, 0.12);
+      --hw-shadow-lg: 0 28px 48px rgba(35, 31, 32, 0.18);
+      --hw-font-sans: "Source Sans 3", "Source Sans Pro", "Source Sans", Arial,
+        -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+        sans-serif;
+      --hw-radius-sm: 8px;
+      --hw-radius: 16px;
+      --hw-radius-lg: 22px;
+      --hw-page-bg: radial-gradient(
+          1200px 680px at -12% -15%,
+          rgba(35, 31, 32, 0.08),
+          transparent 62%
+        ),
+        linear-gradient(160deg, #f7f8fb, #eceff4);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--hw-font-sans);
+      font-weight: 400;
+      color: var(--hw-neutral-900);
+      background: var(--hw-page-bg);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: contents;
+    }
+
+    .container {
+      width: min(1240px, 100% - 3rem);
+      margin: 0 auto;
+    }
+
+    .container--wide {
+      width: min(1440px, 100% - 3rem);
+    }
+
+    .hw-topnav {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--hw-border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .hw-topnav__inner {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 0;
+    }
+
+    .hw-brand {
+      text-decoration: none;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      color: var(--hw-black);
+      font-size: 1.1rem;
+    }
+
+    .hw-nav {
+      margin-left: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .hw-nav__link {
+      text-decoration: none;
+      color: var(--hw-neutral-800);
+      font-weight: 600;
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .hw-nav__link:hover,
+    .hw-nav__link.active {
+      background: rgba(200, 16, 46, 0.12);
+      color: var(--hw-neutral-900);
+    }
+
+    .page {
+      padding: clamp(2rem, 6vw, 3.5rem) 0 3rem;
+    }
+
+    .widget-hero {
+      position: relative;
+      background: var(--hw-surface);
+      border-radius: var(--hw-radius);
+      padding: clamp(1rem, 3vw, 1.6rem);
+      box-shadow: var(--hw-shadow-md);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      overflow: hidden;
+    }
+
+    .widget-hero::before,
+    .widget-hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .widget-hero::before {
+      background: linear-gradient(
+        135deg,
+        rgba(200, 16, 46, 0.1),
+        transparent 55%
+      );
+    }
+
+    .widget-hero::after {
+      background: radial-gradient(
+        circle at 90% 10%,
+        rgba(240, 179, 35, 0.22),
+        transparent 60%
+      );
+    }
+
+    .widget-hero > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      margin: 0;
+    }
+
+    .h2 {
+      font-size: clamp(1.85rem, 1.45rem + 1vw, 2.35rem);
+      line-height: 1.08;
+      font-weight: 800;
+      letter-spacing: 0.005em;
+      color: var(--hw-black);
+    }
+
+    .widget-hero .lead {
+      max-width: 52ch;
+      color: var(--hw-neutral-700);
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.72rem;
+      color: var(--hw-neutral-600);
+      font-weight: 700;
+    }
+
+    .lead {
+      font-size: clamp(0.98rem, 0.94rem + 0.45vw, 1.2rem);
+      font-weight: 400;
+    }
+
+    .widget-hero__meta {
+      display: none;
+    }
+
+    .panel {
+      background: var(--hw-surface);
+      border-radius: var(--hw-radius);
+      border: 1px solid var(--hw-border);
+      box-shadow: var(--hw-shadow-sm);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: var(--hw-red);
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 0.65rem 1.25rem;
+      min-height: 44px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease,
+        filter 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 18px rgba(200, 16, 46, 0.28);
+      filter: brightness(0.96);
+    }
+
+    .btn:focus-visible {
+      outline: 3px solid rgba(200, 16, 46, 0.35);
+      outline-offset: 2px;
+    }
+
+    .btn:disabled {
+      background: var(--hw-neutral-200);
+      color: var(--hw-neutral-600);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn--outline {
+      background: transparent;
+      color: var(--hw-red);
+      border-color: rgba(200, 16, 46, 0.5);
+      box-shadow: none;
+    }
+
+    .btn--outline:hover {
+      background: rgba(200, 16, 46, 0.08);
+      box-shadow: none;
+    }
+
+    .btn--ghost {
+      background: transparent;
+      color: var(--hw-neutral-800);
+      border-color: rgba(35, 31, 32, 0.12);
+    }
+
+    .btn--ghost:hover {
+      background: rgba(35, 31, 32, 0.05);
+      color: var(--hw-neutral-900);
+    }
+
+    .btn--caps {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.84rem;
+    }
+
+    .btn--sm {
+      min-height: 38px;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.85rem;
+    }
+
+    #app-layout,
+    .widget-layout {
+      margin-top: clamp(2.2rem, 6vw, 3.25rem);
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) 1fr;
+      gap: clamp(1.5rem, 4vw, 2.75rem);
+      align-items: start;
+      height: auto;
+      width: 100%;
+      overflow: visible;
+    }
+
+    #sidebar {
+      display: grid;
+      gap: 1.5rem;
+      position: sticky;
+      top: 6.5rem;
+      width: auto;
+      min-width: 0;
+      padding: 0;
+      background: transparent;
+      border: none;
+    }
+
+    #control-panel {
+      background: linear-gradient(180deg, #ffffff, rgba(255, 255, 255, 0.92));
+      border-radius: var(--hw-radius);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: var(--hw-shadow-md);
+      padding: clamp(1.5rem, 3vw, 1.9rem);
+      display: grid;
+      gap: 1.75rem;
+    }
+
+    #control-panel .panel-title {
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--hw-neutral-600);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .cell-config {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .cell-config h4 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--hw-neutral-900);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .info-icon {
+      --tip-bg: rgba(17, 24, 39, 0.96);
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 999px;
+      background: rgba(200, 16, 46, 0.12);
+      color: rgba(200, 16, 46, 0.88);
+      font-size: 0.75rem;
+      font-weight: 700;
+      line-height: 1;
+      cursor: help;
+      transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+    }
+
+    .info-icon:hover,
+    .info-icon:focus-visible {
+      background: rgba(200, 16, 46, 0.18);
+      color: rgba(200, 16, 46, 1);
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .info-icon::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: calc(100% + 0.65rem);
+      left: 50%;
+      transform: translate(-50%, -4px);
+      background: var(--tip-bg);
+      color: #f8fafc;
+      padding: 0.6rem 0.8rem;
+      border-radius: 0.65rem;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.25);
+      font-size: 0.78rem;
+      font-weight: 500;
+      max-width: 220px;
+      width: max-content;
+      line-height: 1.35;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 9999;
+      text-align: left;
+      white-space: normal;
+    }
+
+    .info-icon::before {
+      content: '';
+      position: absolute;
+      top: calc(100% + 0.3rem);
+      left: 50%;
+      transform: translate(-50%, -4px) rotate(45deg);
+      width: 10px;
+      height: 10px;
+      background: var(--tip-bg);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 9998;
+    }
+
+    .info-icon:hover::after,
+    .info-icon:focus-visible::after,
+    .info-icon:hover::before,
+    .info-icon:focus-visible::before {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .info-target {
+      position: relative;
+      cursor: help;
+      pointer-events: auto;
+    }
+
+    .info-target:focus-visible {
+      outline: 2px solid rgba(200, 16, 46, 0.32);
+      outline-offset: 3px;
+    }
+
+    .info-target:hover,
+    .info-target:focus-visible,
+    .info-target:focus-within {
+      z-index: 1000;
+    }
+
+    .info-target:hover .info-icon,
+    .info-target:focus-visible .info-icon,
+    .info-target:focus-within .info-icon {
+      background: rgba(200, 16, 46, 0.18);
+      color: rgba(200, 16, 46, 1);
+      transform: translateY(-1px);
+    }
+
+    .info-target:hover .info-icon::after,
+    .info-target:focus-visible .info-icon::after,
+    .info-target:focus-within .info-icon::after,
+    .info-target:hover .info-icon::before,
+    .info-target:focus-visible .info-icon::before,
+    .info-target:focus-within .info-icon::before {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .action-with-info,
+    .metric-with-info,
+    .info-line,
+    .cell-info__header,
+    .summary-card__header,
+    #control-panel .label-with-info {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .action-with-info {
+      flex-wrap: nowrap;
+    }
+
+    .metric-with-info,
+    .info-line,
+    .summary-card__header,
+    .cell-info__header {
+      justify-content: center;
+    }
+
+    .info-line {
+      text-align: center;
+    }
+
+    .info-line > span:first-of-type,
+    .metric-with-info > span:first-of-type {
+      flex: 1;
+    }
+
+    #control-panel .label-with-info {
+      justify-content: flex-start;
+    }
+
+    #info-overlay .info-icon {
+      pointer-events: auto;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    #control-panel label {
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--hw-neutral-600);
+      font-weight: 700;
+    }
+
+    #control-panel select,
+    #control-panel input {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      border-radius: 10px;
+      border: 1px solid var(--hw-border);
+      background: rgba(246, 247, 251, 0.95);
+      font-size: 0.96rem;
+      color: var(--hw-neutral-900);
+      transition: border 0.18s ease, box-shadow 0.18s ease,
+        background 0.18s ease;
+    }
+
+    #control-panel select:focus,
+    #control-panel input:focus {
+      outline: none;
+      border-color: rgba(200, 16, 46, 0.6);
+      box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.18);
+      background: #fff;
+    }
+
+    #control-panel small {
+      font-size: 0.82rem;
+      color: var(--hw-neutral-600);
+      line-height: 1.5;
+    }
+
+    #swap-cells {
+      justify-self: start;
+      padding: 0.45rem 0.9rem;
+      border-radius: 10px;
+      border: 1px solid rgba(35, 31, 32, 0.16);
+      background: transparent;
+      color: var(--hw-neutral-800);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    #swap-cells:hover {
+      background: rgba(35, 31, 32, 0.06);
+      color: var(--hw-neutral-900);
+      box-shadow: none;
+    }
+
+    #main-stage {
+      display: grid;
+      gap: clamp(1.5rem, 3vw, 2rem);
+      background: var(--hw-surface);
+      border-radius: var(--hw-radius-lg);
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      box-shadow: var(--hw-shadow-lg);
+      padding: clamp(1.8rem, 4vw, 2.4rem);
+    }
+
+    #header-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem 1.5rem;
+    }
+
+    #title-text {
+      font-size: clamp(1.9rem, 1.4rem + 1vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: var(--hw-neutral-900);
+      margin: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    #canvas-wrapper {
+      border-radius: 24px;
+      background: linear-gradient(140deg, #f7f8fb, #ffffff);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        0 32px 48px rgba(35, 31, 32, 0.18);
+      min-height: clamp(420px, 55vh, 640px);
+    }
+
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+    }
+
+    #info-overlay {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: clamp(1rem, 3vw, 1.5rem);
+      align-items: stretch;
+      position: relative;
+      z-index: 30;
+    }
+
+    .cell-info,
+    .summary-card {
+      background: radial-gradient(
+          circle at top,
+          rgba(255, 255, 255, 0.12),
+          transparent 60%
+        ),
+        rgba(17, 24, 39, 0.85);
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #eef2ff;
+      padding: 1.6rem;
+      display: grid;
+      gap: 0.75rem;
+      position: relative;
+      overflow: visible;
+    }
+
+    .cell-info::after,
+    .summary-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(
+        160deg,
+        rgba(200, 16, 46, 0.14),
+        transparent 65%
+      );
+      opacity: 0.7;
+    }
+
+    .cell-info > *,
+    .summary-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .cell-info h3,
+    .summary-card h3 {
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.85rem;
+      color: rgba(240, 236, 255, 0.88);
+    }
+
+    .electrode-name {
+      font-size: 1.06rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .potential,
+    .concentration,
+    .half-reaction,
+    .flow-line {
+      font-size: 0.95rem;
+      color: rgba(225, 231, 240, 0.85);
+    }
+
+    .half-reaction {
+      font-family: "Menlo", "Roboto Mono", monospace;
+    }
+
+    .summary-card {
+      text-align: center;
+    }
+
+    .summary-card .metric {
+      font-size: clamp(1.35rem, 1.1rem + 1vw, 1.8rem);
+      font-weight: 800;
+      color: #f0b323;
+    }
+
+    #instruction-text {
+      text-align: center;
+      font-size: 0.95rem;
+      color: var(--hw-neutral-600);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .hw-footer {
+      margin-top: 4rem;
+      padding: 2rem 0;
+      border-top: 1px solid var(--hw-border);
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+    }
+
+    .hw-footer__inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      color: var(--hw-neutral-600);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 1100px) {
+      .widget-layout {
+        grid-template-columns: 1fr;
+      }
+
+      #sidebar {
+        position: static;
+        order: 2;
+      }
+
+      #main-stage {
+        order: 1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container,
+      .container--wide {
+        width: min(100%, 100% - 2rem);
+      }
+
+      .hw-topnav__inner {
+        flex-wrap: wrap;
+      }
+
+      .widget-hero {
+        border-radius: 18px;
+      }
+
+      #main-stage {
+        border-radius: 18px;
+      }
+
+      #canvas-wrapper {
+        border-radius: 20px;
+        min-height: clamp(360px, 48vh, 520px);
+      }
+    }
+
+    @media (max-width: 560px) {
+      .hw-nav {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .hw-nav__link {
+        flex: 1;
+        text-align: center;
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .header-actions .btn {
+        flex: 1 1 100%;
+      }
+    }
+    </style>
+  </head>
+  <body class="app-shell">
+    <header class="hw-topnav">
+      <div class="container container--wide hw-topnav__inner">
+        <a class="hw-brand" href="/">Harvard-Westlake</a>
+        <nav class="hw-nav">
+          <a class="hw-nav__link" href="/">Home</a>
+          <a class="hw-nav__link active" href="#app-layout">Electrochemistry</a>
+          <a
+            class="hw-nav__link"
+            href="https://learnhw.web.app/admin"
+            target="_blank"
+            rel="noopener"
+            >Resources</a
+          >
+        </nav>
+      </div>
+    </header>
+    <main class="page">
+      <div class="container container--wide">
+        <section class="widget-hero">
+          <div class="widget-hero__heading">
+            <p class="eyebrow">Science &amp; Innovation</p>
+            <h1 class="h2">Electrochemical Cell Explorer</h1>
+            <p class="lead">
+              Experiment with galvanic and electrolytic cells, visualize ion flow,
+              and compare standard reduction potentials using an interactive 3D
+              lab experience.
+            </p>
+          </div>
+        </section>
+        <div id="app-layout" class="widget-layout">
+          <aside id="sidebar">
+            <div id="control-panel">
+              <div class="panel-title info-target">
+                Cell Configuration
+                <span
+                  class="info-icon"
+                  tabindex="0"
+                  role="button"
+                  aria-label="What is the cell configuration panel?"
+                  data-tooltip="Set up the two half-cells here—picking different electrodes changes the overall reaction and voltage."
+                >
+                  i
+                </span>
+              </div>
+              <div class="cell-config">
+                <h4 class="info-target">
+                  Left Cell
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="More information about the left cell selection"
+                    aria-describedby="left-electrode-help"
+                    data-tooltip="Choose an electrode pair to define the anode half-cell."
+                  >
+                    i
+                  </span>
+                </h4>
+                <label
+                  for="left-electrode-select"
+                  class="label-with-info info-target"
+                >
+                  Electrode Couple
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="What is an electrode couple?"
+                    data-tooltip="A metal electrode paired with its aqueous ion; together they define one half-reaction and its standard potential."
+                  >
+                    i
+                  </span>
+                </label>
+                <select
+                  id="left-electrode-select"
+                  aria-describedby="left-electrode-help"
+                ></select>
+                <small id="left-electrode-help" class="sr-only"
+                  >Select the metal | ion pair.</small
+                >
+              </div>
+              <div class="cell-config">
+                <h4 class="info-target">
+                  Right Cell
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="More information about the right cell selection"
+                    aria-describedby="right-electrode-help"
+                    data-tooltip="Pick a complementary electrode pair to define the cathode half-cell."
+                  >
+                    i
+                  </span>
+                </h4>
+                <label
+                  for="right-electrode-select"
+                  class="label-with-info info-target"
+                >
+                  Electrode Couple
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="What is an electrode couple?"
+                    data-tooltip="A metal electrode paired with its aqueous ion; together they define one half-reaction and its standard potential."
+                  >
+                    i
+                  </span>
+                </label>
+                <select
+                  id="right-electrode-select"
+                  aria-describedby="right-electrode-help"
+                ></select>
+                <small id="right-electrode-help" class="sr-only"
+                  >Pair it with a second half-reaction.</small
+                >
+              </div>
+              <button id="swap-cells" class="btn btn--ghost btn--sm">Swap Cells</button>
+            </div>
+          </aside>
+          <div id="main-stage">
+            <div id="header-bar">
+              <div id="title-text">Electrochemistry</div>
+              <div class="header-actions">
+                <div class="action-with-info info-target">
+                  <button id="mode-toggle" class="btn btn--caps">Switch to Electrolytic</button>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="What does switching between galvanic and electrolytic do?"
+                    data-tooltip="Toggle between galvanic cells (spontaneous) and electrolytic cells (non-spontaneous, driven by external power)."
+                  >
+                    i
+                  </span>
+                </div>
+                <div class="action-with-info info-target">
+                  <button id="salt-bridge-button" class="btn btn--outline btn--caps">
+                    Add Salt Bridge
+                  </button>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="Why add a salt bridge?"
+                    data-tooltip="A salt bridge supplies ions that keep both half-cells electrically neutral so electrons can continue flowing."
+                  >
+                    i
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div id="canvas-wrapper">
+              <div id="canvas-container"></div>uhh 
+            </div>
+            <div id="instruction-text">Click and drag to rotate</div>
+            <div id="info-overlay">
+              <div class="cell-info" id="left-info">
+                <div class="cell-info__header info-target">
+                  <h3 id="left-role">Anode (-)</h3>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="How does the left side's role work?"
+                    data-tooltip="This tag flips between anode and cathode so you can see whether the left half-cell is where oxidation (electrons leave) or reduction (electrons arrive) is happening."
+                  >
+                    i
+                  </span>
+                </div>
+                <div class="electrode-name" id="left-name"></div>
+                <div class="potential" id="left-potential"></div>
+                <div class="half-reaction" id="left-half-reaction"></div>
+              </div>
+              <div class="summary-card" id="cell-summary">
+                <div class="summary-card__header info-target">
+                  <h3>Cell Summary</h3>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="What does the cell summary show?"
+                    data-tooltip="Quick reference for voltage, particle movement, and operating status based on your chosen electrodes and mode."
+                  >
+                    i
+                  </span>
+                </div>
+                <div class="metric metric-with-info info-target">
+                  <span id="cell-potential"></span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="What is E°cell?"
+                    data-tooltip="Standard cell potential, E°cell, equals the cathode E° minus the anode E°. Positive values mean a spontaneous galvanic cell."
+                  >
+                    i
+                  </span>
+                </div>
+                <div class="flow-line info-line info-target">
+                  <span id="electron-flow-text"></span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="What does the electron flow line describe?"
+                    data-tooltip="Shows which direction electrons travel through the external circuit between the two electrodes."
+                  >
+                    i
+                  </span>
+                </div>
+                <div class="flow-line info-line info-target">
+                  <span id="cation-flow-text"></span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="What does the cation flow line describe?"
+                    data-tooltip="Explains how positive ions migrate through the salt bridge toward the cathode to balance charge."
+                  >
+                    i
+                  </span>
+                </div>
+                <div class="flow-line info-line info-target">
+                  <span id="anion-flow-text"></span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="What does the anion flow line describe?"
+                    data-tooltip="Explains how negative ions travel through the salt bridge toward the anode to maintain charge neutrality."
+                  >
+                    i
+                  </span>
+                </div>
+                <div class="flow-line info-line info-target">
+                  <span id="status-text"></span>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="What does the status line explain?"
+                    data-tooltip="Summarizes whether the cell runs on its own, needs external power, or lacks a complete circuit."
+                  >
+                    i
+                  </span>
+                </div>
+              </div>
+              <div class="cell-info" id="right-info">
+                <div class="cell-info__header info-target">
+                  <h3 id="right-role">Cathode (+)</h3>
+                  <span
+                    class="info-icon"
+                    tabindex="0"
+                    role="button"
+                    aria-label="How does the right side's role work?"
+                    data-tooltip="This tag flips between anode and cathode so you can see whether the right half-cell is where oxidation happens or where electrons are being reduced."
+                  >
+                    i
+                  </span>
+                </div>
+                <div class="electrode-name" id="right-name"></div>
+                <div class="potential" id="right-potential"></div>
+                <div class="half-reaction" id="right-half-reaction"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer class="hw-footer">
+      <div class="container container--wide hw-footer__inner">
+        <span>© Harvard-Westlake · Demo UI</span>
+        <span class="muted">Electrochemical learning resources</span>
+      </div>
+    </footer>
+    
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module">
+      import * as THREE from 'three';
+      import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+      import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+
+      const ELECTRODE_DATA = [
+        {
+          id: 'al',
+          name: 'Aluminum',
+          metalSymbol: 'Al',
+          metalState: 's',
+          ionSymbol: 'Al',
+          ionCharge: 3,
+          ionState: 'aq',
+          electronCount: 3,
+          reductionPotential: -1.66,
+          electrodeColor: 0xb46d3a,
+          solutionColor: 0x2d7bff,
+          solutionAttenuation: 0x3f8eff,
+          solutionOpacity: 0.95,
+          defaultConcentration: 1.0
+        },
+        {
+          id: 'zn',
+          name: 'Zinc',
+          metalSymbol: 'Zn',
+          metalState: 's',
+          ionSymbol: 'Zn',
+          ionCharge: 2,
+          ionState: 'aq',
+          electronCount: 2,
+          reductionPotential: -0.76,
+          electrodeColor: 0x9ea6b2,
+          solutionColor: 0x4d80d1,
+          solutionAttenuation: 0x5c96e7,
+          solutionOpacity: 0.94,
+          defaultConcentration: 1.0
+        },
+        {
+          id: 'fe',
+          name: 'Iron',
+          metalSymbol: 'Fe',
+          metalState: 's',
+          ionSymbol: 'Fe',
+          ionCharge: 2,
+          ionState: 'aq',
+          electronCount: 2,
+          reductionPotential: -0.44,
+          electrodeColor: 0x7a7d84,
+          solutionColor: 0x3f6fb4,
+          solutionAttenuation: 0x4e83ca,
+          solutionOpacity: 0.95,
+          defaultConcentration: 1.0
+        },
+        {
+          id: 'ni',
+          name: 'Nickel',
+          metalSymbol: 'Ni',
+          metalState: 's',
+          ionSymbol: 'Ni',
+          ionCharge: 2,
+          ionState: 'aq',
+          electronCount: 2,
+          reductionPotential: -0.25,
+          electrodeColor: 0x9fa5ad,
+          solutionColor: 0x3f74ba,
+          solutionAttenuation: 0x4e8ad1,
+          solutionOpacity: 0.94,
+          defaultConcentration: 0.1
+        },
+        {
+          id: 'sn',
+          name: 'Tin',
+          metalSymbol: 'Sn',
+          metalState: 's',
+          ionSymbol: 'Sn',
+          ionCharge: 2,
+          ionState: 'aq',
+          electronCount: 2,
+          reductionPotential: -0.14,
+          electrodeColor: 0xbfc4cc,
+          solutionColor: 0x4c8dd6,
+          solutionAttenuation: 0x5fa2ea,
+          solutionOpacity: 0.95,
+          defaultConcentration: 1.0
+        },
+        {
+          id: 'pb',
+          name: 'Lead',
+          metalSymbol: 'Pb',
+          metalState: 's',
+          ionSymbol: 'Pb',
+          ionCharge: 2,
+          ionState: 'aq',
+          electronCount: 2,
+          reductionPotential: -0.13,
+          electrodeColor: 0x726d65,
+          solutionColor: 0x3a5a9c,
+          solutionAttenuation: 0x4c70b2,
+          solutionOpacity: 0.95,
+          defaultConcentration: 1.0
+        },
+        {
+          id: 'cu',
+          name: 'Copper',
+          metalSymbol: 'Cu',
+          metalState: 's',
+          ionSymbol: 'Cu',
+          ionCharge: 2,
+          ionState: 'aq',
+          electronCount: 2,
+          reductionPotential: 0.34,
+          electrodeColor: 0xc7793b,
+          solutionColor: 0x2f6eff,
+          solutionAttenuation: 0x3f85ff,
+          solutionOpacity: 0.95,
+          defaultConcentration: 1.0
+        },
+        {
+          id: 'ag',
+          name: 'Silver',
+          metalSymbol: 'Ag',
+          metalState: 's',
+          ionSymbol: 'Ag',
+          ionCharge: 1,
+          ionState: 'aq',
+          electronCount: 1,
+          reductionPotential: 0.80,
+          electrodeColor: 0xdfe4ef,
+          solutionColor: 0x8db5ff,
+          solutionAttenuation: 0xa3c9ff,
+          solutionOpacity: 0.95,
+          defaultConcentration: 1.0
+        },
+        {
+          id: 'au',
+          name: 'Gold',
+          metalSymbol: 'Au',
+          metalState: 's',
+          ionSymbol: 'Au',
+          ionCharge: 3,
+          ionState: 'aq',
+          electronCount: 3,
+          reductionPotential: 1.50,
+          electrodeColor: 0xd4b344,
+          solutionColor: 0xf2c15e,
+          solutionAttenuation: 0xf8d27c,
+          solutionOpacity: 0.93,
+          defaultConcentration: 1.0
+        }
+      ];
+
+      const ELECTRODE_LOOKUP = new Map(ELECTRODE_DATA.map((entry) => [entry.id, entry]));
+      const DEFAULT_SORTED_ELECTRODES = [...ELECTRODE_DATA].sort(
+        (a, b) => a.reductionPotential - b.reductionPotential
+      );
+      const DEFAULT_LEFT_ID = 'al';
+      const DEFAULT_RIGHT_ID = 'ni';
+
+      function htmlCharge(charge) {
+        const magnitude = Math.abs(charge);
+        if (magnitude === 0) {
+          return '0';
+        }
+        const sign = charge > 0 ? '+' : '-';
+        return magnitude === 1 ? sign : `${magnitude}${sign}`;
+      }
+
+      function formatIonHtml(species) {
+        return `${species.ionSymbol}<sup>${htmlCharge(species.ionCharge)}</sup>`;
+      }
+
+      function formatIonStateHtml(species) {
+        return `${formatIonHtml(species)}(${species.ionState})`;
+      }
+
+      function formatMetalHtml(species) {
+        return `${species.metalSymbol}(${species.metalState})`;
+      }
+
+      function formatElectronTerm(count) {
+        return `${count > 1 ? `${count} ` : ''}e<sup>-</sup>`;
+      }
+
+      function formatHalfReaction(species, role) {
+        const ionTerm = formatIonStateHtml(species);
+        const metalTerm = formatMetalHtml(species);
+        const electronTerm = formatElectronTerm(species.electronCount);
+        if (role === 'anode') {
+          return `${metalTerm} &rarr; ${ionTerm} + ${electronTerm}`;
+        }
+        return `${ionTerm} + ${electronTerm} &rarr; ${metalTerm}`;
+      }
+
+      function formatSignedPotential(value) {
+        if (!Number.isFinite(value)) {
+          return 'n/a';
+        }
+        const sign = value > 0 ? '+' : value < 0 ? '' : '';
+        return `${sign}${value.toFixed(2)} V`;
+      }
+
+      const EXTERNAL_CIRCUIT_HEIGHT = 12.6;
+      const EXTERNAL_CIRCUIT_DEPTH = -1.2;
+      const CELL_POTENTIAL_TOLERANCE = 1e-4;
+      const MAX_GALVANIC_POTENTIAL = 3.2;
+
+      // Scene setup
+      const canvasContainer = document.getElementById('canvas-container');
+
+      function getCanvasDimensions() {
+        const rect = canvasContainer.getBoundingClientRect();
+        return {
+          width: Math.max(rect.width, 1),
+          height: Math.max(rect.height, 1)
+        };
+      }
+
+      const { width: initialWidth, height: initialHeight } = getCanvasDimensions();
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf0f0f0);
+
+      const camera = new THREE.PerspectiveCamera(45, initialWidth / initialHeight, 0.1, 1000);
+      camera.position.set(0, 6.8, 25);
+      camera.lookAt(0, 6.2, 0);
+
+      const renderer = new THREE.WebGLRenderer({ 
+        antialias: true,
+        alpha: true,
+        logarithmicDepthBuffer: true
+      });
+      renderer.setSize(initialWidth, initialHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.25;
+      renderer.sortObjects = true;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.physicallyCorrectLights = true;
+      canvasContainer.appendChild(renderer.domElement);
+      const clock = new THREE.Clock();
+
+      // Create environment map for reflections
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      pmremGenerator.compileEquirectangularShader();
+
+      // Create fallback gradient environment while HDR loads
+      const fallbackEnvScene = new THREE.Scene();
+      fallbackEnvScene.background = new THREE.Color(0xe8e8e8);
+      const fallbackRT = pmremGenerator.fromScene(fallbackEnvScene);
+      scene.environment = fallbackRT.texture;
+
+      // Load high-dynamic-range environment for dramatic reflections
+      const rgbeLoader = new RGBELoader();
+      rgbeLoader.setDataType(THREE.FloatType);
+      rgbeLoader.load('https://threejs.org/examples/textures/equirectangular/venice_sunset_1k.hdr', (hdrTexture) => {
+        const envMap = pmremGenerator.fromEquirectangular(hdrTexture).texture;
+        scene.environment = envMap;
+        hdrTexture.dispose();
+        fallbackRT.dispose();
+        pmremGenerator.dispose();
+      });
+
+      // Lighting for maximum shine and dramatic shadows - minimal ambient
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
+      scene.add(ambientLight);
+
+      const directionalLight1 = new THREE.DirectionalLight(0xffffff, 2.2);
+      directionalLight1.position.set(5, 15, 10);
+      directionalLight1.castShadow = true;
+      directionalLight1.shadow.mapSize.width = 2048;
+      directionalLight1.shadow.mapSize.height = 2048;
+      scene.add(directionalLight1);
+
+      const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
+      directionalLight2.position.set(-5, 10, 8);
+      scene.add(directionalLight2);
+
+      const directionalLight3 = new THREE.DirectionalLight(0xffffff, 0.4);
+      directionalLight3.position.set(0, 8, -5);
+      scene.add(directionalLight3);
+
+      // Add powerful spotlight for extra shine
+      const spotLight = new THREE.SpotLight(0xffffff, 3.5);
+      spotLight.position.set(0, 20, 15);
+      spotLight.angle = Math.PI / 6;
+      spotLight.penumbra = 0.1;
+      spotLight.decay = 2;
+      spotLight.castShadow = true;
+      spotLight.shadow.mapSize.width = 2048;
+      spotLight.shadow.mapSize.height = 2048;
+      scene.add(spotLight);
+
+      // Add light from behind the camera
+      const backLight = new THREE.DirectionalLight(0xffffff, 0.1);
+      backLight.position.set(0, 10, 20); // Behind camera
+      scene.add(backLight);
+
+      // Add very bright spotlight from camera position directly on beakers
+      const cameraSpotlight = new THREE.SpotLight(0xffffff, 4.0);
+      cameraSpotlight.position.set(0, 6.8, 25); // From camera position
+      cameraSpotlight.target.position.set(0, 6.2, 0); // Point at beakers
+      cameraSpotlight.angle = Math.PI / 5;
+      cameraSpotlight.penumbra = 0.1;
+      cameraSpotlight.decay = 2;
+      cameraSpotlight.castShadow = true;
+      cameraSpotlight.shadow.mapSize.width = 2048;
+      cameraSpotlight.shadow.mapSize.height = 2048;
+      scene.add(cameraSpotlight);
+      scene.add(cameraSpotlight.target);
+
+      // Add OrbitControls for interactive rotation with smooth resistance
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true; // Smooth damping
+      controls.dampingFactor = 0.6; // Base damping
+      controls.enableZoom = false; // Disable zoom
+      controls.enablePan = false; // Disable panning
+      controls.minAzimuthAngle = -Infinity; // No azimuth clamp
+      controls.maxAzimuthAngle = Infinity; // No azimuth clamp
+      controls.minPolarAngle = Math.PI / 2.6; // Tighter limit vertical rotation
+      controls.maxPolarAngle = Math.PI / 2.1; // Limit downward rotation to keep oval visible
+      controls.target.set(0, 6.2, 0); // Look at beakers
+      controls.autoRotate = true; // Gentle idle motion
+      controls.autoRotateSpeed = 0.2;
+      controls.rotateSpeed = 0.28; // More resistant manual response
+      controls.update();
+
+      // Store initial camera position for gradual resistance
+      const initialCameraPosition = camera.position.clone();
+      const initialAzimuth = controls.getAzimuthalAngle();
+      const initialPolar = controls.getPolarAngle();
+
+      // Create beaker geometry with flared top and spout - with thick rounded rim
+      function createBeakerGeometry(height = 8, radius = 3, thickness = 0.25, segments = 64) {
+        const shape = new THREE.Shape();
+
+        // Create inner and outer profile for thick glass with rounded rim
+        const innerRadius = radius - thickness;
+        const points = [];
+
+        // Build profile from bottom to top - OUTER surface
+        for (let i = 0; i <= 30; i++) {
+          const t = i / 30;
+          const y = t * height - height / 2;
+          let r = radius;
+
+          // Flare starts higher up on the beaker
+          if (t > 0.75) {
+            const flareAmount = (t - 0.75) / 0.25;
+            r = radius * (1 + flareAmount * 0.12);
+          }
+
+          // Rounded bottom edge
+          if (t < 0.05) {
+            const roundAmount = (0.05 - t) / 0.05;
+            r = radius - roundAmount * 0.2;
+          }
+
+          points.push(new THREE.Vector2(r, y));
+        }
+
+        // Get the top outer radius (with flare applied)
+        const topOuterR = points[points.length - 1].x;
+        const topY = height / 2;
+
+        // Add thick rounded rim at the top - smooth curve from outer to inner
+        const rimThickness = thickness * 0.9; // Thicker rim
+        const rimSteps = 8; // More steps for smoother curve
+
+        for (let i = 1; i <= rimSteps; i++) {
+          const t = i / rimSteps;
+          const angle = t * Math.PI / 2; // Quarter circle
+
+          // Create smooth rounded edge
+          const offsetR = -Math.cos(angle) * rimThickness;
+          const offsetY = -Math.sin(angle) * rimThickness;
+
+          points.push(new THREE.Vector2(topOuterR + offsetR, topY + offsetY));
+        }
+
+        // Build profile going down - INNER surface
+        for (let i = 30; i >= 0; i--) {
+          const t = i / 30;
+          const y = t * height - height / 2;
+          let r = innerRadius;
+
+          // Match flare on inner surface
+          if (t > 0.75) {
+            const flareAmount = (t - 0.75) / 0.25;
+            r = innerRadius * (1 + flareAmount * 0.12);
+          }
+
+          // Rounded bottom edge
+          if (t < 0.05) {
+            const roundAmount = (0.05 - t) / 0.05;
+            r = innerRadius - roundAmount * 0.15;
+          }
+
+          points.push(new THREE.Vector2(r, y));
+        }
+
+        // Create geometry by rotating profile
+        const geometry = new THREE.LatheGeometry(points, segments);
+        const positions = geometry.attributes.position;
+
+        // Create subtle spout by deforming one side
+        for (let i = 0; i < positions.count; i++) {
+          const x = positions.getX(i);
+          const y = positions.getY(i);
+          const z = positions.getZ(i);
+
+          const angle = Math.atan2(z, x);
+          const distFromCenter = Math.sqrt(x * x + z * z);
+
+          // Subtle spout on one side at the top
+          if (angle > -0.3 && angle < 0.3 && y > height * 0.35) {
+            const angleWeight = Math.cos(angle * 3);
+            const heightWeight = Math.min(1, (y - height * 0.35) / (height * 0.15));
+            const spoutExtension = angleWeight * heightWeight * 0.3;
+
+            const newDist = distFromCenter * (1 + spoutExtension);
+            positions.setX(i, Math.cos(angle) * newDist);
+            positions.setZ(i, Math.sin(angle) * newDist);
+          }
+        }
+
+        geometry.attributes.position.needsUpdate = true;
+        geometry.computeVertexNormals();
+
+        return geometry;
+      }
+
+      // Create measurement lines that conform to the beaker surface - ONE line per level
+      function createMeasurementLines(beaker, height = 8, radius = 3) {
+        const linesGroup = new THREE.Group();
+
+        // Create lines at regular intervals (50mL, 100mL, 150mL, 200mL)
+        const measurements = [1.6, 3.2, 4.8, 6.4];
+
+        measurements.forEach((yPos) => {
+          // Create ONE short horizontal line at the front
+          const points = [];
+          const startAngle = 0; // Front of beaker
+          const tickLength = 0.4; // Short horizontal tick
+
+          // ALL lines at the SAME radius (no flare for measurement lines)
+          const r = radius + 0.02;
+
+          // Create a short horizontal line
+          const segments = 10;
+          for (let i = 0; i <= segments; i++) {
+            const angle = startAngle - tickLength / 2 + (i / segments) * tickLength;
+            points.push(new THREE.Vector3(
+              Math.cos(angle) * r,
+              yPos - height / 2,
+              Math.sin(angle) * r
+            ));
+          }
+
+          const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+          const lineMaterial = new THREE.LineBasicMaterial({ 
+            color: 0xffffff, 
+            linewidth: 3,
+            depthTest: true
+          });
+          const line = new THREE.Line(lineGeometry, lineMaterial);
+          linesGroup.add(line);
+        });
+
+        return linesGroup;
+      }
+
+      // Create 3D liquid - SHINY, VIBRANT and VISIBLE!
+      function createLiquid(height = 5, radius = 2.55) {
+        const liquidGeometry = new THREE.CylinderGeometry(radius, radius, height, 64);
+        const liquidMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0x1c8cff, // Vibrant base tone
+          transparent: true,
+          opacity: 1.0,
+          roughness: 0.05,
+          metalness: 0.0,
+          clearcoat: 0.85,
+          clearcoatRoughness: 0.03,
+          transmission: 0.9,
+          thickness: 1.6,
+          ior: 1.33,
+          envMapIntensity: 2.4,
+          specularIntensity: 1.2,
+          specularColor: 0xffffff,
+          attenuationColor: new THREE.Color(0x1cb7ff),
+          attenuationDistance: 2.2,
+          depthWrite: false,
+          depthTest: true
+        });
+        const liquid = new THREE.Mesh(liquidGeometry, liquidMaterial);
+        liquid.position.y = (height - 8) / 2 + 0.5;
+        liquid.renderOrder = 1; // Render liquid after beaker
+        liquid.castShadow = true;
+        liquid.receiveShadow = true;
+        return liquid;
+      }
+
+      function createElectrode({
+        width = 0.65,
+        height = 9.4,
+        depth = 0.3,
+        color = 0xd3d7df,
+        roughness = 0.2,
+        metalness = 1.0
+      } = {}) {
+        const geometry = new THREE.BoxGeometry(width, height, depth);
+        const material = new THREE.MeshPhysicalMaterial({
+          color,
+          metalness,
+          roughness,
+          envMapIntensity: 3.2,
+          clearcoat: 0.12,
+          clearcoatRoughness: 0.2
+        });
+        const electrode = new THREE.Mesh(geometry, material);
+        electrode.castShadow = true;
+        electrode.receiveShadow = true;
+        electrode.userData.height = height;
+        return electrode;
+      }
+
+      function createElectrodeWire(points, radius = 0.09) {
+        const curve = new THREE.CatmullRomCurve3(points.map((point) => point.clone()));
+        const wireGeometry = new THREE.TubeGeometry(curve, 80, radius, 16, false);
+        const wireMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0xb7bcc4,
+          metalness: 1.0,
+          roughness: 0.22,
+          envMapIntensity: 3.4,
+          clearcoat: 0.08,
+          clearcoatRoughness: 0.24
+        });
+        const wire = new THREE.Mesh(wireGeometry, wireMaterial);
+        wire.castShadow = true;
+        wire.receiveShadow = true;
+        wire.renderOrder = 3;
+        return wire;
+      }
+
+      function disposeGroup(group) {
+        if (!group) {
+          return;
+        }
+        const disposedGeometries = new Set();
+        const disposedMaterials = new Set();
+        group.traverse((child) => {
+          if (child.geometry && !disposedGeometries.has(child.geometry)) {
+            child.geometry.dispose();
+            disposedGeometries.add(child.geometry);
+          }
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach((material) => {
+                if (material && material.dispose && !disposedMaterials.has(material)) {
+                  material.dispose();
+                  disposedMaterials.add(material);
+                }
+              });
+            } else if (child.material.dispose && !disposedMaterials.has(child.material)) {
+              child.material.dispose();
+              disposedMaterials.add(child.material);
+            }
+          }
+          if (child.isLight && typeof child.dispose === 'function') {
+            child.dispose();
+          }
+        });
+      }
+
+      function createLightbulb() {
+        const bulbGroup = new THREE.Group();
+
+        const socketGeometry = new THREE.CylinderGeometry(0.32, 0.36, 0.6, 32);
+        const socketMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0x8b8f98,
+          metalness: 1.0,
+          roughness: 0.32,
+          envMapIntensity: 3.1
+        });
+        const socket = new THREE.Mesh(socketGeometry, socketMaterial);
+        socket.position.y = -0.3;
+        socket.castShadow = true;
+        socket.receiveShadow = true;
+        bulbGroup.add(socket);
+
+        const collarGeometry = new THREE.TorusGeometry(0.38, 0.08, 18, 36);
+        const collarMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0xc7cbd4,
+          metalness: 0.9,
+          roughness: 0.18,
+          envMapIntensity: 3.4
+        });
+        const collar = new THREE.Mesh(collarGeometry, collarMaterial);
+        collar.rotation.x = Math.PI / 2;
+        collar.position.y = -0.04;
+        collar.castShadow = true;
+        collar.receiveShadow = true;
+        bulbGroup.add(collar);
+
+        const glassGeometry = new THREE.SphereGeometry(0.78, 36, 32);
+        const glassMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0xfff9e8,
+          transmission: 0.92,
+          thickness: 0.55,
+          roughness: 0.05,
+          metalness: 0.0,
+          envMapIntensity: 1.6,
+          attenuationColor: new THREE.Color(0xfff6cf),
+          attenuationDistance: 2.6,
+          clearcoat: 0.35,
+          clearcoatRoughness: 0.18,
+          transparent: true,
+          opacity: 1.0,
+          emissive: new THREE.Color(0xffe3a4),
+          emissiveIntensity: 0.1
+        });
+        const glass = new THREE.Mesh(glassGeometry, glassMaterial);
+        glass.position.y = 0.55;
+        glass.castShadow = false;
+        glass.receiveShadow = false;
+        bulbGroup.add(glass);
+
+        const filamentGeometry = new THREE.TorusGeometry(0.18, 0.035, 14, 28);
+        const filamentMaterial = new THREE.MeshStandardMaterial({
+          color: 0xffb347,
+          emissive: 0xffd27f,
+          emissiveIntensity: 0.2,
+          metalness: 0.7,
+          roughness: 0.2
+        });
+        const filament = new THREE.Mesh(filamentGeometry, filamentMaterial);
+        filament.rotation.x = Math.PI / 2;
+        filament.position.y = 0.48;
+        bulbGroup.add(filament);
+
+        const leadGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.65, 16);
+        const leadMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0xb0b4bd,
+          metalness: 1.0,
+          roughness: 0.25,
+          envMapIntensity: 3.2
+        });
+
+        const leftLead = new THREE.Mesh(leadGeometry, leadMaterial);
+        leftLead.rotation.z = Math.PI / 2;
+        leftLead.position.set(-0.55, -0.22, 0);
+        leftLead.castShadow = true;
+        leftLead.receiveShadow = true;
+        bulbGroup.add(leftLead);
+
+        const rightLead = leftLead.clone();
+        rightLead.position.x = 0.55;
+        bulbGroup.add(rightLead);
+
+        const bulbLight = new THREE.PointLight(0xffdeaa, 0.12, 2.5, 2.4);
+        bulbLight.position.set(0, 0.4, 0);
+        bulbLight.castShadow = false;
+        bulbGroup.add(bulbLight);
+        bulbGroup.userData.light = bulbLight;
+        bulbGroup.userData.glassMaterial = glassMaterial;
+        bulbGroup.userData.filamentMaterial = filamentMaterial;
+
+        return bulbGroup;
+      }
+
+      function createBattery() {
+        const batteryGroup = new THREE.Group();
+
+        const bodyGeometry = new THREE.CylinderGeometry(0.55, 0.55, 2.6, 40);
+        const bodyMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0x2c3037,
+          metalness: 0.74,
+          roughness: 0.32,
+          envMapIntensity: 3.0,
+          clearcoat: 0.08,
+          clearcoatRoughness: 0.3
+        });
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        body.castShadow = true;
+        body.receiveShadow = true;
+        batteryGroup.add(body);
+
+        const accentGeometry = new THREE.CylinderGeometry(0.56, 0.56, 0.46, 40);
+        const accentMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0xff6f3c,
+          metalness: 0.5,
+          roughness: 0.35,
+          envMapIntensity: 2.4
+        });
+        const accent = new THREE.Mesh(accentGeometry, accentMaterial);
+        accent.position.y = 0.84;
+        accent.castShadow = true;
+        accent.receiveShadow = true;
+        batteryGroup.add(accent);
+
+        const capGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 32);
+        const capMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0xd9dce2,
+          metalness: 0.95,
+          roughness: 0.18,
+          envMapIntensity: 3.5
+        });
+        const positiveCap = new THREE.Mesh(capGeometry, capMaterial);
+        positiveCap.position.y = 1.4;
+        positiveCap.castShadow = true;
+        positiveCap.receiveShadow = true;
+        batteryGroup.add(positiveCap);
+
+        const nubGeometry = new THREE.CylinderGeometry(0.18, 0.18, 0.18, 32);
+        const nubMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0xf3f5f8,
+          metalness: 0.9,
+          roughness: 0.22,
+          envMapIntensity: 3.6
+        });
+        const positiveNub = new THREE.Mesh(nubGeometry, nubMaterial);
+        positiveNub.position.y = 1.59;
+        positiveNub.castShadow = true;
+        positiveNub.receiveShadow = true;
+        batteryGroup.add(positiveNub);
+
+        const negativeCap = positiveCap.clone();
+        negativeCap.position.y = -1.3;
+        negativeCap.material = positiveCap.material.clone();
+        negativeCap.material.color = new THREE.Color(0x59606a);
+        batteryGroup.add(negativeCap);
+
+        const connectorGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.65, 20);
+        const connectorMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0xb5bac3,
+          metalness: 1.0,
+          roughness: 0.28,
+          envMapIntensity: 3.2
+        });
+
+        const leftConnector = new THREE.Mesh(connectorGeometry, connectorMaterial);
+        leftConnector.rotation.z = Math.PI / 2;
+        leftConnector.position.set(-1.0, 0, 0);
+        leftConnector.castShadow = true;
+        leftConnector.receiveShadow = true;
+        batteryGroup.add(leftConnector);
+
+        const rightConnector = leftConnector.clone();
+        rightConnector.position.x = 1.0;
+        batteryGroup.add(rightConnector);
+
+        return batteryGroup;
+      }
+
+      function getElectrodeConnectionPoint(electrode, target = new THREE.Vector3()) {
+        const height = electrode.userData.height || 0;
+        target.set(0, height / 2 + 0.35, 0);
+        return electrode.localToWorld(target);
+      }
+
+      // Create complete beaker with liquid
+      function createBeaker(xPosition, rotationY) {
+        const beakerGroup = new THREE.Group();
+
+        // Glass beaker - visible grey glass with thicker rim (shorter height)
+        const beakerGeometry = createBeakerGeometry(8, 3, 0.25, 64);
+        const beakerMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0xfafafa, // Lighter neutral base so highlights pop
+          transparent: true,
+          opacity: 1.0,
+          roughness: 0.04, // Slight roughness to soften reflections
+          metalness: 0.1,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.008,
+          transmission: 0.8,
+          thickness: 1.4,
+          ior: 1.52,
+          envMapIntensity: 1.9,
+          specularIntensity: 1.0,
+          specularColor: 0xffffff,
+          attenuationColor: new THREE.Color(0xf6f9ff),
+          attenuationDistance: 6,
+          side: THREE.FrontSide,
+          depthWrite: false
+        });
+        const beakerMesh = new THREE.Mesh(beakerGeometry, beakerMaterial);
+        beakerMesh.renderOrder = 2; // Render glass after liquid
+        beakerMesh.castShadow = true;
+        beakerMesh.receiveShadow = true;
+        beakerGroup.add(beakerMesh);
+
+        // Measurement lines (adjusted for shorter height)
+        const lines = createMeasurementLines(beakerMesh, 8, 3);
+        beakerGroup.add(lines);
+
+        // Liquid (adjusted for shorter height and thicker walls)
+        const liquid = createLiquid(5, 2.55);
+        beakerGroup.add(liquid);
+        beakerGroup.userData = {
+          ...(beakerGroup.userData || {}),
+          liquid,
+          liquidMaterial: liquid.material
+        };
+
+        beakerGroup.position.x = xPosition;
+        beakerGroup.position.y = 6.2; // Position with buffer space from top
+        beakerGroup.rotation.y = rotationY; // Rotate beaker
+
+        return beakerGroup;
+      }
+
+      // Create two beakers with natural rotation (spouts facing outward)
+      const beaker1 = createBeaker(-4.25, -Math.PI / 6); // Rotate left beaker left
+      const beaker2 = createBeaker(4.25, Math.PI / 6); // Rotate right beaker right
+      scene.add(beaker1);
+      scene.add(beaker2);
+
+      const electrodeHeight = 9.4;
+      const electrodeBottom = -3.9;
+      const electrodeYOffset = electrodeBottom + electrodeHeight / 2;
+
+      const leftElectrode = createElectrode({
+        width: 0.7,
+        height: electrodeHeight,
+        depth: 0.34,
+        color: 0xb46d3a,
+        roughness: 0.3
+      });
+      leftElectrode.position.set(-0.2, electrodeYOffset, 0.25);
+      leftElectrode.rotation.y = Math.PI / 18;
+      beaker1.add(leftElectrode);
+
+      const rightElectrode = createElectrode({
+        width: 0.68,
+        height: electrodeHeight,
+        depth: 0.32,
+        color: 0xd1d6df,
+        roughness: 0.18
+      });
+      rightElectrode.position.set(0.2, electrodeYOffset, -0.25);
+      rightElectrode.rotation.y = -Math.PI / 18;
+      beaker2.add(rightElectrode);
+
+      const clampGeometry = new THREE.BoxGeometry(1.05, 0.35, 0.46);
+      const clampMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xe9ecef,
+        metalness: 0.85,
+        roughness: 0.26,
+        envMapIntensity: 3.1
+      });
+
+      const leftClamp = new THREE.Mesh(clampGeometry, clampMaterial);
+      leftClamp.position.set(0, electrodeHeight / 2 + 0.2, 0);
+      leftClamp.castShadow = true;
+      leftClamp.receiveShadow = true;
+      leftElectrode.add(leftClamp);
+
+      const rightClamp = new THREE.Mesh(clampGeometry, clampMaterial);
+      rightClamp.position.set(0, electrodeHeight / 2 + 0.2, 0);
+      rightClamp.castShadow = true;
+      rightClamp.receiveShadow = true;
+      rightElectrode.add(rightClamp);
+
+      const saltBridgeButton = document.getElementById('salt-bridge-button');
+      const modeToggleButton = document.getElementById('mode-toggle');
+      const leftSelect = document.getElementById('left-electrode-select');
+      const rightSelect = document.getElementById('right-electrode-select');
+      const swapCellsButton = document.getElementById('swap-cells');
+      const leftRoleEl = document.getElementById('left-role');
+      const rightRoleEl = document.getElementById('right-role');
+      const leftNameEl = document.getElementById('left-name');
+      const rightNameEl = document.getElementById('right-name');
+      const leftPotentialEl = document.getElementById('left-potential');
+      const rightPotentialEl = document.getElementById('right-potential');
+      const leftHalfReactionEl = document.getElementById('left-half-reaction');
+      const rightHalfReactionEl = document.getElementById('right-half-reaction');
+      const cellPotentialEl = document.getElementById('cell-potential');
+      const electronFlowTextEl = document.getElementById('electron-flow-text');
+      const cationFlowTextEl = document.getElementById('cation-flow-text');
+      const anionFlowTextEl = document.getElementById('anion-flow-text');
+      const statusTextEl = document.getElementById('status-text');
+      const saltBridgeRestY = 10.8;
+      let saltBridgeGroup = null;
+      let saltBridgeSimulation = null;
+      let cellMode = 'galvanic';
+      let externalCircuitGroup = null;
+      const externalCircuitState = {
+        mode: null,
+        anodeUuid: null,
+        cathodeUuid: null
+      };
+      const cellState = {
+        left: { species: null, concentration: 1.0 },
+        right: { species: null, concentration: 1.0 },
+        anodeSide: 'left',
+        cathodeSide: 'right',
+        anodeSpecies: null,
+        cathodeSpecies: null,
+        cellPotential: 0,
+        isBalanced: false,
+        hasDrive: false
+      };
+      let electronArrow = null;
+      let cationArrow = null;
+      let anionArrow = null;
+      const SALT_BRIDGE_ARROW_DIMENSIONS = {
+        shaftRadius: 0.055,
+        headRadius: 0.12,
+        headHeight: 0.38
+      };
+      const ARROW_UP = new THREE.Vector3(0, 1, 0);
+      const arrowDirection = new THREE.Vector3();
+      const arrowQuaternion = new THREE.Quaternion();
+      const anodeConnectionVec = new THREE.Vector3();
+      const cathodeConnectionVec = new THREE.Vector3();
+      const electronStartVec = new THREE.Vector3();
+      const electronEndVec = new THREE.Vector3();
+      const saltBridgeStartVec = new THREE.Vector3();
+      const saltBridgeTargetVec = new THREE.Vector3();
+
+      function createArrowMesh(colorHex = 0xffffff, dimensions = {}) {
+        const {
+          shaftRadius = 0.08,
+          headRadius = 0.18,
+          headHeight = 0.45
+        } = dimensions;
+        const group = new THREE.Group();
+        const material = new THREE.MeshStandardMaterial({
+          color: colorHex,
+          metalness: 0.6,
+          roughness: 0.2,
+          emissive: new THREE.Color(colorHex).multiplyScalar(0.35),
+          emissiveIntensity: 0.8
+        });
+        const shaftGeometry = new THREE.CylinderGeometry(
+          shaftRadius,
+          shaftRadius,
+          1,
+          16
+        );
+        const shaft = new THREE.Mesh(shaftGeometry, material);
+        shaft.position.y = 0.5;
+        shaft.castShadow = true;
+        shaft.receiveShadow = true;
+
+        const headGeometry = new THREE.ConeGeometry(headRadius, headHeight, 20);
+        const head = new THREE.Mesh(headGeometry, material);
+        head.castShadow = true;
+        head.receiveShadow = true;
+
+        group.add(shaft);
+        group.add(head);
+        group.userData = {
+          shaft,
+          head,
+          headHeight,
+          material,
+          shaftRadius,
+          headRadius
+        };
+        group.renderOrder = 6;
+        group.visible = false;
+        return group;
+      }
+
+      function ensureArrowMesh(current, colorHex, dimensions) {
+        if (!current) {
+          current = createArrowMesh(colorHex, dimensions);
+          scene.add(current);
+        }
+        return current;
+      }
+
+      function setArrowVisibility(arrow, visible) {
+        if (arrow) {
+          arrow.visible = visible;
+        }
+      }
+
+      function updateGalvanicIndicators(isActive) {
+        if (!externalCircuitGroup || cellMode !== 'galvanic') {
+          return;
+        }
+        const bulb = externalCircuitGroup.userData?.bulb;
+        if (!bulb) {
+          return;
+        }
+        const { light, glassMaterial, filamentMaterial } = bulb.userData ?? {};
+        const normalized = isActive
+          ? THREE.MathUtils.clamp(cellState.cellPotential / MAX_GALVANIC_POTENTIAL, 0, 1)
+          : 0;
+        const eased = Math.pow(normalized, 0.7);
+        if (light) {
+          light.intensity = THREE.MathUtils.lerp(0.08, 1.75, eased);
+          light.distance = THREE.MathUtils.lerp(2.5, 7.5, eased);
+        }
+        if (glassMaterial) {
+          glassMaterial.emissiveIntensity = THREE.MathUtils.lerp(0.05, 0.35, eased);
+        }
+        if (filamentMaterial) {
+          filamentMaterial.emissiveIntensity = THREE.MathUtils.lerp(0.12, 1.6, eased);
+        }
+      }
+
+      function positionArrowMesh(group, start, end) {
+        if (!group) {
+          return;
+        }
+        arrowDirection.copy(end).sub(start);
+        const length = arrowDirection.length();
+        if (length < 1e-3) {
+          group.visible = false;
+          return;
+        }
+        const { shaft, head, headHeight } = group.userData;
+        const normalized = arrowDirection.normalize();
+        arrowQuaternion.setFromUnitVectors(ARROW_UP, normalized);
+        group.position.copy(start);
+        group.quaternion.copy(arrowQuaternion);
+
+        const shaftLength = Math.max(length - headHeight, 0.12);
+        shaft.scale.set(1, shaftLength, 1);
+        shaft.position.y = shaftLength / 2;
+        head.position.y = shaftLength + headHeight / 2;
+        group.visible = true;
+      }
+
+      function updateFlowVectors() {
+        const { anodeSide, cathodeSide } = cellState;
+        const hideTransportVectors = () => {
+          setArrowVisibility(electronArrow, false);
+          setArrowVisibility(cationArrow, false);
+          setArrowVisibility(anionArrow, false);
+        };
+
+        const hasSaltBridge = Boolean(saltBridgeGroup);
+        const shouldShowElectronFlow =
+          hasSaltBridge && (cellState.hasDrive || (cellMode === 'electrolytic' && !cellState.isBalanced));
+
+        if (!anodeSide || !cathodeSide || !shouldShowElectronFlow) {
+          hideTransportVectors();
+          updateGalvanicIndicators(false);
+          return;
+        }
+
+        electronArrow = ensureArrowMesh(electronArrow, 0xffd25a);
+        cationArrow = ensureArrowMesh(
+          cationArrow,
+          0xff7b5a,
+          SALT_BRIDGE_ARROW_DIMENSIONS
+        );
+        anionArrow = ensureArrowMesh(
+          anionArrow,
+          0x6cd0ff,
+          SALT_BRIDGE_ARROW_DIMENSIONS
+        );
+
+        const anodeMesh = anodeSide === 'left' ? leftElectrode : rightElectrode;
+        const cathodeMesh = cathodeSide === 'left' ? leftElectrode : rightElectrode;
+        if (!anodeMesh || !cathodeMesh) {
+          hideTransportVectors();
+          updateGalvanicIndicators(false);
+          return;
+        }
+
+        getElectrodeConnectionPoint(anodeMesh, anodeConnectionVec);
+        getElectrodeConnectionPoint(cathodeMesh, cathodeConnectionVec);
+
+        const electronArrowHeight = EXTERNAL_CIRCUIT_HEIGHT + 0.75;
+        electronStartVec.set(
+          anodeConnectionVec.x,
+          electronArrowHeight,
+          EXTERNAL_CIRCUIT_DEPTH - 0.06
+        );
+        electronEndVec.set(
+          cathodeConnectionVec.x,
+          electronArrowHeight,
+          EXTERNAL_CIRCUIT_DEPTH - 0.06
+        );
+        positionArrowMesh(electronArrow, electronStartVec, electronEndVec);
+        setArrowVisibility(electronArrow, true);
+
+        if (saltBridgeGroup) {
+          saltBridgeStartVec.set(0, saltBridgeRestY + 0.28, -0.12);
+          const saltTargetY = saltBridgeRestY - 0.4;
+
+          saltBridgeTargetVec.set(
+            cathodeSide === 'left' ? beaker1.position.x - 0.35 : beaker2.position.x + 0.35,
+            saltTargetY,
+            -0.12
+          );
+          positionArrowMesh(cationArrow, saltBridgeStartVec, saltBridgeTargetVec);
+
+          saltBridgeTargetVec.set(
+            anodeSide === 'left' ? beaker1.position.x - 0.35 : beaker2.position.x + 0.35,
+            saltTargetY,
+            -0.12
+          );
+          positionArrowMesh(anionArrow, saltBridgeStartVec, saltBridgeTargetVec);
+
+          setArrowVisibility(cationArrow, true);
+          setArrowVisibility(anionArrow, true);
+        } else {
+          setArrowVisibility(cationArrow, false);
+          setArrowVisibility(anionArrow, false);
+        }
+
+        updateGalvanicIndicators(cellMode === 'galvanic' && shouldShowElectronFlow);
+      }
+
+      function updateModeButton() {
+        if (modeToggleButton) {
+          modeToggleButton.textContent = cellMode === 'galvanic' ? 'Switch to Electrolytic' : 'Switch to Galvanic';
+        }
+        const titleElement = document.getElementById('title-text');
+        if (titleElement) {
+          titleElement.textContent = cellMode === 'galvanic' ? 'Electrochemistry — Galvanic Cell' : 'Electrochemistry — Electrolytic Cell';
+        }
+      }
+
+      function getSortedElectrodes(data = ELECTRODE_DATA) {
+        if (data === ELECTRODE_DATA) {
+          return DEFAULT_SORTED_ELECTRODES;
+        }
+        return [...data].sort((a, b) => a.reductionPotential - b.reductionPotential);
+      }
+
+      function populateElectrodeSelect(selectElement, defaultId, data = ELECTRODE_DATA) {
+        if (!selectElement) {
+          return;
+        }
+        const sorted = getSortedElectrodes(data);
+        selectElement.innerHTML = '';
+        sorted.forEach((entry) => {
+          const option = document.createElement('option');
+          option.value = entry.id;
+          const chargeLabel = htmlCharge(entry.ionCharge);
+          option.textContent = `${entry.name} (${entry.ionSymbol}${chargeLabel}/${entry.metalSymbol})`;
+          selectElement.appendChild(option);
+        });
+        const hasDefault = sorted.some((entry) => entry.id === defaultId);
+        if (hasDefault) {
+          selectElement.value = defaultId;
+        } else if (sorted.length > 0) {
+          selectElement.value = sorted[0].id;
+        }
+      }
+
+      function applySpeciesToSide(side, species, role) {
+        if (!species) {
+          return;
+        }
+        const electrode = side === 'left' ? leftElectrode : rightElectrode;
+        const beaker = side === 'left' ? beaker1 : beaker2;
+        if (!electrode) {
+          return;
+        }
+
+        const baseColor = new THREE.Color(species.electrodeColor);
+        electrode.material.color.copy(baseColor);
+        electrode.material.metalness = 1.0;
+        electrode.material.roughness = role === 'anode' ? 0.3 : 0.18;
+        if (electrode.material.emissive) {
+          electrode.material.emissive.copy(baseColor).multiplyScalar(role === 'anode' ? 0.08 : 0.12);
+          electrode.material.emissiveIntensity = role === 'anode' ? 0.5 : 0.65;
+        }
+        electrode.material.needsUpdate = true;
+
+        if (beaker?.userData?.liquid) {
+          const liquid = beaker.userData.liquid;
+          liquid.material.color.setHex(species.solutionColor);
+          if (liquid.material.attenuationColor) {
+            liquid.material.attenuationColor.setHex(species.solutionAttenuation ?? species.solutionColor);
+          }
+          if (species.solutionOpacity) {
+            liquid.material.opacity = species.solutionOpacity;
+          }
+          liquid.material.needsUpdate = true;
+        }
+      }
+
+      function describeSide(side, roleLabel) {
+        const sideLabel = side === 'left' ? 'Left cell' : 'Right cell';
+        return `${sideLabel} (${roleLabel})`;
+      }
+
+      function updateInfoDisplay() {
+        const leftSpecies = cellState.left.species;
+        const rightSpecies = cellState.right.species;
+        if (!leftSpecies || !rightSpecies) {
+          return;
+        }
+        const leftRole = cellState.anodeSide === 'left' ? 'anode' : 'cathode';
+        const rightRole = cellState.anodeSide === 'right' ? 'anode' : 'cathode';
+        const anodeChargeLabel = cellMode === 'galvanic' ? 'Anode (-)' : 'Anode (+)';
+        const cathodeChargeLabel = cellMode === 'galvanic' ? 'Cathode (+)' : 'Cathode (-)';
+
+        if (leftRoleEl) {
+          leftRoleEl.textContent =
+            leftRole === 'anode' ? anodeChargeLabel : cathodeChargeLabel;
+        }
+        if (rightRoleEl) {
+          rightRoleEl.textContent =
+            rightRole === 'anode' ? anodeChargeLabel : cathodeChargeLabel;
+        }
+        if (leftNameEl) {
+          leftNameEl.innerHTML = `${leftSpecies.name} | ${formatIonStateHtml(leftSpecies)}`;
+        }
+        if (rightNameEl) {
+          rightNameEl.innerHTML = `${rightSpecies.name} | ${formatIonStateHtml(rightSpecies)}`;
+        }
+        if (leftPotentialEl) {
+          leftPotentialEl.textContent = `E\u00b0 = ${formatSignedPotential(leftSpecies.reductionPotential)}`;
+        }
+        if (rightPotentialEl) {
+          rightPotentialEl.textContent = `E\u00b0 = ${formatSignedPotential(rightSpecies.reductionPotential)}`;
+        }
+        if (leftHalfReactionEl) {
+          leftHalfReactionEl.innerHTML = formatHalfReaction(leftSpecies, leftRole);
+        }
+        if (rightHalfReactionEl) {
+          rightHalfReactionEl.innerHTML = formatHalfReaction(rightSpecies, rightRole);
+        }
+
+        const hasSaltBridge = Boolean(saltBridgeGroup);
+
+        if (cellPotentialEl) {
+          cellPotentialEl.textContent = `E\u00b0cell = ${formatSignedPotential(cellState.cellPotential)}`;
+        }
+        if (electronFlowTextEl) {
+          const flowDirection =
+            cellState.anodeSide === 'left'
+              ? 'Left &rarr; Right'
+              : 'Right &rarr; Left';
+          if (!hasSaltBridge) {
+            electronFlowTextEl.innerHTML = 'e<sup>-</sup> flow: incomplete circuit (connect the salt bridge)';
+          } else if (cellState.isBalanced) {
+            electronFlowTextEl.innerHTML = 'e<sup>-</sup> flow: no net direction at standard conditions';
+          } else if (!cellState.hasDrive && cellMode === 'galvanic') {
+            electronFlowTextEl.innerHTML = 'e<sup>-</sup> flow: no flow — E\u00b0cell negative (cell inactive)';
+          } else if (!cellState.hasDrive && cellMode === 'electrolytic') {
+            electronFlowTextEl.innerHTML = `e<sup>-</sup> flow: forced ${flowDirection} (external power)`;
+          } else {
+            electronFlowTextEl.innerHTML = `e<sup>-</sup> flow: ${flowDirection}`;
+          }
+        }
+        const cathodeLabel = describeSide(cellState.cathodeSide, 'Cathode');
+        const anodeLabel = describeSide(cellState.anodeSide, 'Anode');
+        if (cationFlowTextEl) {
+          if (!hasSaltBridge) {
+            cationFlowTextEl.innerHTML = 'Cations: salt bridge not connected';
+          } else if (cellState.isBalanced) {
+            cationFlowTextEl.innerHTML = 'Cations: no net migration through salt bridge';
+          } else {
+            cationFlowTextEl.innerHTML = `Cations: salt bridge &rarr; ${cathodeLabel}`;
+          }
+        }
+        if (anionFlowTextEl) {
+          if (!hasSaltBridge) {
+            anionFlowTextEl.innerHTML = 'Anions: salt bridge not connected';
+          } else if (cellState.isBalanced) {
+            anionFlowTextEl.innerHTML = 'Anions: no net migration through salt bridge';
+          } else {
+            anionFlowTextEl.innerHTML = `${anodeLabel} &larr; salt bridge anions`;
+          }
+        }
+        if (statusTextEl) {
+          const modeLabel = cellMode === 'galvanic'
+            ? 'Galvanic mode'
+            : 'Electrolytic view (sign convention fixed to galvanic)';
+          const anodeCharge = cellMode === 'galvanic' ? '-' : '+';
+          const cathodeCharge = cellMode === 'galvanic' ? '+' : '-';
+          const baseStatus = `${modeLabel}: anode (${anodeCharge}), cathode (${cathodeCharge})`;
+          if (!hasSaltBridge) {
+            statusTextEl.textContent = `${baseStatus} - salt bridge not connected`;
+          } else if (cellState.isBalanced) {
+            statusTextEl.textContent = `${baseStatus} - no spontaneous drive at standard conditions`;
+          } else if (!cellState.hasDrive) {
+            if (cellMode === 'galvanic') {
+              statusTextEl.textContent = `${baseStatus} - cell will not run (E\u00b0cell negative)`;
+            } else {
+              statusTextEl.textContent = `${baseStatus} - driven by external power (E\u00b0cell negative)`;
+            }
+          } else {
+            statusTextEl.textContent = baseStatus;
+          }
+        }
+      }
+
+      function updateCellChemistry() {
+        if (!leftSelect || !rightSelect) {
+          return;
+        }
+        const leftSpecies = ELECTRODE_LOOKUP.get(leftSelect.value) ?? ELECTRODE_DATA[0];
+        const rightSpecies = ELECTRODE_LOOKUP.get(rightSelect.value) ?? ELECTRODE_DATA[0];
+        const leftConcentration = leftSpecies?.defaultConcentration ?? 1.0;
+        const rightConcentration = rightSpecies?.defaultConcentration ?? 1.0;
+
+        cellState.left.species = leftSpecies;
+        cellState.left.concentration = leftConcentration;
+        cellState.right.species = rightSpecies;
+        cellState.right.concentration = rightConcentration;
+
+        const anodeSide = 'left';
+        const cathodeSide = 'right';
+        const anodeSpecies = leftSpecies;
+        const cathodeSpecies = rightSpecies;
+        const cellPotential = cathodeSpecies.reductionPotential - anodeSpecies.reductionPotential;
+
+        cellState.anodeSide = anodeSide;
+        cellState.cathodeSide = cathodeSide;
+        cellState.anodeSpecies = anodeSpecies;
+        cellState.cathodeSpecies = cathodeSpecies;
+        cellState.cellPotential = cellPotential;
+        cellState.isBalanced = Math.abs(cellPotential) < CELL_POTENTIAL_TOLERANCE;
+        cellState.hasDrive = cellPotential > CELL_POTENTIAL_TOLERANCE;
+
+        const leftRole = 'anode';
+        const rightRole = 'cathode';
+
+        applySpeciesToSide('left', leftSpecies, leftRole);
+        applySpeciesToSide('right', rightSpecies, rightRole);
+
+        updateInfoDisplay();
+        refreshExternalCircuit();
+      }
+
+      function initializeChemistryUI() {
+        if (!leftSelect || !rightSelect) {
+          return;
+        }
+        populateElectrodeSelect(leftSelect, DEFAULT_LEFT_ID);
+        populateElectrodeSelect(rightSelect, DEFAULT_RIGHT_ID);
+
+        leftSelect.addEventListener('change', updateCellChemistry);
+        rightSelect.addEventListener('change', updateCellChemistry);
+
+        if (swapCellsButton) {
+          swapCellsButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            const leftValue = leftSelect.value;
+            const rightValue = rightSelect.value;
+            leftSelect.value = rightValue;
+            rightSelect.value = leftValue;
+            updateCellChemistry();
+          });
+        }
+
+        updateCellChemistry();
+      }
+
+      function refreshExternalCircuit(force = false) {
+        scene.updateMatrixWorld(true);
+        const anodeMesh = cellState.anodeSide === 'right' ? rightElectrode : leftElectrode;
+        const cathodeMesh = cellState.cathodeSide === 'left' ? leftElectrode : rightElectrode;
+        if (!anodeMesh || !cathodeMesh) {
+          externalCircuitState.mode = null;
+          externalCircuitState.anodeUuid = null;
+          externalCircuitState.cathodeUuid = null;
+          if (externalCircuitGroup) {
+            scene.remove(externalCircuitGroup);
+            disposeGroup(externalCircuitGroup);
+            externalCircuitGroup = null;
+          }
+          updateFlowVectors();
+          return;
+        }
+
+        const stateMatches =
+          !force &&
+          externalCircuitGroup &&
+          externalCircuitState.mode === cellMode &&
+          externalCircuitState.anodeUuid === anodeMesh.uuid &&
+          externalCircuitState.cathodeUuid === cathodeMesh.uuid;
+
+        if (stateMatches) {
+          updateFlowVectors();
+          return;
+        }
+
+        getElectrodeConnectionPoint(anodeMesh, anodeConnectionVec);
+        getElectrodeConnectionPoint(cathodeMesh, cathodeConnectionVec);
+        const startPoint = anodeConnectionVec.clone();
+        const endPoint = cathodeConnectionVec.clone();
+
+        if (externalCircuitGroup) {
+          scene.remove(externalCircuitGroup);
+          disposeGroup(externalCircuitGroup);
+        }
+
+        externalCircuitState.mode = cellMode;
+        externalCircuitState.anodeUuid = anodeMesh.uuid;
+        externalCircuitState.cathodeUuid = cathodeMesh.uuid;
+
+        externalCircuitGroup = new THREE.Group();
+        externalCircuitGroup.userData = {};
+        scene.add(externalCircuitGroup);
+
+        if (cellMode === 'galvanic') {
+          const bulb = createLightbulb();
+          bulb.position.set(0, EXTERNAL_CIRCUIT_HEIGHT, EXTERNAL_CIRCUIT_DEPTH);
+          bulb.rotation.y = Math.PI / 14;
+          externalCircuitGroup.add(bulb);
+          externalCircuitGroup.userData.bulb = bulb;
+          scene.updateMatrixWorld(true);
+
+          const bulbLeftLead = bulb.localToWorld(new THREE.Vector3(-0.55, -0.22, 0));
+          const bulbRightLead = bulb.localToWorld(new THREE.Vector3(0.55, -0.22, 0));
+
+          const points = [
+            startPoint.clone(),
+            startPoint.clone().add(new THREE.Vector3(-0.9, 1.2, -0.75)),
+            bulbLeftLead.clone().add(new THREE.Vector3(-0.2, 0.22, -0.06)),
+            bulbLeftLead,
+            bulbRightLead,
+            bulbRightLead.clone().add(new THREE.Vector3(0.2, 0.22, -0.06)),
+            endPoint.clone().add(new THREE.Vector3(0.9, 1.2, -0.75)),
+            endPoint.clone()
+          ];
+
+          const wire = createElectrodeWire(points);
+          externalCircuitGroup.add(wire);
+        } else {
+          const battery = createBattery();
+          battery.position.set(0, EXTERNAL_CIRCUIT_HEIGHT, EXTERNAL_CIRCUIT_DEPTH);
+          battery.rotation.set(0.08, -Math.PI / 10, Math.PI / 2);
+          externalCircuitGroup.add(battery);
+          scene.updateMatrixWorld(true);
+
+          const negativeTerminal = battery.localToWorld(new THREE.Vector3(0, -1.59, 0));
+          const positiveTerminal = battery.localToWorld(new THREE.Vector3(0, 1.59, 0));
+
+          const points = [
+            startPoint.clone(),
+            startPoint.clone().add(new THREE.Vector3(-0.95, 0.9, -0.7)),
+            positiveTerminal.clone().add(new THREE.Vector3(-0.16, 0.2, -0.05)),
+            positiveTerminal,
+            negativeTerminal,
+            negativeTerminal.clone().add(new THREE.Vector3(0.16, 0.2, -0.05)),
+            endPoint.clone().add(new THREE.Vector3(0.95, 0.9, -0.7)),
+            endPoint.clone()
+          ];
+
+          const wire = createElectrodeWire(points, 0.085);
+          externalCircuitGroup.add(wire);
+        }
+        updateFlowVectors();
+      }
+
+      updateModeButton();
+      initializeChemistryUI();
+
+      // Create ground oval/shadow below beakers
+      const groundGeometry = new THREE.CircleGeometry(12, 64);
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      // Create radial gradient - darker contact shadow
+      const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+      gradient.addColorStop(0, 'rgba(26, 26, 26, 0.65)');
+      gradient.addColorStop(0.55, 'rgba(40, 40, 40, 0.38)');
+      gradient.addColorStop(1, 'rgba(75, 75, 75, 0)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 256, 256);
+
+      const groundTexture = new THREE.CanvasTexture(canvas);
+      const groundMaterial = new THREE.MeshBasicMaterial({
+        map: groundTexture,
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false
+      });
+
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+      ground.position.y = 2.3; // Position below beakers
+      ground.scale.set(1.5, 1, 1); // Make it oval (stretched horizontally)
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      const tempVecA = new THREE.Vector3();
+      const tempVecB = new THREE.Vector3();
+
+      function createSaltBridge() {
+        const bridgeGroup = new THREE.Group();
+        bridgeGroup.position.set(0, saltBridgeRestY, -0.12);
+
+        const clothWidth = 7.4;
+        const clothDepth = 1.2;
+        const segmentsX = 26;
+        const segmentsZ = 5;
+
+        const geometry = new THREE.PlaneGeometry(clothWidth, clothDepth, segmentsX, segmentsZ);
+        geometry.rotateX(-Math.PI / 2);
+
+        const attr = geometry.attributes.position;
+        const positions = attr.array;
+        const vertexCount = attr.count;
+        const cols = segmentsX + 1;
+
+        const particles = [];
+        const constraints = [];
+        const dropLift = 2.6;
+        const dropVelocityKick = 0.6;
+        const dropVerticalJitter = 0.24;
+        const dropLateralJitter = 0.05;
+
+        for (let i = 0; i < vertexCount; i++) {
+          const ix = i * 3;
+          const xPos = positions[ix];
+          const zPos = positions[ix + 2];
+          let yPos = 0.62;
+
+          const xIndex = i % cols;
+          const zIndex = Math.floor(i / cols);
+          const normalizedZ = segmentsZ > 0 ? zIndex / segmentsZ : 0;
+          const side = xIndex === 0 || xIndex === segmentsX;
+          const rimDip = Math.abs(normalizedZ - 0.5) * 0.25;
+
+          if (side) {
+            yPos = 0.2 - rimDip * 0.55;
+          }
+
+          positions[ix + 1] = yPos;
+
+          const restPosition = new THREE.Vector3(xPos, yPos, zPos);
+          const position = restPosition.clone();
+          const previous = restPosition.clone();
+
+          const particle = {
+            position,
+            previous,
+            restPosition: restPosition.clone(),
+            pinned: side,
+            pinTarget: null,
+            invMass: side ? 0 : 1 / 0.4
+          };
+
+          if (side) {
+            const xShift = xIndex === 0 ? -0.12 : 0.12;
+            const pinTarget = new THREE.Vector3(xPos + xShift, yPos - 0.22, zPos * 0.6);
+            particle.pinTarget = pinTarget.clone();
+            particle.restPosition.copy(pinTarget);
+            particle.position.copy(pinTarget);
+            particle.previous.copy(pinTarget);
+            positions[ix] = pinTarget.x;
+            positions[ix + 1] = pinTarget.y;
+            positions[ix + 2] = pinTarget.z;
+          } else {
+            positions[ix] = restPosition.x;
+            positions[ix + 1] = restPosition.y;
+            positions[ix + 2] = restPosition.z;
+          }
+
+          particles.push(particle);
+        }
+
+        for (let i = 0; i < particles.length; i++) {
+          const particle = particles[i];
+          const idx = i * 3;
+
+          if (particle.pinned) {
+            particle.previous.copy(particle.position);
+            positions[idx] = particle.position.x;
+            positions[idx + 1] = particle.position.y;
+            positions[idx + 2] = particle.position.z;
+            continue;
+          }
+
+          const lift = dropLift * (0.72 + Math.random() * 0.55);
+          const jitterY = (Math.random() - 0.5) * dropVerticalJitter;
+          const jitterZ = (Math.random() - 0.5) * dropLateralJitter;
+
+          particle.position.copy(particle.restPosition);
+          particle.position.y += lift + jitterY;
+          particle.position.z += jitterZ;
+
+          particle.previous.copy(particle.position);
+          particle.previous.y += dropVelocityKick * (0.7 + Math.random() * 0.45);
+
+          positions[idx] = particle.position.x;
+          positions[idx + 1] = particle.position.y;
+          positions[idx + 2] = particle.position.z;
+        }
+
+        attr.needsUpdate = true;
+        geometry.computeVertexNormals();
+        geometry.computeBoundingSphere();
+
+        const material = new THREE.MeshBasicMaterial({
+          color: 0x9fa6b4,
+          side: THREE.DoubleSide,
+          opacity: 1,
+          transparent: false
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = false;
+        mesh.receiveShadow = true;
+        mesh.renderOrder = 5;
+        mesh.frustumCulled = false;
+        bridgeGroup.add(mesh);
+
+        const getIndex = (x, z) => z * (segmentsX + 1) + x;
+        const addConstraint = (i1, i2, stiffness = 1) => {
+          const restDistance = particles[i1].restPosition.distanceTo(particles[i2].restPosition);
+          constraints.push({
+            i1,
+            i2,
+            rest: restDistance,
+            stiffness
+          });
+        };
+
+        for (let z = 0; z <= segmentsZ; z++) {
+          for (let x = 0; x < segmentsX; x++) {
+            addConstraint(getIndex(x, z), getIndex(x + 1, z), 0.8);
+          }
+        }
+
+        for (let z = 0; z < segmentsZ; z++) {
+          for (let x = 0; x <= segmentsX; x++) {
+            addConstraint(getIndex(x, z), getIndex(x, z + 1), 0.75);
+          }
+        }
+
+        for (let z = 0; z < segmentsZ; z++) {
+          for (let x = 0; x < segmentsX; x++) {
+            addConstraint(getIndex(x, z), getIndex(x + 1, z + 1), 0.6);
+            addConstraint(getIndex(x + 1, z), getIndex(x, z + 1), 0.6);
+          }
+        }
+
+        const simulation = {
+          geometry,
+          particles,
+          constraints,
+          positionsArray: positions,
+          substeps: 5,
+          iterations: 3,
+          gravity: 16,
+          damping: 0.025,
+          time: 0,
+          reenabled: false,
+          settleTime: 1.35
+        };
+
+        bridgeGroup.userData = { geometry, mesh, simulation };
+        return bridgeGroup;
+      }
+
+      function integrateSaltBridge(simulation, step, breezeStrength) {
+        const { particles, damping, gravity, time } = simulation;
+
+        for (let i = 0; i < particles.length; i++) {
+          const particle = particles[i];
+          if (particle.pinned) {
+            continue;
+          }
+
+          tempVecA.copy(particle.position);
+
+          tempVecB.subVectors(particle.position, particle.previous).multiplyScalar(1 - damping);
+          particle.position.add(tempVecB);
+          particle.position.y -= gravity * step * step;
+
+          const sway = Math.sin((time + i * 0.12) * 2.1) * breezeStrength;
+          particle.position.z += sway * step;
+
+          particle.previous.copy(tempVecA);
+        }
+      }
+
+      function satisfySaltBridge(simulation) {
+        const { constraints, particles, iterations } = simulation;
+
+        for (let iter = 0; iter < iterations; iter++) {
+          for (let i = 0; i < constraints.length; i++) {
+            const constraint = constraints[i];
+            const p1 = particles[constraint.i1];
+            const p2 = particles[constraint.i2];
+
+            tempVecA.subVectors(p2.position, p1.position);
+            const distance = tempVecA.length();
+            if (distance === 0) {
+              continue;
+            }
+
+            const diff = (distance - constraint.rest) / distance;
+            const stiffness = constraint.stiffness ?? 1;
+            const inv1 = p1.pinned ? 0 : 1;
+            const inv2 = p2.pinned ? 0 : 1;
+            const invSum = inv1 + inv2;
+
+            if (invSum === 0) {
+              continue;
+            }
+
+            const factor = stiffness * diff / invSum;
+
+            if (inv1) {
+              p1.position.addScaledVector(tempVecA, -inv1 * factor);
+            }
+            if (inv2) {
+              p2.position.addScaledVector(tempVecA, inv2 * factor);
+            }
+          }
+        }
+      }
+
+      function enforceSaltBridgePins(simulation) {
+        const { particles } = simulation;
+
+        for (let i = 0; i < particles.length; i++) {
+          const particle = particles[i];
+          if (!particle.pinned || !particle.pinTarget) {
+            continue;
+          }
+
+          particle.position.copy(particle.pinTarget);
+          particle.previous.copy(particle.pinTarget);
+        }
+      }
+
+      function updateSaltBridgeGeometry(simulation) {
+        const { particles, positionsArray, geometry } = simulation;
+
+        for (let i = 0; i < particles.length; i++) {
+          const position = particles[i].position;
+          const idx = i * 3;
+          positionsArray[idx] = position.x;
+          positionsArray[idx + 1] = position.y;
+          positionsArray[idx + 2] = position.z;
+        }
+
+        geometry.attributes.position.needsUpdate = true;
+        geometry.computeVertexNormals();
+        geometry.computeBoundingSphere();
+      }
+
+      function simulateSaltBridge(delta) {
+        if (!saltBridgeSimulation) {
+          return;
+        }
+
+        const simulation = saltBridgeSimulation;
+        simulation.time += delta;
+        const cappedDelta = Math.min(delta, 1 / 30);
+        const substeps = simulation.substeps;
+        const step = substeps > 0 ? cappedDelta / substeps : cappedDelta;
+        const breezeStrength = 0.35;
+
+        for (let i = 0; i < substeps; i++) {
+          integrateSaltBridge(simulation, step, breezeStrength);
+          satisfySaltBridge(simulation);
+          enforceSaltBridgePins(simulation);
+        }
+
+        updateSaltBridgeGeometry(simulation);
+
+        if (!simulation.reenabled && simulation.time > (simulation.settleTime ?? 1.2)) {
+          simulation.reenabled = true;
+          saltBridgeButton.disabled = false;
+          saltBridgeButton.textContent = 'Remove Salt Bridge';
+        }
+      }
+
+      saltBridgeButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (saltBridgeButton.disabled) {
+          return;
+        }
+
+        if (saltBridgeGroup) {
+          scene.remove(saltBridgeGroup);
+          disposeGroup(saltBridgeGroup);
+          saltBridgeGroup = null;
+          saltBridgeSimulation = null;
+          saltBridgeButton.disabled = false;
+          saltBridgeButton.textContent = 'Add Salt Bridge';
+          saltBridgeButton.blur();
+          updateFlowVectors();
+          updateInfoDisplay();
+          return;
+        }
+
+        saltBridgeGroup = createSaltBridge();
+        saltBridgeSimulation = saltBridgeGroup.userData.simulation;
+        scene.add(saltBridgeGroup);
+        updateFlowVectors();
+        updateInfoDisplay();
+
+        saltBridgeButton.disabled = true;
+        saltBridgeButton.textContent = 'Dropping salt bridge...';
+        saltBridgeButton.blur();
+      });
+
+      if (modeToggleButton) {
+        modeToggleButton.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          cellMode = cellMode === 'galvanic' ? 'electrolytic' : 'galvanic';
+          updateModeButton();
+          refreshExternalCircuit();
+          updateInfoDisplay();
+        });
+      }
+
+      function updateSaltBridge(delta) {
+        if (!saltBridgeGroup || !saltBridgeSimulation) {
+          return;
+        }
+
+        simulateSaltBridge(delta);
+      }
+
+      // Animation loop
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const delta = clock.getDelta();
+
+        // Update controls for smooth damping
+        controls.update();
+
+        updateSaltBridge(delta);
+
+        // Apply smooth resistance based on distance from initial position
+        const currentAzimuth = controls.getAzimuthalAngle();
+        const currentPolar = controls.getPolarAngle();
+
+        const azimuthDiff = Math.abs(currentAzimuth - initialAzimuth);
+        const polarDiff = Math.abs(currentPolar - initialPolar);
+
+        // Calculate resistance factor (increases with distance from initial)
+        const maxAzimuthRange = Math.PI / 8;
+        const maxPolarRange = Math.PI / 8;
+
+        const azimuthRatio = Math.min(1, azimuthDiff / maxAzimuthRange);
+        const polarRatio = Math.min(1, polarDiff / maxPolarRange);
+
+        // Use cubic resistance (smoother than quartic, still strong)
+        const combinedRatio = Math.max(azimuthRatio, polarRatio);
+        const resistanceFactor = Math.pow(combinedRatio, 2.4);
+
+        // Adjust damping smoothly based on distance
+        controls.dampingFactor = 0.55 + resistanceFactor * 0.25;
+
+        // Adjust rotate speed smoothly (doesn't stop completely at edge)
+        controls.rotateSpeed = 0.28 * (1 - resistanceFactor * 0.6);
+
+        renderer.render(scene, camera);
+      }
+
+      // Handle window resize
+      function handleResize() {
+        const { width, height } = getCanvasDimensions();
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+      }
+
+      window.addEventListener('resize', handleResize);
+      window.requestAnimationFrame(handleResize);
+
+      animate();
+    </script>
+  </body>
+</html>
