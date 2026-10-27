@@ -23,6 +23,10 @@
       { "source": "/static/widgets/shamir/**", "destination": "/static/code/widgets/shamir/:splat", "type": 301 },
       { "source": "/static/singly-linked-list/**", "destination": "/static/code/widgets/singly-linked-list/:splat", "type": 301 },
       { "source": "/static/widgets/singly-linked-list/**", "destination": "/static/code/widgets/singly-linked-list/:splat", "type": 301 },
+      { "source": "/static/website-anatomy/**", "destination": "/static/code/widgets/website-anatomy/:splat", "type": 301 },
+      { "source": "/static/widgets/website-anatomy/**", "destination": "/static/code/widgets/website-anatomy/:splat", "type": 301 },
+      { "source": "/static/website-hosting/**", "destination": "/static/code/widgets/website-hosting/:splat", "type": 301 },
+      { "source": "/static/widgets/website-hosting/**", "destination": "/static/code/widgets/website-hosting/:splat", "type": 301 },
 
       { "source": "/static/rsa-encrpytion/**", "destination": "/static/code/widgets/rsa-encrpytion/:splat", "type": 301 },
       { "source": "/static/widgets/rsa-encrpytion/**", "destination": "/static/code/widgets/rsa-encrpytion/:splat", "type": 301 },

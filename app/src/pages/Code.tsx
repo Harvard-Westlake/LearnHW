@@ -7,11 +7,27 @@ export default function Code() {
       <div className="container widgets-page">
         <h1 className="h1">Computer Science</h1>
 
+        <h2 className="h5 eyebrow" style={{ marginTop: '2rem' }}>Websites &amp; Hosting</h2>
+        <div className="widgets-grid">
+          {['website-anatomy', 'website-hosting'].map(slug => {
+            const w = CODE_WIDGETS[slug as keyof typeof CODE_WIDGETS]
+            return (
+              <Link key={slug} className="widget-card" to={`/code/${slug}`}>
+                <div className="title-row">
+                  <h3>{w.title}</h3>
+                </div>
+                <p>{w.blurb}</p>
+                <span className="button">Open</span>
+              </Link>
+            )
+          })}
+        </div>
+
         <h2 className="h5 eyebrow" style={{ marginTop: '2rem' }}>Memory &amp; Data Structures</h2>
         <div className="widgets-grid">
           <Link className="widget-card" to="/code/array-list">
             <div className="title-row">
-              <h3>Java ArrayList — Memory Visualizer</h3>
+              <h3>Java ArrayList: Memory Visualizer</h3>
             </div>
             <p>See allocation, growth, and shifting as you add or remove elements from an ArrayList.</p>
             <span className="button">Open</span>
@@ -51,7 +67,7 @@ export default function Code() {
 
           <Link className="widget-card" to="/code/rsa-cracker">
             <div className="title-row">
-              <h3>Cracking RSA — Period Finding &amp; Quantum Interference</h3>
+              <h3>Cracking RSA: Period Finding &amp; Quantum Interference</h3>
             </div>
             <p>Build a toy RSA lock, watch the powers of a random number loop back to 1, split the period to expose the primes, then see a quantum computer read the same period off an interference pattern.</p>
             <span className="button">Open</span>
@@ -99,7 +115,7 @@ export default function Code() {
         <div className="widgets-grid">
           <Link className="widget-card" to="/code/vyper-framework">
             <div className="title-row">
-              <h3>Vyper Framework — On-chain NFTs &amp; ERC-20</h3>
+              <h3>Vyper Framework: On-chain NFTs &amp; ERC-20</h3>
             </div>
             <p>Deploy Vyper contracts (NFT minter + ERC-20) and mint on-chain images from your wallet on Sepolia, Arbitrum Sepolia, mainnet, or Animechain.</p>
             <span className="button">Open</span>

@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Website Hosting · From Laptop to Link</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#DA0016; --gold:#EDA300; --blue:#539ADC; --blue-20:rgb(83 154 220 / .2); --green:#9CCA00; --orange:#FA7300;
+  --ink:#111827; --muted:#6b7280; --border:#e5e7eb; --bg:#f8f9fa;
+  --sans:"Source Sans 3","Source Sans Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  --tagc:#1d4ed8; --attrc:#b45309; --strc:#15803d;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:15px/1.45 var(--sans);overflow:hidden}
+button{font-family:inherit}
+code{font-family:var(--mono)}
+
+/* ---- shell ---- */
+.page-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:.5rem 1rem .4rem;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0}
+.page-head h1{margin:0;font-size:1.12rem;font-weight:700}
+.page-head p{margin:.05rem 0 0;color:var(--muted);font-size:.86rem}
+.page-head .part{font-size:.76rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.head-right{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
+.dl,.toolbar a.btn{font:600 .78rem var(--sans);color:var(--ink);border:1px solid #d1d5db;border-radius:.4rem;padding:.18rem .55rem;text-decoration:none;background:#fff;white-space:nowrap;display:inline-flex;align-items:center;gap:.25rem}
+.dl:hover,.toolbar a.btn:hover{background:#f3f4f6}
+.tabs{display:flex;gap:.1rem;padding:0 1rem;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.tab{appearance:none;background:transparent;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;padding:.45rem .8rem .5rem;font-size:.9rem;font-weight:600;color:#4b5563;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:.45rem;transition:color .15s,border-color .15s}
+.tab .num{display:inline-grid;place-items:center;width:1.35rem;height:1.35rem;border-radius:50%;background:#e5e7eb;font-size:.75rem;font-weight:700;color:#374151}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--red);border-bottom-color:var(--red)}
+.tab.active .num{background:var(--red);color:#fff}
+.lesson{flex:1;min-height:0;padding:.7rem 1rem .8rem}
+.tabpanel{display:none;height:100%;min-height:0}
+.tabpanel.active{display:grid;grid-template-columns:minmax(230px,280px) minmax(0,1fr);gap:.8rem}
+@media (max-width:860px){ body{overflow:auto} .lesson{height:auto} .tabpanel.active{grid-template-columns:1fr;grid-auto-rows:auto 520px} }
+
+.explain{display:flex;flex-direction:column;gap:.55rem;min-height:0}
+.explain h2{margin:0;font-size:1.22rem;line-height:1.2}
+.eli5{background:#fff;border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:.6rem;padding:.65rem .85rem .75rem;flex:1;min-height:0;overflow:auto}
+.eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.eli5 p{margin:.35rem 0 0;font-size:1.08rem;line-height:1.42}
+.hint{font-size:.8rem;color:var(--muted);margin:0}
+.hint .i{display:inline-grid;place-items:center;width:1.05rem;height:1.05rem;border-radius:50%;background:var(--blue);color:#fff;font:italic 700 .72rem Georgia,serif;vertical-align:-2px}
+.controls{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap}
+.controls .btn{padding:.3rem .55rem}
+.dots{display:flex;gap:.32rem;margin:0 .2rem}
+.dot{width:.6rem;height:.6rem;border-radius:50%;background:#d1d5db;border:0;padding:0;cursor:pointer;transition:background .2s,transform .2s}
+.dot.done{background:#9ca3af}
+.dot.on{background:var(--red);transform:scale(1.25)}
+.btn{appearance:none;border:1px solid #d1d5db;background:#fff;color:var(--ink);border-radius:.45rem;padding:.3rem .7rem;font-size:.85rem;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,transform .1s;min-height:30px}
+.btn:hover{background:#f3f4f6}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+.btn.primary:hover{background:#b80012}
+.btn.playing{background:var(--gold);border-color:var(--gold);color:#111}
+
+.stage{position:relative;background:#fff;border:1px solid var(--border);border-radius:.6rem;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.stage-body{flex:1;min-height:0;position:relative;padding:.7rem}
+.toolbar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;padding:.4rem .7rem;border-top:1px solid var(--border);background:#fafafa;min-height:2.7rem;font-size:.82rem;color:var(--muted)}
+.toolbar .act{display:none;align-items:center;gap:.4rem}
+.toolbar .act.show{display:inline-flex}
+.info-btn{position:absolute;top:.55rem;right:.55rem;z-index:20;width:2rem;height:2rem;border-radius:50%;background:var(--blue);color:#fff;border:0;cursor:pointer;font:italic 700 1.05rem Georgia,serif;box-shadow:0 2px 6px rgb(0 0 0/.15);transition:transform .15s,background .15s}
+.info-btn:hover{transform:scale(1.06)}
+.info-btn.open{background:#1d4ed8}
+.info-pop{position:absolute;top:2.95rem;right:.55rem;z-index:21;width:min(400px,calc(100% - 1.2rem));background:#fff;border:1px solid var(--blue);border-radius:.6rem;box-shadow:0 10px 30px rgb(0 0 0/.14);padding:.7rem .9rem .75rem;display:none;max-height:calc(100% - 3.6rem);overflow:auto}
+.info-pop.open{display:block}
+.info-pop h4{margin:0 0 .35rem;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}
+.info-pop ul{margin:0;padding-left:1.05rem;font-size:.88rem;line-height:1.4}
+.info-pop li{margin:.22rem 0}
+.info-pop code{font-size:.82em;background:#f3f4f6;padding:0 .25rem;border-radius:.2rem}
+
+/* ---- mock windows ---- */
+.win{border:1px solid #d1d5db;border-radius:.6rem;background:#fff;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 3px rgb(0 0 0/.06);min-height:0;position:relative;transition:opacity .4s,filter .4s}
+.win.dim{opacity:.35;filter:grayscale(1)}
+.bar{display:flex;align-items:center;gap:.45rem;padding:.35rem .55rem;background:#f3f4f6;border-bottom:1px solid #e5e7eb;font-size:.78rem;color:var(--muted);flex-shrink:0}
+.lights{display:flex;gap:.25rem;flex-shrink:0}
+.lights i{width:.55rem;height:.55rem;border-radius:50%;background:#fca5a5;display:block}
+.lights i:nth-child(2){background:#fcd34d}.lights i:nth-child(3){background:#86efac}
+.url{flex:1;min-width:0;background:#fff;border:1px solid #e5e7eb;border-radius:.4rem;padding:.12rem .5rem;font-family:var(--mono);font-size:.76rem;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wtitle{font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wbody{flex:1;min-height:0;overflow:auto;position:relative}
+.code{font-family:var(--mono);font-size:.78rem;line-height:1.5;padding:.45rem .6rem;white-space:pre;color:#111;position:relative;tab-size:2}
+.code .ln{display:block;padding:0 .35rem;border-radius:.25rem;transition:background .3s}
+.code .ln.hl{background:#fef3c7}
+.code .ln.cur{background:#dbeafe}
+.code .ln.flash{background:#fde68a}
+.t{color:var(--tagc)}.a{color:var(--attrc)}.s{color:var(--strc)}.c{color:#9ca3af}
+.code.squash{white-space:pre-wrap;word-break:break-all}
+.page{padding:.7rem .9rem;font-family:Georgia,"Times New Roman",serif;color:#000;background:#fff;min-height:100%;transition:background .4s,color .4s}
+.page h1{font-size:1.45rem;margin:0 0 .45rem;font-weight:700}
+.page p{margin:0 0 .5rem}
+.page a{color:#0000ee;text-decoration:underline}
+.page .pimg{display:block;width:76px;height:76px;margin:.2rem 0 .5rem}
+.page .jsbtn{display:none}
+.ael{display:inline-block;position:relative;border-radius:.2rem;transition:background .25s,box-shadow .25s}
+.ael.block{display:block}
+.ael.hl{background:rgb(83 154 220/.28);box-shadow:0 0 0 2px var(--blue)}
+.page.styled{font-family:var(--sans);background:#fffaf0;color:#1f2937}
+.page.styled h1{color:var(--red);letter-spacing:-.01em}
+.page.styled a{color:var(--red);text-decoration:none;font-weight:600;border-bottom:2px solid var(--gold)}
+.page.about h1{margin-bottom:.4rem}
+
+
+/* ---- network stage ---- */
+.net-stage{position:relative;height:100%;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:.6rem;padding:.2rem .4rem}
+.net-stage .wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.net-stage .wires line{stroke:#cbd5e1;stroke-width:2;stroke-dasharray:6 5}
+.net-stage .wires line.on{stroke:var(--blue)}
+.mid{position:relative;z-index:1;text-align:center;font-size:.78rem;color:var(--muted);font-weight:600;background:#fff;padding:.15rem .5rem;border-radius:999px;border:1px solid var(--border);white-space:nowrap}
+.actor{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:.3rem;min-width:0;transition:opacity .4s,filter .4s}
+.actor.dim{opacity:.45;filter:grayscale(1)}
+.actor.hidden{visibility:hidden}
+.a-icon{width:88px;height:88px;display:grid;place-items:center;border-radius:1rem;background:#f8fafc;border:1px solid var(--border);position:relative;transition:box-shadow .3s,border-color .3s,background .3s}
+.a-icon svg{width:62px;height:62px}
+.a-icon.on{border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-20)}
+.a-icon.ok{border-color:var(--green);box-shadow:0 0 0 4px rgb(156 202 0/.25)}
+.a-icon.bad{border-color:var(--red);box-shadow:0 0 0 4px rgb(218 0 22/.18)}
+.a-icon.sm{width:64px;height:64px}.a-icon.sm svg{width:44px;height:44px}
+.a-label{font-weight:700;font-size:.9rem;line-height:1.2;text-align:center}
+.a-sub{font:.74rem var(--mono);color:var(--muted);text-align:center;transition:color .3s;min-height:1.1rem}
+.a-sub.on{color:var(--blue);font-weight:600}
+.a-sub.bad{color:var(--red);font-weight:600}
+.packet{position:absolute;z-index:6;left:0;top:0;background:#fff;border:1.5px solid var(--blue);color:#1e3a8a;border-radius:999px;padding:.18rem .6rem;font:600 .74rem var(--mono);box-shadow:0 6px 16px rgb(0 0 0/.14);white-space:nowrap;pointer-events:none;opacity:0;transform:translate(-50%,-50%) scale(.6)}
+.packet.resp{border-color:var(--green);color:#365314;background:#f7fee7}
+.packet.err{border-color:var(--red);color:var(--red);background:#fef2f2}
+.packet.dns{border-color:var(--gold);color:#78350f;background:#fffbeb}
+.packet.lock{border-color:#6b7280;color:#374151;background:#f3f4f6}
+.packet.file{border-color:var(--orange);color:#7c2d12;background:#fff7ed}
+.mini{width:100%;max-width:230px;border:1px solid #d1d5db;border-radius:.45rem;background:#fff;overflow:hidden;font-size:.72rem;box-shadow:0 1px 3px rgb(0 0 0/.08)}
+.mini .mbar{display:flex;align-items:center;gap:.3rem;padding:.2rem .4rem;background:#f3f4f6;border-bottom:1px solid #e5e7eb;font:.66rem var(--mono);color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .mbar .lk{width:.7rem;height:.7rem;flex-shrink:0;color:#9ca3af}
+.mini .mbar .lk.on{color:#15803d}
+.mini .mbody{min-height:78px;padding:.4rem .5rem;font-family:Georgia,serif;color:#111;position:relative;transition:opacity .25s}
+.mini .mbody.blank{background:#fafafa}
+.mini .mbody h4{margin:0 0 .15rem;font-size:.95rem}
+.mini .mbody p{margin:0 0 .2rem;font-size:.72rem}
+.mini .mbody svg{width:30px;height:30px;display:block}
+.mini .mbody .err{font-family:var(--sans);color:#374151;font-size:.7rem}
+.mini .mbody .err b{display:block;font-size:.8rem;margin-bottom:.15rem}
+.mini .mbody .cache{position:absolute;right:.3rem;top:.3rem;font:700 .58rem var(--sans);letter-spacing:.04em;text-transform:uppercase;background:#fde68a;color:#78350f;padding:0 .3rem;border-radius:.2rem}
+.mini .mbody .greet{font-family:var(--sans);font-weight:700;color:var(--red);font-size:.8rem;margin-top:.2rem;min-height:1rem}
+.mini .mbody input{font:inherit;font-size:.7rem;padding:.1rem .3rem;border:1px solid #d1d5db;border-radius:.25rem;width:7rem}
+.mini.blanking .mbody{opacity:0}
+.chip2{display:inline-flex;align-items:center;gap:.3rem;font:600 .72rem var(--mono);padding:.12rem .5rem;border-radius:999px;border:1px solid #d1d5db;background:#fff;color:#374151;transition:all .3s;white-space:nowrap}
+.chip2.v1{border-color:var(--blue);color:#1e3a8a;background:#eff6ff}
+.chip2.v2{border-color:var(--orange);color:#7c2d12;background:#fff7ed}
+.chip2.on{box-shadow:0 0 0 3px var(--blue-20)}
+.checks{list-style:none;margin:.2rem 0 0;padding:0;font-size:.76rem;display:flex;flex-direction:column;gap:.15rem;width:100%;max-width:230px}
+.checks li{display:flex;gap:.4rem;align-items:center;opacity:0;transform:translateY(4px);transition:opacity .3s,transform .3s;background:#fff;border:1px solid var(--border);border-radius:.35rem;padding:.12rem .45rem}
+.checks li.in{opacity:1;transform:none}
+.checks li b{display:inline-grid;place-items:center;width:1.05rem;height:1.05rem;border-radius:50%;font-size:.68rem;flex-shrink:0}
+.checks li.yes b{background:#dcfce7;color:#15803d}.checks li.no b{background:#fee2e2;color:var(--red)}
+.srv-prog{display:none;font:600 .7rem var(--mono);color:#1e3a8a;background:#eff6ff;border:1px solid var(--blue);border-radius:.35rem;padding:.1rem .4rem;margin-top:.1rem}
+.srv-prog.in{display:inline-block}
+.zzz{position:absolute;right:-6px;top:-10px;font:700 .9rem var(--sans);color:#6b7280;opacity:0;transition:opacity .3s}
+.zzz.in{opacity:1;animation:floaty 1.6s ease-in-out infinite}
+@keyframes floaty{50%{transform:translateY(-4px)}}
+.note2{position:absolute;left:50%;bottom:.3rem;transform:translateX(-50%);background:#111;color:#fff;font-size:.78rem;padding:.25rem .7rem;border-radius:999px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:7;max-width:96%;overflow:hidden;text-overflow:ellipsis}
+.note2.in{opacity:1}
+.ptable{width:100%;max-width:230px;border:1px solid var(--border);border-radius:.4rem;overflow:hidden;font:.7rem var(--mono);background:#fff}
+.ptable div{display:grid;grid-template-columns:1fr auto;gap:.4rem;padding:.14rem .45rem;border-bottom:1px solid #f1f5f9;transition:background .3s}
+.ptable div.on{background:#fef3c7}
+.ptable div.new{opacity:0;transform:translateY(4px);transition:opacity .3s,transform .3s,background .3s}
+.ptable div.new.in{opacity:1;transform:none}
+.ptable div:last-child{border-bottom:0}
+.ptable .h{background:#f3f4f6;font-family:var(--sans);font-weight:700;font-size:.66rem;letter-spacing:.04em;text-transform:uppercase;color:#4b5563}
+
+/* ---- tab b1 ---- */
+[data-tab=b1] .stage-body{display:grid;grid-template-columns:minmax(220px,1fr) minmax(250px,1.1fr);gap:.8rem}
+[data-tab=b1] .colL,[data-tab=b1] .colR{display:flex;flex-direction:column;min-height:0;gap:.5rem;position:relative}
+.urlbar{display:flex;align-items:center;gap:.4rem;background:#f3f4f6;border:1px solid #d1d5db;border-radius:.5rem;padding:.3rem .5rem;flex-shrink:0}
+.urlbar .host{font:.8rem var(--mono);color:#374151;white-space:nowrap}
+.urlbar input{flex:1;min-width:3rem;font:.8rem var(--mono);padding:.2rem .45rem;border:1px solid #d1d5db;border-radius:.4rem;background:#fff}
+.status{font:700 .74rem var(--mono);padding:.1rem .45rem;border-radius:999px;background:#e5e7eb;color:#374151;min-width:3rem;text-align:center}
+.status.ok{background:#dcfce7;color:#15803d}.status.err{background:#fee2e2;color:var(--red)}
+.srvbox{border:1px solid #d1d5db;border-radius:.6rem;background:#fff;display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden}
+.srvbox .shead{display:flex;align-items:center;gap:.5rem;padding:.35rem .6rem;background:#f3f4f6;border-bottom:1px solid #e5e7eb;font-size:.8rem;font-weight:700;margin-right:2.5rem}
+.srvbox .shead svg{width:1.2rem;height:1.2rem}
+.srvbox .shead .sub{font:.7rem var(--mono);color:var(--muted);font-weight:400;margin-left:auto}
+.walkstrip{display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;font:.74rem var(--mono);min-height:1.6rem;color:#9ca3af;padding:.3rem .6rem 0}
+.chip{padding:.08rem .5rem;border-radius:999px;background:#f1f5f9;border:1px solid #e2e8f0;color:#64748b;transition:background .25s,border-color .25s,color .25s}
+.chip.on{background:#fef3c7;border-color:var(--gold);color:#111}
+.chip.bad{background:#fee2e2;border-color:#fca5a5;color:var(--red)}
+.chip.def.on{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8}
+.fwrap{min-height:0;overflow:auto;padding:.3rem .5rem .5rem}
+.ftree,.ftree ul{list-style:none;margin:0;padding:0}
+.ftree ul{padding-left:1rem;border-left:1px dashed #e2e8f0;margin-left:.6rem}
+.ftree li{margin:.1rem 0}
+.ftree .row{display:inline-flex;align-items:center;gap:.35rem;padding:.08rem .45rem;border-radius:.35rem;font:.8rem var(--mono);color:#1f2937;transition:background .25s,box-shadow .25s}
+.ftree .row.walk{background:#fef3c7;box-shadow:0 0 0 2px var(--gold)}
+.ftree .row.found{background:#dcfce7;box-shadow:0 0 0 2px #86efac}
+.ftree .row.fail{background:#fee2e2;box-shadow:0 0 0 2px #fca5a5}
+.ftree.build li{opacity:0;transform:translateX(-6px);transition:opacity .3s,transform .3s}
+.ftree.build li.in{opacity:1;transform:none}
+.ico{width:.8rem;height:.8rem;border-radius:.2rem;display:inline-block;flex-shrink:0}
+.ico.fold{background:var(--gold);clip-path:polygon(0 15%,40% 15%,52% 32%,100% 32%,100% 100%,0 100%)}
+.ico.html{background:#f97316}.ico.css{background:#3b82f6}.ico.img{background:#10b981}.ico.js{background:#eab308}
+.badge{font:700 .58rem var(--sans);letter-spacing:.04em;text-transform:uppercase;padding:0 .35rem;border-radius:.25rem;margin-left:.15rem}
+.badge.def{background:#dbeafe;color:#1d4ed8;display:none}
+.show-def .badge.def{display:inline}
+.badge.top{background:#fde68a;color:#78350f;display:none}
+.show-top .badge.top{display:inline}
+.ghost .row{color:var(--red);background:#fee2e2;box-shadow:0 0 0 2px #fca5a5;font-style:italic}
+.rpanel{position:relative;min-height:0;flex:1;height:100%}
+.rpanel>*{position:absolute;inset:0;opacity:0;transition:opacity .35s;pointer-events:none;overflow:auto}
+.rpanel>.on{opacity:1;pointer-events:auto}
+.page404{padding:1rem .9rem;color:#374151;font-family:var(--sans)}
+.page404 b{display:block;font-size:2rem;line-height:1;color:#111}
+.page404 .t{display:block;font-size:.95rem;font-weight:600;margin:.25rem 0 .3rem;color:#111}
+.page404 small{display:block;font-size:.74rem}
+.imgview{display:grid;place-items:center;height:100%;gap:.3rem;align-content:center}
+.imgview svg{width:90px;height:90px}
+.imgview span{font:.74rem var(--mono);color:var(--muted)}
+.empty{display:grid;place-items:center;height:100%;color:var(--muted);font-size:.9rem;text-align:center;padding:1rem}
+.b1-packets{position:absolute;inset:0;pointer-events:none;z-index:8}
+
+/* ---- tab b4 ---- */
+[data-tab=b4] .stage-body{display:flex;flex-direction:column;gap:.4rem}
+.three{position:relative;flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;align-items:start;padding-top:.5rem}
+.three .wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.three .wires line{stroke:#cbd5e1;stroke-width:2;stroke-dasharray:6 5}
+.col{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:.3rem;min-width:0}
+.col .a-icon{width:72px;height:72px}.col .a-icon svg{width:50px;height:50px}
+.filecard2{width:100%;max-width:200px;border:1px solid #d1d5db;border-radius:.45rem;background:#fff;overflow:hidden;font-size:.72rem;transition:border-color .3s,box-shadow .3s}
+.filecard2 .fh{display:flex;align-items:center;justify-content:space-between;gap:.3rem;padding:.2rem .45rem;background:#f3f4f6;border-bottom:1px solid #e5e7eb;font:.68rem var(--mono)}
+.filecard2 .fb{padding:.35rem .5rem;font:.7rem var(--mono);color:#374151;min-height:2.6rem;white-space:pre}
+.filecard2.v2{border-color:var(--orange);box-shadow:0 0 0 3px rgb(250 115 0/.18)}
+.filecard2 .t{color:var(--tagc)}
+.cmd{display:none;font:600 .72rem var(--mono);color:#fff;background:#111;padding:.15rem .5rem;border-radius:.35rem}
+.cmd.in{display:inline-block}
+.b4-browser{align-self:stretch;display:flex;justify-content:center;flex-shrink:0}
+.b4-browser .mini{max-width:360px;width:100%}
+.b4-browser .mini .mbody{min-height:62px;display:flex;gap:.6rem;align-items:center}
+
+/* ---- tab b5 ---- */
+[data-tab=b5] .stage-body{display:grid;grid-template-columns:1fr 1.4fr;gap:.6rem;align-items:center}
+.visitors{display:flex;flex-direction:column;gap:.45rem;justify-content:center;min-height:0;position:relative;z-index:2}
+.visitor{display:grid;grid-template-columns:auto 1fr;gap:.5rem;align-items:center;transition:opacity .3s}
+.visitor .a-icon{width:56px;height:56px;border-radius:.7rem}.visitor .a-icon svg{width:38px;height:38px}
+.visitor .who{font:700 .7rem var(--sans);text-align:center;margin-top:.15rem;color:#374151}
+.visitor .mini{max-width:none}
+.visitor .mini .mbody{min-height:60px;padding:.3rem .45rem}
+.visitor .mini .mbody h4{font-size:.82rem}
+.srvcol{display:flex;flex-direction:column;align-items:center;gap:.35rem;position:relative;z-index:2}
+.dbicon{position:absolute;left:50%;top:calc(100% + .3rem);transform:translateX(-50%);opacity:0;transition:opacity .4s;text-align:center;font-size:.7rem;color:var(--muted);width:150px}
+.dbicon svg{width:38px;height:38px;display:block;margin:0 auto}
+.dbicon.in{opacity:1}
+.soon{display:inline-block;font:700 .58rem var(--sans);letter-spacing:.05em;text-transform:uppercase;background:#f3f4f6;color:#6b7280;border:1px dashed #d1d5db;padding:0 .35rem;border-radius:.25rem;margin-top:.15rem}
+[data-tab=b5] .stage-body .wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+[data-tab=b5] .stage-body .wires line{stroke:#cbd5e1;stroke-width:2;stroke-dasharray:6 5}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="cat" viewBox="0 0 100 100"><path d="M16 46 L12 10 L42 30 Z" fill="#f59e0b"/><path d="M84 46 L88 10 L58 30 Z" fill="#f59e0b"/><circle cx="50" cy="58" r="34" fill="#fbbf24"/><circle cx="37" cy="53" r="4.2" fill="#1f2937"/><circle cx="63" cy="53" r="4.2" fill="#1f2937"/><path d="M45 64 L55 64 L50 70 Z" fill="#ef4444"/><path d="M50 70 Q44 78 38 74 M50 70 Q56 78 62 74" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M14 62 L36 66 M14 72 L36 69 M86 62 L64 66 M86 72 L64 69" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/></symbol>
+<symbol id="i-laptop" viewBox="0 0 64 64"><rect x="10" y="14" width="44" height="30" rx="3" fill="#1f2937"/><rect x="13" y="17" width="38" height="24" rx="1.5" fill="#e0f2fe"/><path d="M4 48 H60 L56 54 H8 Z" fill="#9ca3af"/><rect x="26" y="49" width="12" height="2" rx="1" fill="#e5e7eb"/></symbol>
+<symbol id="i-server" viewBox="0 0 64 64"><rect x="12" y="6" width="40" height="52" rx="4" fill="#374151"/><rect x="16" y="11" width="32" height="10" rx="2" fill="#6b7280"/><rect x="16" y="27" width="32" height="10" rx="2" fill="#6b7280"/><rect x="16" y="43" width="32" height="10" rx="2" fill="#6b7280"/><circle cx="43" cy="16" r="2.2" fill="#9CCA00"/><circle cx="43" cy="32" r="2.2" fill="#9CCA00"/><circle cx="43" cy="48" r="2.2" fill="#EDA300"/><rect x="19" y="15" width="14" height="2" fill="#d1d5db"/><rect x="19" y="31" width="14" height="2" fill="#d1d5db"/><rect x="19" y="47" width="14" height="2" fill="#d1d5db"/></symbol>
+<symbol id="i-phone" viewBox="0 0 64 64"><rect x="18" y="4" width="28" height="56" rx="6" fill="#1f2937"/><rect x="21" y="10" width="22" height="42" rx="2" fill="#e0f2fe"/><circle cx="32" cy="56" r="2" fill="#9ca3af"/></symbol>
+<symbol id="i-tablet" viewBox="0 0 64 64"><rect x="8" y="10" width="48" height="44" rx="5" fill="#1f2937"/><rect x="12" y="14" width="40" height="36" rx="2" fill="#e0f2fe"/></symbol>
+<symbol id="i-book" viewBox="0 0 64 64"><path d="M10 10 H30 Q34 10 34 14 V54 Q34 50 30 50 H10 Z" fill="#fde68a" stroke="#b45309" stroke-width="2"/><path d="M54 10 H34 Q30 10 30 14 V54 Q30 50 34 50 H54 Z" fill="#fef3c7" stroke="#b45309" stroke-width="2"/><path d="M14 20 H26 M14 27 H26 M14 34 H26 M38 20 H50 M38 27 H50" stroke="#b45309" stroke-width="2"/></symbol>
+<symbol id="i-github" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="#1f2937"/><path d="M32 14 C22 14 16 21 16 30 C16 37 20 42 26 44 C26 42 26 40 26 39 C21 40 20 37 20 36 C19 34 18 33 18 33 C20 32 21 34 21 34 C23 37 26 36 27 35 C27 33 28 32 28 32 C23 31 20 29 20 24 C20 22 21 20 22 19 C22 18 21 16 22 14 C24 14 26 15 27 16 C29 15 31 15 32 15 C33 15 35 15 37 16 C38 15 40 14 42 14 C43 16 42 18 42 19 C43 20 44 22 44 24 C44 29 41 31 36 32 C37 33 38 34 38 36 C38 39 38 42 38 44 C44 42 48 37 48 30 C48 21 42 14 32 14 Z" fill="#fff"/></symbol>
+<symbol id="i-firebase" viewBox="0 0 64 64"><path d="M14 50 L22 10 L30 26 Z" fill="#FFA000"/><path d="M14 50 L38 6 L46 20 Z" fill="#F57C00"/><path d="M14 50 L50 24 L52 50 L32 60 Z" fill="#FFCA28"/></symbol>
+<symbol id="i-db" viewBox="0 0 64 64"><ellipse cx="32" cy="14" rx="22" ry="7" fill="#9ca3af"/><path d="M10 14 V50 C10 54 20 57 32 57 C44 57 54 54 54 50 V14 C54 18 44 21 32 21 C20 21 10 18 10 14 Z" fill="#d1d5db"/><path d="M10 26 C10 30 20 33 32 33 C44 33 54 30 54 26 M10 38 C10 42 20 45 32 45 C44 45 54 42 54 38" stroke="#9ca3af" stroke-width="2" fill="none"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2" fill="currentColor"/><path d="M8 10 V7 a4 4 0 0 1 8 0 v3" stroke="currentColor" stroke-width="2" fill="none"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 64 40"><path d="M18 36 H48 a10 10 0 0 0 1 -20 a13 13 0 0 0 -25 -3 a9 9 0 0 0 -6 23 Z" fill="#e0f2fe" stroke="#93c5fd" stroke-width="2"/></symbol>
+</defs></svg>
+
+<header class="page-head">
+  <div><h1>Website Hosting</h1><p>From a file on your laptop to a link anyone can open.</p></div>
+  <div class="head-right"><a class="dl" href="../website-anatomy/downloads/demo/public/index.html" download="index.html" title="The one HTML file from this lesson">⬇ index.html</a><a class="dl" href="../website-anatomy/downloads/demo.zip" download="demo.zip" title="The whole site folder: index.html, about/, css/, img/, js/">⬇ demo.zip</a><div class="part">Websites · Part 2 of 3</div></div>
+</header>
+<nav class="tabs" role="tablist" id="tabs"></nav>
+<main class="lesson" id="lesson"></main>
+<script>
+(() => {
+'use strict';
+const NS='http://www.w3.org/2000/svg';
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function makeSeq(){
+  let token=0, timers=[];
+  const cancel=()=>{ token++; timers.forEach(clearTimeout); timers=[]; };
+  return { cancel,
+    run(list){ cancel(); const my=token; let t=0; list.forEach(([d,fn])=>{ t+=d; timers.push(setTimeout(()=>{ if(my===token) fn(); },t)); }); },
+    loop(ms,fn){ cancel(); const my=token; const tick=()=>{ if(my!==token) return; fn(); timers.push(setTimeout(tick,ms)); }; timers.push(setTimeout(tick,0)); } };
+}
+function center(el,base){ const a=el.getBoundingClientRect(), b=base.getBoundingClientRect(); return {x:a.left+a.width/2-b.left,y:a.top+a.height/2-b.top}; }
+function packet(container,from,to,label,cls,ms){
+  const p=document.createElement('div'); p.className='packet '+(cls||''); p.innerHTML=label; container.appendChild(p);
+  const a=center(from,container), b=center(to,container);
+  p.style.left=a.x+'px'; p.style.top=a.y+'px';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ p.style.transition=`transform ${ms}ms cubic-bezier(.35,.6,.3,1),opacity .25s`; p.style.opacity='1'; p.style.transform=`translate(calc(-50% + ${b.x-a.x}px),calc(-50% + ${b.y-a.y}px)) scale(1)`; }));
+  setTimeout(()=>{ p.style.transition='opacity .25s'; p.style.opacity='0'; setTimeout(()=>p.remove(),300); },ms+120);
+  return p;
+}
+function clearPackets(container){ container.querySelectorAll('.packet').forEach(p=>p.remove()); }
+function drawWires(svg,pairs){ svg.innerHTML=''; pairs.forEach(([a,b,cls])=>{ if(!a||!b||a.offsetParent===null||b.offsetParent===null) return; const A=center(a,svg), B=center(b,svg); const l=document.createElementNS(NS,'line'); l.setAttribute('x1',A.x); l.setAttribute('y1',A.y); l.setAttribute('x2',B.x); l.setAttribute('y2',B.y); if(cls) l.setAttribute('class',cls); svg.appendChild(l); }); }
+function miniHTML(id,url,lock){ return `<div class="mini" id="${id}"><div class="mbar">${lock?'<svg class="lk"><use href="#i-lock"/></svg>':''}<span class="murl">${esc(url)}</span></div><div class="mbody blank"></div></div>`; }
+function miniSet(mini,state,extra={}){
+  const b=mini.querySelector('.mbody'); b.classList.toggle('blank',state==='blank');
+  const cat=`<h4>Mochi the ${extra.dog?'Dog':'Cat'}</h4><p>Mochi is <b>very</b> fluffy.</p><svg><use href="#cat"/></svg>`;
+  const map={blank:'',cat,
+    err:`<div class="err"><b>This site can’t be reached</b>${esc(extra.host||'192.168.1.23')} took too long to respond.<br>ERR_CONNECTION_TIMED_OUT</div>`,
+    greet:cat+`<div class="greet"></div><input placeholder="your name" readonly>`};
+  b.innerHTML=(state in map?map[state]:state)+(extra.cache?'<span class="cache">from cache</span>':'');
+}
+function miniUrl(mini,url){ mini.querySelector('.murl').textContent=url; }
+function miniBlink(mini,fn){ mini.classList.add('blanking'); setTimeout(()=>{ fn&&fn(); mini.classList.remove('blanking'); },380); }
+function note(el,text,ms){ el.textContent=text; el.classList.add('in'); clearTimeout(el._t); if(ms) el._t=setTimeout(()=>el.classList.remove('in'),ms); }
+function typeInto(seq,list,el,text,extra){ [...text].forEach((ch,i)=>list.push([i?90:200,()=>{ el.textContent+=ch; extra&&extra(el.textContent); }])); }
+
+/* ---------- site folder + URL resolution (same site as Part 1) ---------- */
+const FILES=new Set(['index.html','about/index.html','css/style.css','img/mochi.png','js/app.js']);
+const DIRS=new Set(['','about/','css/','img/','js/']);
+function resolvePath(input){
+  const p=(input||'').trim().replace(/^\/+/,''); const steps=[]; let cur='';
+  if(p==='') return {steps,file:'index.html',defaulted:true};
+  const segs=p.split('/');
+  for(let i=0;i<segs.length;i++){
+    const s=segs[i], last=i===segs.length-1;
+    if(s===''){ const f=cur+'index.html'; return FILES.has(f)?{steps,file:f,defaulted:true}:{steps,file:null}; }
+    const asDir=cur+s+'/', asFile=cur+s;
+    if(DIRS.has(asDir)&&(!last||!FILES.has(asFile))){ steps.push({seg:s,path:asDir,ok:true,parent:cur}); cur=asDir; if(last){ const f=asDir+'index.html'; return FILES.has(f)?{steps,file:f,defaulted:true,clean:true}:{steps,file:null}; } continue; }
+    if(last&&FILES.has(asFile)){ steps.push({seg:s,path:asFile,ok:true,parent:cur}); return {steps,file:asFile,defaulted:false}; }
+    steps.push({seg:s,path:asFile,ok:false,parent:cur}); return {steps,file:null};
+  }
+  return {steps,file:null};
+}
+const frow=(ico,name,badge='')=>`<span class="row"><span class="ico ${ico}"></span>${name}${badge}</span>`;
+function ftreeHTML(){
+  return `<ul class="ftree">
+  <li class="dir" data-path="">${frow('fold','public/')}
+    <ul>
+      <li class="file" data-path="index.html">${frow('html','index.html','<span class="badge top">top file</span><span class="badge def">default</span>')}</li>
+      <li class="dir" data-path="about/">${frow('fold','about/')}<ul><li class="file" data-path="about/index.html">${frow('html','index.html','<span class="badge def">default</span>')}</li></ul></li>
+      <li class="dir" data-path="css/">${frow('fold','css/')}<ul><li class="file" data-path="css/style.css">${frow('css','style.css')}</li></ul></li>
+      <li class="dir" data-path="img/">${frow('fold','img/')}<ul><li class="file" data-path="img/mochi.png">${frow('img','mochi.png')}</li></ul></li>
+      <li class="dir" data-path="js/">${frow('fold','js/')}<ul><li class="file" data-path="js/app.js">${frow('js','app.js')}</li></ul></li>
+    </ul></li></ul>`;
+}
+const CSS_SAMPLE=['h1   { color: #DA0016; }','body { font-family: "Source Sans 3", sans-serif;','       background: #fffaf0; }','a    { color: #DA0016; font-weight: 600; }'];
+const JS_SAMPLE=["const btn = document.createElement('button');","btn.textContent = 'Pet Mochi';","btn.onclick = () => alert('purr');","document.body.append(btn);"];
+const plainCode=lines=>lines.map(l=>`<span class="ln">${esc(l)}</span>`).join('');
+const sitePage=(about)=>about
+  ?`<div class="page styled about"><h1>About Maya</h1><p>I like cats more than most people.</p><a href="#" onclick="return false">← Back</a></div>`
+  :`<div class="page styled"><h1>Mochi the Cat</h1><p>Mochi is <strong>very</strong> fluffy.</p><svg class="pimg"><use href="#cat"/></svg><a href="#" onclick="return false">About me</a></div>`;
+
+const TABS=[];
+
+/* ================= TAB 1: the URL is a folder walk (server side) ================= */
+function b1View(ctx,name){ ctx.qa('#b1-rp > *').forEach(v=>v.classList.toggle('on',v.dataset.view===name)); }
+function b1ResetTree(ctx){ const ft=ctx.q('#b1-ftree'); ft.querySelectorAll('.row').forEach(r=>r.classList.remove('walk','found','fail')); ft.querySelectorAll('.ghost').forEach(g=>g.remove()); ctx.q('#b1-strip').innerHTML=''; }
+function b1Reset(ctx){ b1ResetTree(ctx); clearPackets(ctx.q('#b1-pk')); const st=ctx.q('#b1-status'); st.className='status'; st.textContent='·'; ctx.q('#b1-url').textContent='https://maya.web.app/'; b1View(ctx,'empty'); ctx.q('#b1-ftree').classList.remove('show-top'); ctx.q('#b1-ftree .ftree').classList.remove('build'); ctx.q('#b1-srvicon').className='a-icon sm'; }
+function b1Request(ctx,path,opts={}){
+  b1ResetTree(ctx); clearPackets(ctx.q('#b1-pk')); const status=ctx.q('#b1-status'); status.className='status'; status.textContent='…'; b1View(ctx,'empty');
+  const clean=(path||'').trim().replace(/^\/+/,''); ctx.q('#b1-path').value=clean; ctx.q('#b1-url').textContent='https://maya.web.app/'+clean;
+  const res=resolvePath(clean); const ft=ctx.q('#b1-ftree'), strip=ctx.q('#b1-strip'), pk=ctx.q('#b1-pk'), srv=ctx.q('#b1-srvicon'), brw=ctx.q('#b1-browser .bar');
+  const chip=(txt,cls='')=>{ const c=document.createElement('span'); c.className='chip '+cls; c.textContent=txt; strip.appendChild(c); return c; };
+  const sep=()=>{ const s=document.createElement('span'); s.textContent='›'; strip.appendChild(s); };
+  const row=p=>ft.querySelector(`[data-path="${p}"] > .row`);
+  const list=[[100,()=>{ packet(pk,brw,srv,`GET /${esc(clean)}`,'',900); }],[950,()=>{ srv.classList.add('on'); const root=chip('public/'); root.classList.add('on'); row('').classList.add('walk'); }]];
+  const chips=[]; res.steps.forEach(s=>{ list.push([430,()=>{ sep(); const c=chip(s.seg+(s.ok&&s.path.endsWith('/')?'/':''),s.ok?'on':'bad'); chips.push(c);
+    if(s.ok) row(s.path).classList.add('walk');
+    else { row(s.parent).classList.add('fail'); const parent=ft.querySelector(`[data-path="${s.parent}"]`); let ul=parent.querySelector(':scope > ul'); if(!ul){ ul=document.createElement('ul'); parent.appendChild(ul); } const li=document.createElement('li'); li.className='ghost'; li.innerHTML=`<span class="row"><span class="ico" style="background:#fca5a5"></span>${esc(s.seg)} ?</span>`; ul.appendChild(li); } }]); });
+  if(res.file){
+    list.push([430,()=>{ if(res.defaulted){ sep(); chip('index.html (default)','def on'); } const r=row(res.file); r.classList.remove('walk'); r.classList.add('found'); srv.className='a-icon sm ok'; }]);
+    list.push([500,()=>{ packet(pk,srv,brw,`200 OK · ${esc(res.file.split('/').pop())}`,'resp',900); }]);
+    list.push([950,()=>{ status.className='status ok'; status.textContent='200 OK'; const f=res.file; b1View(ctx,f==='index.html'?'index':f==='about/index.html'?'about':f.endsWith('.css')?'css':f.endsWith('.js')?'js':'img'); srv.className='a-icon sm'; }]);
+  } else {
+    list.push([430,()=>{ srv.className='a-icon sm bad'; }]);
+    list.push([400,()=>{ packet(pk,srv,brw,'404 Not Found','err',900); }]);
+    list.push([950,()=>{ status.className='status err'; status.textContent='404'; b1View(ctx,'404'); srv.className='a-icon sm'; }]);
+  }
+  if(opts.then) list.push(opts.then);
+  ctx.seq.run(list);
+}
+TABS.push({
+  id:'b1', label:'The URL walks the folder', title:'The address is a walk through the server’s folder',
+  stage(){ return `
+    <div class="colL">
+      <div class="win browser" id="b1-browser" style="flex:1">
+        <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="url" id="b1-url">https://maya.web.app/</span><span class="status" id="b1-status">·</span></div>
+        <div class="wbody"><div class="rpanel" id="b1-rp">
+          <div data-view="empty"><div class="empty">New Tab<br><small>Ask the server for a path.</small></div></div>
+          <div data-view="index">${sitePage(false)}</div>
+          <div data-view="about">${sitePage(true)}</div>
+          <div data-view="css"><div class="code">${plainCode(CSS_SAMPLE)}</div></div>
+          <div data-view="js"><div class="code">${plainCode(JS_SAMPLE)}</div></div>
+          <div data-view="img"><div class="imgview"><svg><use href="#cat"/></svg><span>mochi.png · 48 × 48</span></div></div>
+          <div data-view="404"><div class="page404"><b>404</b><span class="t">Page Not Found</span><small>The specified file was not found on this website. Please check the URL for mistakes and try again.</small></div></div>
+        </div></div>
+      </div>
+      <div class="urlbar"><span class="host">maya.web.app/</span><input id="b1-path" value="" placeholder="path" spellcheck="false" autocomplete="off"><button class="btn" id="b1-go" type="button">Ask</button></div>
+    </div>
+    <div class="colR">
+      <div class="srvbox">
+        <div class="shead"><span class="a-icon sm" id="b1-srvicon" style="width:34px;height:34px;border-radius:.5rem"><svg style="width:24px;height:24px"><use href="#i-server"/></svg></span>Firebase server<span class="sub">199.36.158.100 · always on</span></div>
+        <div class="walkstrip" id="b1-strip"></div>
+        <div class="fwrap" id="b1-ftree">${ftreeHTML()}</div>
+      </div>
+    </div>
+    <div class="b1-packets" id="b1-pk"></div>`; },
+  toolbar(){ return `<span class="act" data-steps="0,1,2,3"><a class="btn" href="../website-anatomy/downloads/demo.zip" download="demo.zip">⬇ demo.zip: this folder</a></span><span class="act" data-steps="1,2,3">Try: <button class="btn" data-try="">/</button><button class="btn" data-try="about">about</button><button class="btn" data-try="img/mochi.png">img/mochi.png</button><button class="btn" data-try="Img/mochi.png">Img/mochi.png</button><button class="btn" data-try="js/app.js">js/app.js</button></span>`; },
+  init(ctx){
+    const go=()=>b1Request(ctx,ctx.q('#b1-path').value);
+    ctx.q('#b1-go').addEventListener('click',go); ctx.q('#b1-path').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); e.stopPropagation(); });
+    ctx.qa('[data-try]',ctx.panel).forEach(b=>b.addEventListener('click',()=>b1Request(ctx,b.dataset.try)));
+  },
+  steps:[
+    { eli5:'Hosting means a copy of your site folder lives on a computer that never sleeps. This is what the server is holding right now: your public folder, exactly as you deployed it.', dur:6500,
+      tech:['<code>firebase deploy</code> uploads everything inside <code>public/</code> to Firebase Hosting.','The server keeps the same folder shape. It is just files on a disk with a program in front of them.','Nothing outside public/ is uploaded: no node_modules, no .git, no secrets.','Firebase also copies the files to servers around the world (a CDN) so they are close to every visitor.'],
+      enter(ctx){ b1Reset(ctx); const ul=ctx.q('#b1-ftree .ftree'); ul.classList.add('build'); const lis=ctx.qa('#b1-ftree li'); lis.forEach(l=>l.classList.remove('in'));
+        ctx.seq.run(lis.map((l,i)=>[i?170:300,()=>{ l.classList.add('in'); if(i===lis.length-1) ctx.q('#b1-ftree').classList.add('show-top'); }])); } },
+    { eli5:'The browser asks for a path. The server reads it left to right and walks down its own folder until it finds the file, then sends it back.', dur:7500,
+      tech:['The request line is literally <code>GET /css/style.css HTTP/1.1</code>. The path is the only thing the server needs.','The server maps the path onto the public folder: css is a folder, style.css is a file inside it.','It never serves anything outside public/, no matter what the path says.','The response carries a status (200), headers (type, size) and then the file bytes.'],
+      enter(ctx){ b1Reset(ctx); b1Request(ctx,'css/style.css'); } },
+    { eli5:'Ask for a folder instead of a file and the server hands you the index.html inside it. That is the whole reason the home page is named index.', dur:11000,
+      tech:['This is the directory index convention, used by nearly every web server.','<code>/</code> serves <code>public/index.html</code>. <code>/about/</code> serves <code>public/about/index.html</code>.','Firebase’s cleanUrls setting also lets <code>/about</code> work without the slash.','Any other name, like home.html, has to be typed into the address.'],
+      enter(ctx){ b1Reset(ctx); ctx.q('#b1-ftree').classList.add('show-def'); b1Request(ctx,'',{then:[2400,()=>b1Request(ctx,'about/')]}); } },
+    { eli5:'Ask for something that is not in the folder and the server answers 404. It looked. There is nothing there. Try your own paths, including a capital letter.', dur:7500,
+      tech:['404 is a response like any other, just with a different status number.','Firebase shows a default page, or <code>public/404.html</code> if you make one.','Letter case matters on the server: <code>Img/</code> is not <code>img/</code>, even though your Mac would not care.','When something 404s, walk the folder by hand and compare it to the address, segment by segment.'],
+      enter(ctx){ b1Reset(ctx); ctx.q('#b1-ftree').classList.add('show-def'); b1Request(ctx,'images/mochi.png'); } }
+  ]
+});
+
+/* ================= TAB 2: client and server ================= */
+function b2Wires(ctx){ const mode=ctx.state.mode; const pairs=[]; if(mode==='remote'||mode==='friend') pairs.push([ctx.q('#b2-maya-icon'),ctx.q('#b2-right-icon')]); drawWires(ctx.q('#b2-wires'),pairs); }
+function b2Mode(ctx,mode){
+  ctx.state.mode=mode; const right=ctx.q('#b2-right'), mid=ctx.q('#b2-mid');
+  ctx.q('#b2-prog').classList.toggle('in',mode!=='remote'); ctx.q('#b2-mini2').hidden=mode!=='friend';
+  if(mode==='remote'){ right.classList.remove('hidden'); ctx.q('#b2-right-use').setAttribute('href','#i-server'); ctx.q('#b2-right-label').textContent='Firebase server'; ctx.q('#b2-right-sub').textContent='199.36.158.100'; mid.textContent='the internet'; mid.style.visibility=''; miniUrl(ctx.q('#b2-mini'),'https://maya.web.app/'); }
+  if(mode==='local'){ right.classList.add('hidden'); mid.style.visibility='hidden'; miniUrl(ctx.q('#b2-mini'),'http://localhost:5000/'); }
+  if(mode==='friend'){ right.classList.remove('hidden'); ctx.q('#b2-right-use').setAttribute('href','#i-laptop'); ctx.q('#b2-right-label').textContent='Sam’s laptop'; ctx.q('#b2-right-sub').textContent='192.168.1.40'; mid.textContent='same Wi-Fi'; mid.style.visibility=''; miniUrl(ctx.q('#b2-mini'),'http://localhost:5000/'); miniUrl(ctx.q('#b2-mini2'),'http://192.168.1.23:5000/'); }
+  requestAnimationFrame(()=>b2Wires(ctx));
+}
+function b2Reset(ctx){ clearPackets(ctx.q('#b2-stage')); b2Mode(ctx,'remote'); miniSet(ctx.q('#b2-mini'),'blank'); miniSet(ctx.q('#b2-mini2'),'blank');
+  ctx.qa('#b2-stage .checks li').forEach(l=>l.classList.remove('in')); ctx.q('#b2-maya-icon').className='a-icon'; ctx.q('#b2-right-icon').className='a-icon'; ctx.q('#b2-zzz').classList.remove('in'); ctx.q('#b2-maya').classList.remove('dim');
+  const sub=ctx.q('#b2-maya-sub'); sub.textContent='192.168.1.23'; sub.className='a-sub'; ctx.q('#b2-note').classList.remove('in'); }
+function b2Exchange(ctx,list,from,to,req,resp,mini,delay=0){
+  const st=ctx.q('#b2-stage');
+  list.push([delay,()=>{ packet(st,from,to,req,'',900); }]);
+  list.push([950,()=>{ to.classList.add('on'); }]);
+  list.push([450,()=>{ to.classList.remove('on'); packet(st,to,from,resp,'resp',900); }]);
+  list.push([950,()=>{ miniSet(mini,'cat'); }]);
+}
+TABS.push({
+  id:'b2', label:'Client and server', title:'Client and server: ask, answer',
+  stage(){ return `
+    <div class="net-stage" id="b2-stage">
+      <svg class="wires" id="b2-wires"></svg>
+      <div class="actor" id="b2-maya">
+        <div class="a-icon" id="b2-maya-icon"><svg><use href="#i-laptop"/></svg><span class="zzz" id="b2-zzz">zzz</span></div>
+        <div class="a-label">Maya’s laptop</div><div class="a-sub" id="b2-maya-sub">192.168.1.23</div>
+        <span class="srv-prog" id="b2-prog">▶ firebase serve · port 5000</span>
+        ${miniHTML('b2-mini','https://maya.web.app/')}
+        <ul class="checks" id="b2-maya-checks"><li class="no"><b>✗</b>Sleeps when the lid closes</li><li class="no"><b>✗</b>Address changes with the Wi-Fi</li><li class="no"><b>✗</b>No program answering</li></ul>
+      </div>
+      <div class="mid" id="b2-mid">the internet</div>
+      <div class="actor" id="b2-right">
+        <div class="a-icon" id="b2-right-icon"><svg><use id="b2-right-use" href="#i-server"/></svg></div>
+        <div class="a-label" id="b2-right-label">Firebase server</div><div class="a-sub" id="b2-right-sub">199.36.158.100</div>
+        ${miniHTML('b2-mini2','http://192.168.1.23:5000/')}
+        <ul class="checks" id="b2-srv-checks"><li class="yes"><b>✓</b>Always on</li><li class="yes"><b>✓</b>One fixed public address</li><li class="yes"><b>✓</b>A program whose job is to answer</li></ul>
+      </div>
+      <div class="note2" id="b2-note"></div>
+    </div>`; },
+  toolbar(){ return `<span class="act" data-steps="0,1,2,3"><button class="btn" id="b2-again">Play this step again</button></span>`; },
+  init(ctx){ ctx.q('#b2-again').addEventListener('click',replay); window.addEventListener('resize',()=>{ if(ctx.panel.classList.contains('active')) b2Wires(ctx); }); },
+  steps:[
+    { eli5:'The web is a conversation. Your browser asks: can I have index.html? The server answers: here you go. That is all a website is, asked and answered.', dur:7000,
+      tech:['The request is a few lines of text: <code>GET /index.html HTTP/1.1</code> and <code>Host: maya.web.app</code>.','The response starts with a status line, <code>200 OK</code>, then headers, then the file bytes.','Every file on the page (CSS, images, scripts) is its own request and response.','DevTools → Network → click any row to see the real request and response headers.'],
+      enter(ctx){ b2Reset(ctx); const list=[]; b2Exchange(ctx,list,ctx.q('#b2-maya-icon'),ctx.q('#b2-right-icon'),'GET /index.html','200 OK · index.html',ctx.q('#b2-mini'),500); ctx.seq.run(list); } },
+    { eli5:'A server is just a computer with three habits. It never sleeps. It has one fixed address. And it runs a program whose only job is to answer. Your laptop has none of those habits.', dur:8000,
+      tech:['Server software (nginx, Apache, Firebase’s edge servers) listens on a port: 80 for http, 443 for https.','Always on means a data center with backup power and people paid to watch it.','A fixed public IP address, so a name can point at it. That is the next part.','Your laptop fails all three, which is why hosting is a service you rent, or in Firebase’s case, get free.'],
+      enter(ctx){ b2Reset(ctx); miniSet(ctx.q('#b2-mini'),'cat'); const s=ctx.qa('#b2-srv-checks li'), m=ctx.qa('#b2-maya-checks li'); const list=[];
+        s.forEach((l,i)=>list.push([i?600:500,()=>{ l.classList.add('in'); ctx.q('#b2-right-icon').classList.add('ok'); }])); m.forEach((l,i)=>list.push([i?600:900,()=>{ l.classList.add('in'); ctx.q('#b2-maya-icon').classList.add('bad'); }])); ctx.seq.run(list); } },
+    { eli5:'Run a small server program and your own laptop starts answering. Type localhost and the request goes out your front door and straight back in your back door. A friend on the same Wi-Fi can ask your laptop too.', dur:12000,
+      tech:['<code>firebase emulators:start</code> or <code>firebase serve</code> runs a tiny web server on your laptop.','localhost is the name for your own machine, 127.0.0.1. The port number, 5000, picks which program answers.','On the same Wi-Fi a friend can use your LAN address, something like 192.168.1.23:5000.','That is a real server. It just has all the bad habits from the last step.'],
+      enter(ctx){ b2Reset(ctx); b2Mode(ctx,'local'); const list=[[600,()=>note(ctx.q('#b2-note'),'A server program is now running on the laptop',2500)]];
+        b2Exchange(ctx,list,ctx.q('#b2-mini'),ctx.q('#b2-prog'),'GET localhost:5000/','200 OK',ctx.q('#b2-mini'),900);
+        list.push([1500,()=>{ b2Mode(ctx,'friend'); note(ctx.q('#b2-note'),'Sam joins the same Wi-Fi',2200); }]);
+        b2Exchange(ctx,list,ctx.q('#b2-mini2'),ctx.q('#b2-prog'),'GET 192.168.1.23:5000/','200 OK',ctx.q('#b2-mini2'),1800);
+        ctx.seq.run(list); } },
+    { eli5:'Your laptop sleeps, moves and changes its address. A real server does none of those things. That is what you get when you host: a computer with no bad habits.', dur:11000,
+      tech:['A closed lid stops the server program. Requests just time out.','Home and school networks hand out addresses with DHCP, so your number changes.','Routers also hide your laptop from the open internet (NAT), so only people on your Wi-Fi could reach it anyway.','Hosting providers run machines in data centers, with fixed addresses, that stay up for years.'],
+      enter(ctx){ b2Reset(ctx); b2Mode(ctx,'friend'); miniSet(ctx.q('#b2-mini'),'cat'); miniSet(ctx.q('#b2-mini2'),'cat'); const st=ctx.q('#b2-stage'), maya=ctx.q('#b2-maya-icon'), sam=ctx.q('#b2-mini2');
+        ctx.seq.run([
+          [700,()=>{ ctx.q('#b2-zzz').classList.add('in'); ctx.q('#b2-maya').classList.add('dim'); ctx.q('#b2-prog').classList.remove('in'); note(ctx.q('#b2-note'),'Maya closes the lid',2000); }],
+          [1500,()=>{ miniBlink(sam,()=>miniSet(sam,'blank')); packet(st,sam,maya,'GET 192.168.1.23:5000/','',900); }],
+          [1200,()=>{ maya.classList.add('bad'); packet(st,maya,sam,'no answer · timed out','err',900); }],
+          [1000,()=>{ miniSet(sam,'err',{host:'192.168.1.23'}); }],
+          [1800,()=>{ ctx.q('#b2-zzz').classList.remove('in'); ctx.q('#b2-maya').classList.remove('dim'); maya.classList.remove('bad'); ctx.q('#b2-prog').classList.add('in'); const sub=ctx.q('#b2-maya-sub'); sub.textContent='10.0.0.7'; sub.className='a-sub bad'; note(ctx.q('#b2-note'),'Back from lunch on a different Wi-Fi: new address',2600); }],
+          [1500,()=>{ miniBlink(sam,()=>miniSet(sam,'blank')); packet(st,sam,ctx.q('#b2-mid'),'GET 192.168.1.23:5000/','',800); }],
+          [900,()=>{ packet(st,ctx.q('#b2-mid'),sam,'nobody at that address','err',800); }],
+          [900,()=>{ miniSet(sam,'err',{host:'192.168.1.23'}); }]
+        ]); } }
+  ]
+});
+
+/* ================= TAB 3: names and addresses ================= */
+function b3Wires(ctx){ drawWires(ctx.q('#b3-wires'),[[ctx.q('#b3-laptop-icon'),ctx.q('#b3-dns-icon')],[ctx.q('#b3-laptop-icon'),ctx.q('#b3-srv-icon')]]); }
+function b3Reset(ctx){ clearPackets(ctx.q('#b3-stage')); miniSet(ctx.q('#b3-mini'),'blank'); ctx.q('#b3-mini .lk').classList.remove('on'); ctx.qa('#b3-stage .a-icon').forEach(i=>i.className='a-icon'); ctx.qa('#b3-table div').forEach(d=>d.classList.remove('on')); ctx.q('#b3-custom').classList.remove('in'); ctx.q('#b3-cert').style.display='none'; ctx.q('#b3-note').classList.remove('in'); const sub=ctx.q('#b3-laptop-sub'); sub.textContent='wants: maya.web.app'; sub.className='a-sub'; requestAnimationFrame(()=>b3Wires(ctx)); }
+TABS.push({
+  id:'b3', label:'Names and addresses', title:'Names are for people, numbers are for computers',
+  stage(){ return `
+    <div class="net-stage" id="b3-stage" style="grid-template-rows:auto auto;align-content:center;row-gap:.6rem">
+      <svg class="wires" id="b3-wires"></svg>
+      <div class="actor" id="b3-dns" style="grid-column:2;grid-row:1">
+        <div class="a-icon" id="b3-dns-icon"><svg><use href="#i-book"/></svg></div>
+        <div class="a-label">The phone book (DNS)</div>
+        <div class="ptable" id="b3-table"><div class="h"><span>name</span><span>number</span></div><div data-name="maya"><span>maya.web.app</span><span>199.36.158.100</span></div><div><span>learnhw.web.app</span><span>199.36.158.100</span></div><div><span>google.com</span><span>142.250.72.14</span></div><div class="new" id="b3-custom"><span>mayascats.com</span><span>199.36.158.100</span></div></div>
+      </div>
+      <div class="actor" id="b3-laptop" style="grid-column:1;grid-row:2">
+        <div class="a-icon" id="b3-laptop-icon"><svg><use href="#i-laptop"/></svg></div>
+        <div class="a-label">Maya’s laptop</div><div class="a-sub" id="b3-laptop-sub">wants: maya.web.app</div>
+        ${miniHTML('b3-mini','https://maya.web.app/',true)}
+      </div>
+      <div class="mid" style="grid-column:2;grid-row:2">the internet</div>
+      <div class="actor" id="b3-srv" style="grid-column:3;grid-row:2">
+        <div class="a-icon" id="b3-srv-icon"><svg><use href="#i-server"/></svg></div>
+        <div class="a-label">Firebase server</div><div class="a-sub on">199.36.158.100</div>
+        <span class="chip2" id="b3-cert" style="display:none">📜 cert: maya.web.app · signed ✓</span>
+      </div>
+      <div class="note2" id="b3-note"></div>
+    </div>`; },
+  toolbar(){ return `<span class="act" data-steps="0,1,2,3"><button class="btn" id="b3-again">Play this step again</button></span><span class="act" data-steps="1">Try it in Terminal: <code>nslookup learnhw.web.app</code></span>`; },
+  init(ctx){ ctx.q('#b3-again').addEventListener('click',replay); window.addEventListener('resize',()=>{ if(ctx.panel.classList.contains('active')) b3Wires(ctx); }); },
+  steps:[
+    { eli5:'Computers find each other by number, like phone numbers. Names like maya.web.app are for humans. Before the browser can ask for the page, it needs the number.', dur:6500,
+      tech:['An IP address is the number: 199.36.158.100 is IPv4. IPv6 addresses are longer and written in hex.','Packets on the internet are routed by IP address, never by name.','Firebase Hosting sites share a small set of IPs. The name in the request tells the server which site you mean.','Try it: <code>ping maya.web.app</code> in Terminal prints the number.'],
+      enter(ctx){ b3Reset(ctx); const st=ctx.q('#b3-stage'); ctx.seq.run([[500,()=>{ ctx.q('#b3-srv-icon').classList.add('on'); packet(st,ctx.q('#b3-laptop-icon'),ctx.q('#b3-stage .mid'),'maya.web.app ?','',900); }],[1000,()=>{ packet(st,ctx.q('#b3-stage .mid'),ctx.q('#b3-laptop-icon'),'need a number, not a name','err',900); note(ctx.q('#b3-note'),'The network only understands numbers',2600); }]]); } },
+    { eli5:'First the browser asks the internet’s phone book: what number is maya.web.app? It gets the number, then dials it and asks for the page.', dur:9000,
+      tech:['DNS, the Domain Name System, is the phone book. Your computer asks a resolver, usually your ISP’s, or a public one like 8.8.8.8.','The answer is an A record (IPv4) or AAAA record (IPv6), cached for a while (the TTL).','Try it: <code>nslookup maya.web.app</code> or <code>dig maya.web.app</code>.','The lookup happens once, then your computer remembers the answer for minutes to hours.'],
+      enter(ctx){ b3Reset(ctx); const st=ctx.q('#b3-stage'), lp=ctx.q('#b3-laptop-icon'), dns=ctx.q('#b3-dns-icon'), srv=ctx.q('#b3-srv-icon');
+        ctx.seq.run([
+          [500,()=>packet(st,lp,dns,'maya.web.app ?','dns',900)],
+          [950,()=>{ dns.classList.add('on'); ctx.q('#b3-table [data-name=maya]').classList.add('on'); }],
+          [600,()=>{ dns.classList.remove('on'); packet(st,dns,lp,'199.36.158.100','dns',900); }],
+          [950,()=>{ const sub=ctx.q('#b3-laptop-sub'); sub.textContent='maya.web.app = 199.36.158.100'; sub.className='a-sub on'; }],
+          [500,()=>packet(st,lp,srv,'GET / → 199.36.158.100','',900)],
+          [950,()=>srv.classList.add('on')],
+          [400,()=>{ srv.classList.remove('on'); packet(st,srv,lp,'200 OK · index.html','resp',900); }],
+          [950,()=>miniSet(ctx.q('#b3-mini'),'cat')]
+        ]); } },
+    { eli5:'Firebase lends you a name for free that ends in .web.app. Later you can buy your own name and point it at the very same number.', dur:7000,
+      tech:['<code>&lt;project-id&gt;.web.app</code> and <code>&lt;project-id&gt;.firebaseapp.com</code> are subdomains Firebase controls, so it can add the phone-book entry for you.','A custom domain is bought from a registrar. Then you add the A and TXT records Firebase shows you.','DNS changes take minutes to hours to spread. That is called propagation.','Both names lead to the same files on the same servers.'],
+      enter(ctx){ b3Reset(ctx); miniSet(ctx.q('#b3-mini'),'cat'); ctx.seq.run([[500,()=>{ ctx.q('#b3-table [data-name=maya]').classList.add('on'); note(ctx.q('#b3-note'),'Firebase added this entry for you, free',2600); }],[2800,()=>{ ctx.q('#b3-custom').classList.add('in','on'); ctx.q('#b3-table [data-name=maya]').classList.remove('on'); note(ctx.q('#b3-note'),'A bought name is just one more entry pointing at the same number',3200); }]]); } },
+    { eli5:'The padlock means two things. You really are talking to maya.web.app and not an impostor. And nobody sitting on the same Wi-Fi can read along.', dur:9000,
+      tech:['https is http wrapped in TLS. The server proves who it is with a certificate signed by a trusted authority.','Firebase requests and renews that certificate for you, for free, including custom domains.','After the handshake every request and response is encrypted: the path, the cookies, the page, all of it.','Plain http:// pages get a Not Secure warning and are blocked from some features, like the camera.'],
+      enter(ctx){ b3Reset(ctx); miniSet(ctx.q('#b3-mini'),'blank'); const st=ctx.q('#b3-stage'), lp=ctx.q('#b3-laptop-icon'), srv=ctx.q('#b3-srv-icon');
+        ctx.seq.run([
+          [500,()=>packet(st,lp,srv,'hello, are you maya.web.app?','',900)],
+          [950,()=>{ ctx.q('#b3-cert').style.display=''; srv.classList.add('on'); }],
+          [500,()=>{ srv.classList.remove('on'); packet(st,srv,lp,'📜 certificate · signed by a trusted authority','lock',1000); }],
+          [1050,()=>{ ctx.q('#b3-mini .lk').classList.add('on'); lp.classList.add('ok'); note(ctx.q('#b3-note'),'Checked ✓ · padlock closes · from here on everything is scrambled',3000); }],
+          [900,()=>packet(st,lp,srv,'🔒 x9#k2…Qf','lock',900)],
+          [950,()=>packet(st,srv,lp,'🔒 7Lp@…mZ3','lock',900)],
+          [950,()=>miniSet(ctx.q('#b3-mini'),'cat')]
+        ]); } }
+  ]
+});
+
+/* ================= TAB 4: deploy is a copy ================= */
+function b4Card(ctx,col,v){ const c=ctx.q(`#b4-${col}-card`); c.classList.toggle('v2',v===2); c.querySelector('.ver').textContent=v===2?'v2':'v1'; c.querySelector('.ver').className='chip2 ver '+(v===2?'v2':'v1'); c.querySelector('.fb').innerHTML=`<span class="t">&lt;h1&gt;</span>Mochi the ${v===2?'Dog':'Cat'}<span class="t">&lt;/h1&gt;</span>`; }
+function b4Cmd(ctx,col,text){ const c=ctx.q(`#b4-${col}-cmd`); if(!text){ c.classList.remove('in'); return; } c.textContent=text; c.classList.add('in'); }
+function b4Wires(ctx){ drawWires(ctx.q('#b4-wires'),[[ctx.q('#b4-laptop-icon'),ctx.q('#b4-github-icon')],[ctx.q('#b4-laptop-icon'),ctx.q('#b4-firebase-icon')],[ctx.q('#b4-firebase-icon'),ctx.q('#b4-mini')]]); }
+function b4Reset(ctx,v){ clearPackets(ctx.q('#b4-three')); ['laptop','github','firebase'].forEach(c=>{ b4Card(ctx,c,v[c]||1); b4Cmd(ctx,c,null); }); miniSet(ctx.q('#b4-mini'),'cat',{dog:!!v.browser2,cache:!!v.cache}); ctx.qa('#b4-three .a-icon').forEach(i=>i.className='a-icon'); ctx.q('#b4-note').classList.remove('in'); requestAnimationFrame(()=>b4Wires(ctx)); }
+TABS.push({
+  id:'b4', label:'Deploy is a copy', title:'Deploy is a copy: three places, one website',
+  stage(){ const col=(id,icon,label,sub)=>`<div class="col"><div class="a-icon" id="b4-${id}-icon"><svg><use href="#${icon}"/></svg></div><div class="a-label">${label}</div><div class="a-sub">${sub}</div>
+      <div class="filecard2" id="b4-${id}-card"><div class="fh"><span>public/index.html</span><span class="chip2 ver v1">v1</span></div><div class="fb"></div></div><span class="cmd" id="b4-${id}-cmd"></span></div>`;
+    return `
+    <div class="three" id="b4-three">
+      <svg class="wires" id="b4-wires"></svg>
+      ${col('laptop','i-laptop','Maya’s laptop','your working copy')}
+      ${col('github','i-github','GitHub','history and backup')}
+      ${col('firebase','i-firebase','Firebase server','the website')}
+      <div class="note2" id="b4-note"></div>
+    </div>
+    <div class="b4-browser">${miniHTML('b4-mini','https://maya.web.app/',true)}</div>`; },
+  toolbar(){ return `<span class="act" data-steps="0,1,2,3"><button class="btn" id="b4-again">Play this step again</button></span><span class="act" data-steps="4"><button class="btn" id="b4-refresh">Refresh ⌘R</button><button class="btn" id="b4-hard">Hard refresh ⌘⇧R</button></span>`; },
+  init(ctx){ ctx.q('#b4-again').addEventListener('click',replay); window.addEventListener('resize',()=>{ if(ctx.panel.classList.contains('active')) b4Wires(ctx); });
+    ctx.q('#b4-refresh').addEventListener('click',()=>{ const m=ctx.q('#b4-mini'); miniBlink(m,()=>miniSet(m,'cat',{cache:true})); note(ctx.q('#b4-note'),'Still the old page: the browser used its cached copy',2600); });
+    ctx.q('#b4-hard').addEventListener('click',()=>{ const m=ctx.q('#b4-mini'); packet(ctx.q('#b4-three'),m,ctx.q('#b4-firebase-icon'),'GET / (no cache)','',700); setTimeout(()=>packet(ctx.q('#b4-three'),ctx.q('#b4-firebase-icon'),m,'200 OK · v2','resp',700),800); setTimeout(()=>miniBlink(m,()=>miniSet(m,'cat',{dog:true})),1550); note(ctx.q('#b4-note'),'Asked the server again properly: new page',2600); }); },
+  steps:[
+    { eli5:'Your site ends up living in three places: your laptop, GitHub, and the server. Only one of them is the website. The other two are your working copy and your backup.', dur:6500,
+      tech:['Working copy: the folder on your laptop that you edit.','GitHub: a history of snapshots (commits) that you push to. It is a backup and a record, not a web server in this class.','Firebase: the copy the server hands out. This is the website.','Three copies can disagree. Most Day 1 confusion is about which copy you are looking at.'],
+      enter(ctx){ b4Reset(ctx,{}); ctx.seq.run([[500,()=>ctx.q('#b4-laptop-icon').classList.add('on')],[700,()=>ctx.q('#b4-github-icon').classList.add('on')],[700,()=>ctx.q('#b4-firebase-icon').classList.add('ok')],[500,()=>note(ctx.q('#b4-note'),'Three copies of the same file, all v1',2600)]]); } },
+    { eli5:'You change the file on your laptop and save. Nothing else notices. The website still shows the old page, because the server still has the old file.', dur:6500,
+      tech:['Saving writes bytes to your disk. That is all it does.','GitHub and Firebase have no idea. Each holds its own copy.','Opening the file with file:// shows the new version, because that reads your disk.','Opening maya.web.app shows the old version, because that asks the server.'],
+      enter(ctx){ b4Reset(ctx,{}); ctx.seq.run([[600,()=>{ b4Card(ctx,'laptop',2); b4Cmd(ctx,'laptop','⌘S  saved'); ctx.q('#b4-laptop-icon').classList.add('on'); }],[900,()=>note(ctx.q('#b4-note'),'Laptop has v2 · GitHub v1 · server v1 · browser shows v1',3200)]]); } },
+    { eli5:'Push copies your change to GitHub, so there is a history and a backup. The website STILL has not changed.', dur:7000,
+      tech:['<code>git commit</code> takes a snapshot of the folder. <code>git push</code> uploads the snapshots to GitHub.','GitHub is where your teacher and reviewers read your code: pull requests on Day 10.','Firebase does not watch GitHub unless you set up a deploy action. In this class you deploy by hand.','Commit before you deploy, so what is live always matches something in the history.'],
+      enter(ctx){ b4Reset(ctx,{laptop:2}); ctx.seq.run([[500,()=>b4Cmd(ctx,'laptop','git commit -m "dog" && git push')],[700,()=>packet(ctx.q('#b4-three'),ctx.q('#b4-laptop-icon'),ctx.q('#b4-github-icon'),'commit 3f9a1c · push','file',1000)],[1050,()=>{ b4Card(ctx,'github',2); ctx.q('#b4-github-icon').classList.add('on'); }],[700,()=>note(ctx.q('#b4-note'),'GitHub has v2 now · the server still has v1',3000)]]); } },
+    { eli5:'Deploy copies your public folder onto the server. Now the server has the new file. Your browser just has not asked for it again yet.', dur:7000,
+      tech:['<code>firebase deploy</code> reads firebase.json, finds public/, and uploads the files whose contents changed.','It creates a new release. The Firebase console lets you roll back to an older one.','Deploys take seconds. The URL never changes.','If the terminal says Deploy complete but you still see the old page, it is almost always the next step.'],
+      enter(ctx){ b4Reset(ctx,{laptop:2,github:2}); ctx.seq.run([[500,()=>b4Cmd(ctx,'laptop','firebase deploy')],[700,()=>packet(ctx.q('#b4-three'),ctx.q('#b4-laptop-icon'),ctx.q('#b4-firebase-icon'),'upload public/ (1 file changed)','file',1100)],[1150,()=>{ b4Card(ctx,'firebase',2); ctx.q('#b4-firebase-icon').classList.add('ok'); b4Cmd(ctx,'firebase','✔ Deploy complete!'); }],[700,()=>note(ctx.q('#b4-note'),'Server has v2 · the browser is still showing what it loaded earlier',3000)]]); } },
+    { eli5:'You refresh and still see the old page! Your browser kept a copy to be fast. A hard refresh makes it ask the server again properly.', dur:9000,
+      tech:['Browsers cache files to avoid downloading them again. Cache-Control headers say for how long.','Hard refresh: Cmd+Shift+R on Mac, Ctrl+Shift+R elsewhere. Or DevTools → Network → tick Disable cache.','Firebase sends short cache times for HTML and lets you set long ones for images and scripts.','A private window has an empty cache, handy for seeing what a brand-new visitor sees.'],
+      enter(ctx){ b4Reset(ctx,{laptop:2,github:2,firebase:2}); const m=ctx.q('#b4-mini'); ctx.seq.run([[700,()=>{ miniBlink(m,()=>miniSet(m,'cat',{cache:true})); note(ctx.q('#b4-note'),'⌘R · still the old page, served from the browser’s cache',2800); }],[3200,()=>{ packet(ctx.q('#b4-three'),m,ctx.q('#b4-firebase-icon'),'GET / (no cache)','',700); note(ctx.q('#b4-note'),'⌘⇧R · hard refresh asks the server again',2800); }],[800,()=>packet(ctx.q('#b4-three'),ctx.q('#b4-firebase-icon'),m,'200 OK · v2','resp',700)],[750,()=>miniBlink(m,()=>miniSet(m,'cat',{dog:true}))]]); } }
+  ]
+});
+
+/* ================= TAB 5: static means the same for everyone ================= */
+const VISITORS=[['sam','i-phone','Sam'],['priya','i-laptop','Priya'],['lopez','i-tablet','Mr. Lopez']];
+function b5Wires(ctx){ drawWires(ctx.q('#b5-wires'),VISITORS.map(([id])=>[ctx.q('#b5-srv-icon'),ctx.q(`#b5-${id}-icon`)])); }
+function b5Reset(ctx){ clearPackets(ctx.root); VISITORS.forEach(([id])=>{ miniSet(ctx.q(`#b5-${id}-mini`),'blank'); ctx.q(`#b5-${id}-icon`).className='a-icon'; }); ctx.q('#b5-srv-icon').className='a-icon'; ctx.q('#b5-db').classList.remove('in'); ctx.q('#b5-note').classList.remove('in'); ctx.q('#b5-unch').style.visibility='hidden'; requestAnimationFrame(()=>b5Wires(ctx)); }
+function b5LoadAll(ctx){ VISITORS.forEach(([id])=>miniSet(ctx.q(`#b5-${id}-mini`),'cat')); }
+TABS.push({
+  id:'b5', label:'Static: same for everyone', title:'Static means everyone gets the same bytes',
+  stage(){ return `
+    <svg class="wires" id="b5-wires"></svg>
+    <div class="srvcol">
+      <div class="a-icon" id="b5-srv-icon"><svg><use href="#i-server"/></svg></div>
+      <div class="a-label">Firebase server</div><div class="a-sub">static hosting</div>
+      <div class="filecard2" id="b5-card"><div class="fh"><span>public/index.html</span><span class="chip2 v1">v1</span></div><div class="fb"><span class="t">&lt;h1&gt;</span>Mochi the Cat<span class="t">&lt;/h1&gt;</span></div></div>
+      <span class="chip2" id="b5-unch" style="visibility:hidden">file unchanged ✓</span>
+      <div class="dbicon" id="b5-db"><svg><use href="#i-db"/></svg>a database<span class="soon">later · Day 6</span></div>
+    </div>
+    <div class="visitors">
+      ${VISITORS.map(([id,icon,name])=>`<div class="visitor" id="b5-${id}"><div><div class="a-icon" id="b5-${id}-icon"><svg><use href="#${icon}"/></svg></div><div class="who">${name}</div></div>${miniHTML(`b5-${id}-mini`,'https://maya.web.app/',true)}</div>`).join('')}
+    </div>
+    <div class="note2" id="b5-note"></div>`; },
+  toolbar(){ return `<span class="act" data-steps="0,1,2,3"><button class="btn" id="b5-again">Play this step again</button></span>`; },
+  init(ctx){ ctx.q('#b5-again').addEventListener('click',replay); window.addEventListener('resize',()=>{ if(ctx.panel.classList.contains('active')) b5Wires(ctx); }); },
+  steps:[
+    { eli5:'A static website is a photocopier. Everyone who asks gets the exact same page, byte for byte. Three visitors, three identical copies.', dur:9000,
+      tech:['Static hosting means the server sends files exactly as they are. No code runs on the server per visitor.','That is why it is cheap, fast and hard to break. Firebase even copies the files to servers near each visitor (a CDN).','Static does not mean boring: JavaScript still runs inside each visitor’s browser.','Instagram, Canvas and Gmail are not static. A program on their server builds a different page per person.'],
+      enter(ctx){ b5Reset(ctx); const list=[]; VISITORS.forEach(([id],i)=>{ const icon=ctx.q(`#b5-${id}-icon`), srv=ctx.q('#b5-srv-icon'); list.push([i?350:500,()=>packet(ctx.root,icon,srv,'GET /','',800)]); });
+        list.push([900,()=>ctx.q('#b5-srv-icon').classList.add('on')]);
+        VISITORS.forEach(([id],i)=>{ list.push([i?350:300,()=>packet(ctx.root,ctx.q('#b5-srv-icon'),ctx.q(`#b5-${id}-icon`),'200 OK · same bytes','resp',800)]); list.push([0,()=>setTimeout(()=>miniSet(ctx.q(`#b5-${id}-mini`),'cat'),850)]); });
+        list.push([1200,()=>{ ctx.q('#b5-srv-icon').classList.remove('on'); note(ctx.q('#b5-note'),'Same file, three copies',2400); }]); ctx.seq.run(list); } },
+    { eli5:'You can type into a page, and it can react. But that happens inside YOUR browser. The server’s file never changes, and nobody else’s page changes either.', dur:8000,
+      tech:['JavaScript running in the page can read the input and change the DOM. That is Day 3.','Nothing was sent to the server. No request happened at all.','The other visitors’ pages are separate copies in separate browsers.','A form with no server or database behind it is a dead end: it changes the screen and nothing else.'],
+      enter(ctx){ b5Reset(ctx); b5LoadAll(ctx); const m=ctx.q('#b5-sam-mini'); miniSet(m,'greet'); const inp=m.querySelector('input'), g=m.querySelector('.greet'); const list=[[600,()=>{ inp.value=''; ctx.q('#b5-sam-icon').classList.add('on'); }]];
+        [...'Sam'].forEach((ch,i)=>list.push([i?180:300,()=>{ inp.value+=ch; }])); list.push([400,()=>{ g.textContent='Hi, Sam!'; }]); list.push([700,()=>{ ctx.q('#b5-unch').style.visibility=''; note(ctx.q('#b5-note'),'Only Sam’s screen changed · no request left the browser',3000); }]); ctx.seq.run(list); } },
+    { eli5:'Refresh and your page is a fresh photocopy again. The page forgot you. Teaching it to remember is Day 5 and Day 6.', dur:7000,
+      tech:['Reload throws away the page’s memory and fetches the file again.','Remembering in this browser: cookies or localStorage. Day 5.','Remembering for everyone: a database like Firestore. Day 6.','Static hosting plus a database you talk to from the browser is how this class builds widgets that remember.'],
+      enter(ctx){ b5Reset(ctx); b5LoadAll(ctx); const m=ctx.q('#b5-sam-mini'); miniSet(m,'greet'); m.querySelector('input').value='Sam'; m.querySelector('.greet').textContent='Hi, Sam!';
+        ctx.seq.run([[900,()=>{ packet(ctx.root,ctx.q('#b5-sam-icon'),ctx.q('#b5-srv-icon'),'GET / (refresh)','',800); note(ctx.q('#b5-note'),'Sam presses refresh',2000); }],[900,()=>packet(ctx.root,ctx.q('#b5-srv-icon'),ctx.q('#b5-sam-icon'),'200 OK · same bytes','resp',800)],[850,()=>{ miniBlink(m,()=>{ miniSet(m,'greet'); }); }],[600,()=>note(ctx.q('#b5-note'),'Fresh copy · the name is gone',2600)]]); } },
+    { eli5:'Big sites show everyone a different page because a program and a database sit behind the server. We will add memory to your widget later, one piece at a time.', dur:7000,
+      tech:['Dynamic sites run code per request (Node, Python, PHP), or let the browser fetch data from a database.','In this class the server stays static. The browser talks to Firestore directly, with security rules in between.','Same bytes for everyone, then JavaScript fills in your data. That is a very common modern pattern.','Day 6: documents, collections, set and get.'],
+      enter(ctx){ b5Reset(ctx); b5LoadAll(ctx); const names={sam:'Sam',priya:'Priya',lopez:'Mr. Lopez'}; const list=[[600,()=>ctx.q('#b5-db').classList.add('in')]];
+        VISITORS.forEach(([id],i)=>list.push([i?500:800,()=>{ const m=ctx.q(`#b5-${id}-mini`); miniSet(m,'greet'); m.querySelector('input').value=names[id]; m.querySelector('.greet').textContent=`Welcome back, ${names[id]}!`; ctx.q(`#b5-${id}-icon`).classList.add('ok'); }]));
+        list.push([600,()=>note(ctx.q('#b5-note'),'Same file for everyone, then each page fills in its own data',3200)]); ctx.seq.run(list); } }
+  ]
+});
+
+/* ================= app shell ================= */
+const lesson=$('#lesson'), tabsNav=$('#tabs');
+const state={tab:0,steps:TABS.map(()=>0),autoplay:false,timer:null};
+function replay(){ enterStep(state.tab,state.steps[state.tab]); }
+
+TABS.forEach((t,i)=>{
+  const b=document.createElement('button'); b.className='tab'; b.type='button'; b.setAttribute('role','tab'); b.innerHTML=`<span class="num">${i+1}</span>${t.label}`; b.addEventListener('click',()=>selectTab(i)); tabsNav.appendChild(b);
+  const panel=document.createElement('section'); panel.className='tabpanel'; panel.dataset.tab=t.id; panel.setAttribute('role','tabpanel');
+  panel.innerHTML=`
+    <aside class="explain">
+      <h2>${t.title}</h2>
+      <div class="eli5"><div class="eyebrow">ELI5 · <span class="stepno"></span></div><p class="eli5-text" aria-live="polite"></p></div>
+      <p class="hint">Press <span class="i">i</span> on the picture for the technical version.</p>
+      <div class="controls"><button class="btn prev" type="button">‹ Back</button><div class="dots"></div><button class="btn next primary" type="button">Next ›</button><button class="btn play" type="button">▶ Play</button></div>
+    </aside>
+    <div class="stage">
+      <button class="info-btn" type="button" aria-label="Technical details" title="Technical details">i</button>
+      <div class="info-pop"><h4>Technically</h4><ul></ul></div>
+      <div class="stage-body">${t.stage()}</div>
+      <div class="toolbar">${t.toolbar?t.toolbar():''}</div>
+    </div>`;
+  lesson.appendChild(panel);
+  const dots=panel.querySelector('.dots'); t.steps.forEach((s,si)=>{ const d=document.createElement('button'); d.className='dot'; d.type='button'; d.title=`Step ${si+1}`; d.addEventListener('click',()=>{ stopPlay(); enterStep(i,si); }); dots.appendChild(d); });
+  panel.querySelector('.prev').addEventListener('click',()=>{ stopPlay(); if(state.steps[i]>0) enterStep(i,state.steps[i]-1); });
+  panel.querySelector('.next').addEventListener('click',()=>{ stopPlay(); if(state.steps[i]<t.steps.length-1) enterStep(i,state.steps[i]+1); else if(i<TABS.length-1) selectTab(i+1); });
+  panel.querySelector('.play').addEventListener('click',()=>{ if(state.autoplay) stopPlay(); else startPlay(); });
+  const ib=panel.querySelector('.info-btn'), ip=panel.querySelector('.info-pop');
+  ib.addEventListener('click',e=>{ e.stopPropagation(); const open=!ip.classList.contains('open'); ip.classList.toggle('open',open); ib.classList.toggle('open',open); });
+  ip.addEventListener('click',e=>e.stopPropagation());
+  const root=panel.querySelector('.stage-body');
+  t.ctx={root,panel,q:s=>root.querySelector(s)||panel.querySelector(s),qa:(s,r=root)=>Array.from(r.querySelectorAll(s)),seq:makeSeq(),state:{},step:0};
+  if(t.init) t.init(t.ctx);
+});
+document.addEventListener('click',()=>$$('.info-pop.open').forEach(p=>{ p.classList.remove('open'); p.parentElement.querySelector('.info-btn').classList.remove('open'); }));
+
+function selectTab(i){
+  stopPlay(); TABS[state.tab].ctx.seq.cancel(); state.tab=i;
+  $$('.tab',tabsNav).forEach((b,k)=>{ b.classList.toggle('active',k===i); b.setAttribute('aria-selected',k===i); });
+  $$('.tabpanel',lesson).forEach((p,k)=>p.classList.toggle('active',k===i));
+  requestAnimationFrame(()=>enterStep(i,state.steps[i]));
+}
+function enterStep(ti,si){
+  const t=TABS[ti], st=t.steps[si]; state.steps[ti]=si; t.ctx.step=si; t.ctx.seq.cancel();
+  const panel=t.ctx.panel;
+  panel.querySelector('.stepno').textContent=`Step ${si+1} of ${t.steps.length}`;
+  panel.querySelector('.eli5-text').textContent=st.eli5;
+  panel.querySelector('.info-pop ul').innerHTML=st.tech.map(x=>`<li>${x}</li>`).join('');
+  $$('.dot',panel).forEach((d,k)=>{ d.classList.toggle('on',k===si); d.classList.toggle('done',k<si); });
+  panel.querySelector('.prev').disabled=si===0;
+  const next=panel.querySelector('.next'); next.textContent=si===t.steps.length-1?(ti<TABS.length-1?'Next part ›':'Done'):'Next ›'; next.disabled=si===t.steps.length-1&&ti===TABS.length-1;
+  $$('.toolbar .act',panel).forEach(a=>a.classList.toggle('show',a.dataset.steps.split(',').includes(String(si))));
+  st.enter(t.ctx);
+  try{ history.replaceState(null,'',`#${t.id}-${si+1}`); }catch(e){}
+  if(state.autoplay) scheduleNext();
+}
+function scheduleNext(){ clearTimeout(state.timer); const t=TABS[state.tab], si=state.steps[state.tab]; const dur=t.steps[si].dur||6500;
+  state.timer=setTimeout(()=>{ if(!state.autoplay) return; if(si<t.steps.length-1) enterStep(state.tab,si+1); else stopPlay(); },dur); }
+function startPlay(){ state.autoplay=true; const p=TABS[state.tab].ctx.panel.querySelector('.play'); p.textContent='❚❚ Pause'; p.classList.add('playing'); replay(); }
+function stopPlay(){ state.autoplay=false; clearTimeout(state.timer); $$('.play').forEach(p=>{ p.textContent='▶ Play'; p.classList.remove('playing'); }); }
+
+document.addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea')) return;
+  if(e.key==='ArrowRight'){ stopPlay(); const i=state.tab; if(state.steps[i]<TABS[i].steps.length-1) enterStep(i,state.steps[i]+1); else if(i<TABS.length-1) selectTab(i+1); }
+  if(e.key==='ArrowLeft'){ stopPlay(); const i=state.tab; if(state.steps[i]>0) enterStep(i,state.steps[i]-1); else if(i>0){ state.steps[i-1]=TABS[i-1].steps.length-1; selectTab(i-1); } }
+  if(e.key===' '&&!e.target.matches('button')){ e.preventDefault(); state.autoplay?stopPlay():startPlay(); }
+});
+
+(function boot(){
+  const m=/^#([a-z]\d)-(\d+)$/.exec(location.hash||''); let ti=0, si=0;
+  if(m){ const k=TABS.findIndex(t=>t.id===m[1]); if(k>=0){ ti=k; si=Math.min(TABS[k].steps.length-1,Math.max(0,parseInt(m[2],10)-1)); } }
+  state.steps[ti]=si; selectTab(ti);
+})();
+})();
+</script>
+</body>
+</html>

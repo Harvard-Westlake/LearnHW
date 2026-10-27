@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Website Anatomy · One File, One Tree</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#DA0016; --gold:#EDA300; --blue:#539ADC; --blue-20:rgb(83 154 220 / .2); --green:#9CCA00; --orange:#FA7300;
+  --ink:#111827; --muted:#6b7280; --border:#e5e7eb; --bg:#f8f9fa;
+  --sans:"Source Sans 3","Source Sans Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  --tagc:#1d4ed8; --attrc:#b45309; --strc:#15803d;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:15px/1.45 var(--sans);overflow:hidden}
+button{font-family:inherit}
+code{font-family:var(--mono)}
+
+/* ---- shell ---- */
+.page-head{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;padding:.5rem 1rem .4rem;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0}
+.page-head h1{margin:0;font-size:1.12rem;font-weight:700}
+.page-head p{margin:.05rem 0 0;color:var(--muted);font-size:.86rem}
+.page-head .part{font-size:.76rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.head-right{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
+.dl,.toolbar a.btn{font:600 .78rem var(--sans);color:var(--ink);border:1px solid #d1d5db;border-radius:.4rem;padding:.18rem .55rem;text-decoration:none;background:#fff;white-space:nowrap;display:inline-flex;align-items:center;gap:.25rem}
+.dl:hover,.toolbar a.btn:hover{background:#f3f4f6}
+.tabs{display:flex;gap:.1rem;padding:0 1rem;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.tab{appearance:none;background:transparent;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;padding:.45rem .8rem .5rem;font-size:.9rem;font-weight:600;color:#4b5563;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:.45rem;transition:color .15s,border-color .15s}
+.tab .num{display:inline-grid;place-items:center;width:1.35rem;height:1.35rem;border-radius:50%;background:#e5e7eb;font-size:.75rem;font-weight:700;color:#374151}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--red);border-bottom-color:var(--red)}
+.tab.active .num{background:var(--red);color:#fff}
+.lesson{flex:1;min-height:0;padding:.7rem 1rem .8rem}
+.tabpanel{display:none;height:100%;min-height:0}
+.tabpanel.active{display:grid;grid-template-columns:minmax(230px,280px) minmax(0,1fr);gap:.8rem}
+@media (max-width:860px){ body{overflow:auto} .lesson{height:auto} .tabpanel.active{grid-template-columns:1fr;grid-auto-rows:auto 520px} }
+
+.explain{display:flex;flex-direction:column;gap:.55rem;min-height:0}
+.explain h2{margin:0;font-size:1.22rem;line-height:1.2}
+.eli5{background:#fff;border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:.6rem;padding:.65rem .85rem .75rem;flex:1;min-height:0;overflow:auto}
+.eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.eli5 p{margin:.35rem 0 0;font-size:1.08rem;line-height:1.42}
+.hint{font-size:.8rem;color:var(--muted);margin:0}
+.hint .i{display:inline-grid;place-items:center;width:1.05rem;height:1.05rem;border-radius:50%;background:var(--blue);color:#fff;font:italic 700 .72rem Georgia,serif;vertical-align:-2px}
+.controls{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap}
+.controls .btn{padding:.3rem .55rem}
+.dots{display:flex;gap:.32rem;margin:0 .2rem}
+.dot{width:.6rem;height:.6rem;border-radius:50%;background:#d1d5db;border:0;padding:0;cursor:pointer;transition:background .2s,transform .2s}
+.dot.done{background:#9ca3af}
+.dot.on{background:var(--red);transform:scale(1.25)}
+.btn{appearance:none;border:1px solid #d1d5db;background:#fff;color:var(--ink);border-radius:.45rem;padding:.3rem .7rem;font-size:.85rem;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,transform .1s;min-height:30px}
+.btn:hover{background:#f3f4f6}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+.btn.primary:hover{background:#b80012}
+.btn.playing{background:var(--gold);border-color:var(--gold);color:#111}
+
+.stage{position:relative;background:#fff;border:1px solid var(--border);border-radius:.6rem;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.stage-body{flex:1;min-height:0;position:relative;padding:.7rem}
+.toolbar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;padding:.4rem .7rem;border-top:1px solid var(--border);background:#fafafa;min-height:2.7rem;font-size:.82rem;color:var(--muted)}
+.toolbar .act{display:none;align-items:center;gap:.4rem}
+.toolbar .act.show{display:inline-flex}
+.info-btn{position:absolute;top:.55rem;right:.55rem;z-index:20;width:2rem;height:2rem;border-radius:50%;background:var(--blue);color:#fff;border:0;cursor:pointer;font:italic 700 1.05rem Georgia,serif;box-shadow:0 2px 6px rgb(0 0 0/.15);transition:transform .15s,background .15s}
+.info-btn:hover{transform:scale(1.06)}
+.info-btn.open{background:#1d4ed8}
+.info-pop{position:absolute;top:2.95rem;right:.55rem;z-index:21;width:min(400px,calc(100% - 1.2rem));background:#fff;border:1px solid var(--blue);border-radius:.6rem;box-shadow:0 10px 30px rgb(0 0 0/.14);padding:.7rem .9rem .75rem;display:none;max-height:calc(100% - 3.6rem);overflow:auto}
+.info-pop.open{display:block}
+.info-pop h4{margin:0 0 .35rem;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}
+.info-pop ul{margin:0;padding-left:1.05rem;font-size:.88rem;line-height:1.4}
+.info-pop li{margin:.22rem 0}
+.info-pop code{font-size:.82em;background:#f3f4f6;padding:0 .25rem;border-radius:.2rem}
+
+/* ---- mock windows ---- */
+.win{border:1px solid #d1d5db;border-radius:.6rem;background:#fff;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 3px rgb(0 0 0/.06);min-height:0;position:relative;transition:opacity .4s,filter .4s}
+.win.dim{opacity:.35;filter:grayscale(1)}
+.bar{display:flex;align-items:center;gap:.45rem;padding:.35rem .55rem;background:#f3f4f6;border-bottom:1px solid #e5e7eb;font-size:.78rem;color:var(--muted);flex-shrink:0}
+.lights{display:flex;gap:.25rem;flex-shrink:0}
+.lights i{width:.55rem;height:.55rem;border-radius:50%;background:#fca5a5;display:block}
+.lights i:nth-child(2){background:#fcd34d}.lights i:nth-child(3){background:#86efac}
+.url{flex:1;min-width:0;background:#fff;border:1px solid #e5e7eb;border-radius:.4rem;padding:.12rem .5rem;font-family:var(--mono);font-size:.76rem;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wtitle{font-weight:600;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wbody{flex:1;min-height:0;overflow:auto;position:relative}
+.code{font-family:var(--mono);font-size:.78rem;line-height:1.5;padding:.45rem .6rem;white-space:pre;color:#111;position:relative;tab-size:2}
+.code .ln{display:block;padding:0 .35rem;border-radius:.25rem;transition:background .3s}
+.code .ln.hl{background:#fef3c7}
+.code .ln.cur{background:#dbeafe}
+.code .ln.flash{background:#fde68a}
+.t{color:var(--tagc)}.a{color:var(--attrc)}.s{color:var(--strc)}.c{color:#9ca3af}
+.code.squash{white-space:pre-wrap;word-break:break-all}
+.page{padding:.7rem .9rem;font-family:Georgia,"Times New Roman",serif;color:#000;background:#fff;min-height:100%;transition:background .4s,color .4s}
+.page h1{font-size:1.45rem;margin:0 0 .45rem;font-weight:700}
+.page p{margin:0 0 .5rem}
+.page a{color:#0000ee;text-decoration:underline}
+.page .pimg{display:block;width:76px;height:76px;margin:.2rem 0 .5rem}
+.page .jsbtn{display:none}
+.ael{display:inline-block;position:relative;border-radius:.2rem;transition:background .25s,box-shadow .25s}
+.ael.block{display:block}
+.ael.hl{background:rgb(83 154 220/.28);box-shadow:0 0 0 2px var(--blue)}
+.page.styled{font-family:var(--sans);background:#fffaf0;color:#1f2937}
+.page.styled h1{color:var(--red);letter-spacing:-.01em}
+.page.styled a{color:var(--red);text-decoration:none;font-weight:600;border-bottom:2px solid var(--gold)}
+.page.about h1{margin-bottom:.4rem}
+
+/* ---- tab a1 ---- */
+[data-tab=a1] .stage-body{display:grid;grid-template-columns:1fr 1.1fr;gap:.8rem}
+[data-tab=a1] .friend{position:absolute;right:.7rem;bottom:.7rem;width:46%;height:54%;transform:translateY(130%);opacity:0;transition:transform .55s cubic-bezier(.2,.8,.2,1),opacity .4s;z-index:4;box-shadow:0 12px 30px rgb(0 0 0/.18)}
+[data-tab=a1] .friend.in{transform:none;opacity:1}
+.flyer{position:absolute;z-index:6;display:flex;align-items:center;gap:.3rem;background:#fff;border:1px solid var(--border);border-radius:.4rem;padding:.2rem .5rem;font:.78rem var(--mono);box-shadow:0 4px 12px rgb(0 0 0/.15);opacity:0;transition:transform .95s cubic-bezier(.2,.8,.2,1),opacity .3s;pointer-events:none;left:0;top:0}
+.flyer.go{opacity:1}
+.reveal .ael{opacity:0;transform:translateY(6px);transition:opacity .4s,transform .4s,background .25s,box-shadow .25s}
+.reveal .ael.in{opacity:1;transform:none}
+.errpage{padding:1rem 1rem;color:#374151;font-size:.82rem;font-family:var(--sans)}
+.errpage .face{font-size:1.6rem;display:block}
+.errpage b{display:block;font-size:.98rem;margin:.3rem 0 .2rem}
+.errpage code{display:block;margin-top:.45rem;font-size:.7rem;color:#6b7280}
+.errpage .who{display:inline-block;margin-top:.5rem;font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--red);background:#fee2e2;padding:.05rem .4rem;border-radius:.25rem}
+.rename input{font:inherit;font-size:.85rem;padding:.2rem .5rem;border:1px solid #d1d5db;border-radius:.4rem;width:9rem;margin-left:.3rem}
+
+/* ---- tab a2 ---- */
+[data-tab=a2] .stage-body{display:grid;grid-template-columns:minmax(230px,310px) 1fr;gap:.8rem}
+[data-tab=a2] .code{font-size:.74rem}
+.nests{position:absolute;inset:0;pointer-events:none}
+.nest{position:absolute;border:2px solid;border-radius:.4rem;opacity:0;transition:opacity .4s}
+.nest.in{opacity:1}
+.treewrap{display:flex;flex-direction:column;min-height:0;gap:.4rem}
+.treebox{position:relative;flex:1;min-height:0}
+.crumb{font:.78rem var(--mono);color:var(--muted);background:#f8fafc;border:1px solid var(--border);border-radius:.4rem;padding:.25rem .55rem;min-height:1.9rem;display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;margin-right:2.6rem}
+.crumb b{color:var(--ink);font-weight:600}
+.crumb .sep{color:#cbd5e1}
+.crumb .note{margin-left:auto;font-family:var(--sans);font-size:.76rem}
+svg.tree{display:block;width:100%;height:100%}
+.node{opacity:0;transition:opacity .35s}
+.node.shown{opacity:1}
+.node .box{fill:#fff;stroke:#94a3b8;stroke-width:1.5;rx:7;transition:fill .25s,stroke .25s}
+.node .lab{font:600 11.5px var(--mono);fill:var(--tagc);text-anchor:middle;dominant-baseline:middle}
+.node .sub{font:9.5px var(--sans);fill:var(--muted);text-anchor:middle;dominant-baseline:middle}
+.node.ptr .box{stroke:var(--orange);stroke-dasharray:4 3}
+.node.ptr .sub{fill:var(--orange);font-weight:600}
+.node.hl .box{fill:#fef3c7;stroke:var(--gold);stroke-width:2.5}
+.node.moved .box{fill:#fee2e2;stroke:var(--red);stroke-width:2}
+.edge{fill:none;stroke:#cbd5e1;stroke-width:1.6;opacity:0;transition:opacity .35s,stroke .3s}
+.edge.shown{opacity:1}
+.edge.hl{stroke:var(--gold);stroke-width:2.5}
+.edge.moved{stroke:var(--red)}
+svg.dim .node:not(.ptr){opacity:.28}
+svg.dim .edge{opacity:.3}
+.tag-note{position:absolute;left:50%;bottom:.3rem;transform:translateX(-50%);background:#111;color:#fff;font-size:.78rem;padding:.25rem .65rem;border-radius:999px;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:95%;overflow:hidden;text-overflow:ellipsis}
+.tag-note.in{opacity:1}
+
+/* ---- tab a3 ---- */
+[data-tab=a3] .browser{height:100%}
+[data-tab=a3] .wbody{display:flex;overflow:hidden}
+[data-tab=a3] .pagewrap{flex:1;min-width:0;overflow:auto;position:relative}
+[data-tab=a3] .devtools{width:0;flex-shrink:0;border-left:1px solid #d1d5db;background:#fff;display:flex;flex-direction:column;overflow:hidden;transition:width .45s cubic-bezier(.2,.8,.2,1);font-family:var(--mono);font-size:.74rem}
+[data-tab=a3] .browser.dt .devtools{width:50%}
+.dt-tabs{display:flex;border-bottom:1px solid #e5e7eb;background:#f3f4f6;font-family:var(--sans);flex-shrink:0;white-space:nowrap}
+.dt-tab{padding:.3rem .6rem;border:0;background:transparent;color:#4b5563;cursor:pointer;border-bottom:2px solid transparent;font-size:.74rem}
+.dt-tab.on{color:#111;border-bottom-color:var(--blue);background:#fff}
+.dt-tab.off{opacity:.45;cursor:default}
+.dt-pane{display:none;flex:1;min-height:0;overflow:auto;padding:.3rem .2rem}
+.dt-pane.on{display:block}
+.dt-pane .code{font-size:.74rem;padding:.2rem .3rem}
+.el{display:block;white-space:nowrap;padding:.08rem .35rem;border-radius:.2rem;cursor:default;color:#111;line-height:1.55}
+.el .tg{color:#881280}.el .at{color:#994500}.el .av{color:#1a1aa6}
+.el.hov{background:#e8f0fe}
+.el.sel{background:#cfe8fc;outline:1px solid var(--blue)}
+.el .caret{display:inline-block;width:.8rem;color:#6b7280}
+.el.editing .tx{background:#fff;outline:1px solid var(--blue);padding:0 .1rem}
+.caret-blink::after{content:'';display:inline-block;width:1px;height:.9em;background:#111;vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.cursor{position:absolute;z-index:30;width:18px;height:24px;pointer-events:none;transition:transform .7s cubic-bezier(.2,.8,.2,1),opacity .2s;opacity:0;left:0;top:0}
+.cursor.in{opacity:1}
+.ctxmenu{position:absolute;z-index:29;background:#fff;border:1px solid #d1d5db;border-radius:.4rem;box-shadow:0 8px 24px rgb(0 0 0/.18);font-size:.76rem;padding:.25rem 0;min-width:9.5rem;display:none;font-family:var(--sans)}
+.ctxmenu.in{display:block}
+.ctxmenu div{padding:.18rem .8rem}
+.ctxmenu div.hi{background:var(--blue);color:#fff}
+.ctxmenu hr{border:0;border-top:1px solid #e5e7eb;margin:.2rem 0}
+.tip{position:absolute;z-index:28;background:#1f2937;color:#fff;font:.68rem var(--mono);padding:.14rem .4rem;border-radius:.25rem;display:none;pointer-events:none;white-space:nowrap}
+.tip.in{display:block}
+.tip b{color:#93c5fd;font-weight:600}
+.reload{width:1rem;height:1rem;color:#6b7280;flex-shrink:0}
+.reload.spin{animation:spin .8s linear 1}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pagewrap .page{transition:opacity .25s}
+.pagewrap.blank .page{opacity:0}
+.poof{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);background:#111;color:#fff;padding:.3rem .75rem;border-radius:999px;font-size:.8rem;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;z-index:9;font-family:var(--sans)}
+.poof.in{opacity:1}
+
+/* ---- tab a4 ---- */
+[data-tab=a4] .stage-body{display:grid;grid-template-columns:minmax(240px,44%) 1fr;gap:.8rem}
+[data-tab=a4] .left,[data-tab=a4] .right{display:flex;flex-direction:column;min-height:0;gap:.5rem}
+[data-tab=a4] .left .eyebrow{padding:.1rem .2rem}
+.net{border:1px solid #d1d5db;border-radius:.5rem;overflow:hidden;font:.72rem var(--mono);background:#fff;flex-shrink:0}
+.net-head,.net-row{display:grid;grid-template-columns:5.2rem 2.6rem 4.6rem 1fr;gap:.4rem;align-items:center;padding:.2rem .5rem}
+.net-head{background:#f3f4f6;color:#4b5563;border-bottom:1px solid #e5e7eb;font-family:var(--sans);font-weight:600;font-size:.7rem}
+.net-row{border-bottom:1px solid #f1f5f9;opacity:.4;transition:opacity .3s}
+.net-row.on{opacity:1}
+.net-row .st{color:#6b7280}
+.net-row.ok .st{color:#15803d;font-weight:700}
+.net-row.err .st{color:var(--red);font-weight:700}
+.net-row.err .name{color:var(--red);text-decoration:line-through}
+.wf{position:relative;height:.7rem;background:#f8fafc;border-radius:.2rem}
+.bar2{position:absolute;top:0;bottom:0;left:0;width:0;background:var(--blue);border-radius:.2rem}
+.net-row[data-res=index] .bar2{background:#6366f1}
+.net-row[data-res=css] .bar2{background:#8b5cf6}
+.net-row[data-res=png] .bar2{background:#10b981}
+.net-row[data-res=js] .bar2{background:#f59e0b}
+.net-row.err .bar2{background:var(--red)}
+.timeline{display:flex;justify-content:space-between;font:.64rem var(--mono);color:#9ca3af;padding:.1rem .5rem .2rem 13.6rem}
+.preview .pimg{opacity:0;transition:opacity .4s}
+.preview.img-loaded .pimg{opacity:1}
+.preview.js-loaded .jsbtn{display:inline-block;margin:.2rem 0 .6rem;padding:.3rem .7rem;border-radius:.4rem;border:1px solid #d1d5db;background:#fff;font:inherit;cursor:pointer}
+.preview.js-loaded.styled .jsbtn{background:var(--gold);border-color:var(--gold);font-weight:600}
+.mismatch{display:none;font-size:.76rem;line-height:1.5;color:var(--red);background:#fef2f2;border:1px solid #fecaca;border-radius:.4rem;padding:.25rem .55rem;flex-shrink:0}
+.mismatch.in{display:block}
+.mismatch code{background:#fff;padding:0 .25rem;border-radius:.2rem}
+.rpanel{position:relative;min-height:0;flex:1;height:100%}
+.rpanel>*{position:absolute;inset:0;opacity:0;transition:opacity .35s;pointer-events:none;overflow:auto}
+.rpanel>.on{opacity:1;pointer-events:auto}
+
+/* ---- tab a5 ---- */
+[data-tab=a5] .stage-body{display:flex;flex-direction:column;gap:.5rem}
+.urlbar{display:flex;align-items:center;gap:.5rem;background:#f3f4f6;border:1px solid #d1d5db;border-radius:.5rem;padding:.3rem .55rem;flex-shrink:0;margin-right:2.6rem}
+.urlbar .host{font:.84rem var(--mono);color:#374151;white-space:nowrap}
+.urlbar input{flex:1;min-width:4rem;font:.84rem var(--mono);padding:.22rem .5rem;border:1px solid #d1d5db;border-radius:.4rem;background:#fff}
+.status{font:700 .76rem var(--mono);padding:.1rem .5rem;border-radius:999px;background:#e5e7eb;color:#374151;min-width:3.4rem;text-align:center}
+.status.ok{background:#dcfce7;color:#15803d}.status.err{background:#fee2e2;color:var(--red)}
+.walkstrip{display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;font:.76rem var(--mono);min-height:1.7rem;color:#9ca3af;flex-shrink:0}
+.chip{padding:.1rem .5rem;border-radius:999px;background:#f1f5f9;border:1px solid #e2e8f0;color:#64748b;transition:background .25s,border-color .25s,color .25s}
+.chip.on{background:#fef3c7;border-color:var(--gold);color:#111}
+.chip.ok{background:#dcfce7;border-color:#86efac;color:#15803d}
+.chip.bad{background:#fee2e2;border-color:#fca5a5;color:var(--red)}
+.chip.def.on{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8}
+.two{flex:1;min-height:0;display:grid;grid-template-columns:minmax(200px,250px) 1fr;gap:.8rem;position:relative}
+.fwrap{min-height:0;overflow:auto;padding:.3rem .1rem}
+.ftree,.ftree ul{list-style:none;margin:0;padding:0}
+.ftree ul{padding-left:1rem;border-left:1px dashed #e2e8f0;margin-left:.6rem}
+.ftree li{margin:.12rem 0}
+.ftree .row{display:inline-flex;align-items:center;gap:.35rem;padding:.1rem .45rem;border-radius:.35rem;font:.82rem var(--mono);color:#1f2937;transition:background .25s,box-shadow .25s}
+.ftree .row.walk{background:#fef3c7;box-shadow:0 0 0 2px var(--gold)}
+.ftree .row.found{background:#dcfce7;box-shadow:0 0 0 2px #86efac}
+.ftree .row.fail{background:#fee2e2;box-shadow:0 0 0 2px #fca5a5}
+.ftree.build li{opacity:0;transform:translateX(-6px);transition:opacity .3s,transform .3s}
+.ftree.build li.in{opacity:1;transform:none}
+.ico{width:.85rem;height:.85rem;border-radius:.2rem;display:inline-block;flex-shrink:0}
+.ico.fold{background:var(--gold);clip-path:polygon(0 15%,40% 15%,52% 32%,100% 32%,100% 100%,0 100%)}
+.ico.html{background:#f97316}.ico.css{background:#3b82f6}.ico.img{background:#10b981}.ico.js{background:#eab308}
+.badge{font:700 .6rem var(--sans);letter-spacing:.04em;text-transform:uppercase;padding:0 .35rem;border-radius:.25rem;margin-left:.15rem}
+.badge.def{background:#dbeafe;color:#1d4ed8;display:none}
+.show-def .badge.def{display:inline}
+.badge.top{background:#fde68a;color:#78350f;display:none}
+.show-top .badge.top{display:inline}
+.ghost .row{color:var(--red);background:#fee2e2;box-shadow:0 0 0 2px #fca5a5;font-style:italic}
+.overlay{position:absolute;inset:0;pointer-events:none;z-index:5;width:100%;height:100%}
+.overlay path{fill:none;stroke:var(--orange);stroke-width:1.8}
+.filecard{border:1px solid #d1d5db;border-radius:.5rem;background:#fff;display:flex;flex-direction:column}
+.filecard .fill{flex:1;min-height:0;position:relative}
+.page404{padding:1.4rem 1.2rem;color:#374151;font-family:var(--sans)}
+.page404 b{display:block;font-size:2.6rem;line-height:1;color:#111}
+.page404 .t{display:block;font-size:1.05rem;font-weight:600;margin:.3rem 0 .4rem;color:#111}
+.page404 small{display:block;font-size:.8rem;max-width:30rem}
+.imgview{display:grid;place-items:center;height:100%;gap:.3rem}
+.imgview svg{width:120px;height:120px}
+.imgview span{font:.76rem var(--mono);color:var(--muted)}
+.empty{display:grid;place-items:center;height:100%;color:var(--muted);font-size:.95rem;text-align:center;padding:1rem}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="cat" viewBox="0 0 100 100">
+<path d="M16 46 L12 10 L42 30 Z" fill="#f59e0b"/><path d="M84 46 L88 10 L58 30 Z" fill="#f59e0b"/>
+<circle cx="50" cy="58" r="34" fill="#fbbf24"/>
+<circle cx="37" cy="53" r="4.2" fill="#1f2937"/><circle cx="63" cy="53" r="4.2" fill="#1f2937"/>
+<path d="M45 64 L55 64 L50 70 Z" fill="#ef4444"/>
+<path d="M50 70 Q44 78 38 74 M50 70 Q56 78 62 74" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/>
+<path d="M14 62 L36 66 M14 72 L36 69 M86 62 L64 66 M86 72 L64 69" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/>
+</symbol></defs></svg>
+
+<header class="page-head">
+  <div><h1>Website Anatomy</h1><p>One file. One tree. Then the tree points at more files.</p></div>
+  <div class="head-right"><a class="dl" href="downloads/demo/public/index.html" download="index.html" title="The one HTML file from this lesson">⬇ index.html</a><a class="dl" href="downloads/demo.zip" download="demo.zip" title="The whole site folder: index.html, about/, css/, img/, js/">⬇ demo.zip</a><div class="part">Websites · Part 1 of 3</div></div>
+</header>
+<nav class="tabs" role="tablist" id="tabs"></nav>
+<main class="lesson" id="lesson"></main>
+<script>
+(() => {
+'use strict';
+const NS='http://www.w3.org/2000/svg';
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* ---------- syntax highlight ---------- */
+function hl(line){
+  let s=esc(line);
+  s=s.replace(/(&lt;!doctype html&gt;)/i,'<span class="c">$1</span>');
+  return s.replace(/(&lt;\/?)([a-zA-Z][a-zA-Z0-9-]*)([\s\S]*?)(\/?&gt;)/g,(m,lt,tag,rest,gt)=>{
+    const attrs=rest.replace(/([a-zA-Z-]+)=(&quot;.*?&quot;)/g,'<span class="a">$1</span>=<span class="s">$2</span>');
+    return `<span class="t">${lt}${tag}</span>${attrs}<span class="t">${gt}</span>`;
+  });
+}
+const SRC=[
+  '<!doctype html>',
+  '<html>',
+  '  <head>',
+  "    <title>Maya's Cat Page</title>",
+  '    <link rel="stylesheet" href="css/style.css">',
+  '  </head>',
+  '  <body>',
+  '    <h1>Mochi the Cat</h1>',
+  '    <p>Mochi is <strong>very</strong> fluffy.</p>',
+  '    <img src="img/mochi.png" alt="Mochi">',
+  '    <a href="about/">About me</a>',
+  '    <script src="js/app.js"><\/script>',
+  '  </body>',
+  '</html>'];
+const codeHTML=lines=>lines.map((l,i)=>`<span class="ln" data-line="${i}">${hl(l)}</span>`).join('');
+const setLine=(codeEl,i,text)=>{ const ln=codeEl.querySelector(`.ln[data-line="${i}"]`); if(ln) ln.innerHTML=hl(text); };
+const clearHl=codeEl=>codeEl&&$$('.ln',codeEl).forEach(l=>l.classList.remove('hl','cur','flash'));
+function flashLines(codeEl,idx){ idx.forEach(i=>{ const ln=codeEl.querySelector(`.ln[data-line="${i}"]`); if(!ln) return; ln.classList.add('flash'); setTimeout(()=>ln.classList.remove('flash'),900); }); }
+
+const pageHTML=(p,extra='')=>`<div class="page ${extra}" id="${p}-page">
+  <h1 class="ael block" data-node="h1"><span class="h1txt">Mochi the Cat</span></h1>
+  <p class="ael block" data-node="p"><span class="ptxt">Mochi is </span><strong class="ael" data-node="strong">very</strong> fluffy.</p>
+  <span class="ael" data-node="img"><svg class="pimg"><use href="#cat"/></svg></span>
+  <a class="ael" data-node="a" href="#" onclick="return false">About me</a>
+  <button class="jsbtn" type="button">Pet Mochi</button>
+</div>`;
+
+/* ---------- sequencer ---------- */
+function makeSeq(){
+  let token=0, timers=[];
+  const cancel=()=>{ token++; timers.forEach(clearTimeout); timers=[]; };
+  return {
+    cancel,
+    run(list){ cancel(); const my=token; let t=0; list.forEach(([d,fn])=>{ t+=d; timers.push(setTimeout(()=>{ if(my===token) fn(); },t)); }); },
+    loop(ms,fn){ cancel(); const my=token; const tick=()=>{ if(my!==token) return; fn(); timers.push(setTimeout(tick,ms)); }; timers.push(setTimeout(tick,0)); }
+  };
+}
+function tween(ms,onFrame,onDone){ const t0=performance.now(); const f=now=>{ const k=Math.min(1,(now-t0)/ms); const e=k<.5?2*k*k:-1+(4-2*k)*k; onFrame(e); if(k<1) requestAnimationFrame(f); else onDone&&onDone(); }; requestAnimationFrame(f); }
+
+/* ---------- document trees ---------- */
+const docTree=()=>({id:'html',tag:'html',kids:[
+  {id:'head',tag:'head',kids:[
+    {id:'title',tag:'title',text:'Maya’s Cat Page'},
+    {id:'link',tag:'link',text:'stylesheet',ptr:'css/style.css'}]},
+  {id:'body',tag:'body',kids:[
+    {id:'h1',tag:'h1',text:'Mochi the Cat'},
+    {id:'p',tag:'p',text:'Mochi is … fluffy.',kids:[{id:'strong',tag:'strong',text:'very'}]},
+    {id:'img',tag:'img',text:'Mochi',ptr:'img/mochi.png'},
+    {id:'a',tag:'a',text:'About me',ptr:'about/'},
+    {id:'script',tag:'script',text:'',ptr:'js/app.js'}]}]});
+const repairedTree=()=>({id:'html',tag:'html',kids:[
+  {id:'head',tag:'head',kids:[
+    {id:'title',tag:'title',text:'Maya’s Cat Page'},
+    {id:'link',tag:'link',text:'stylesheet',ptr:'css/style.css'}]},
+  {id:'body',tag:'body',kids:[
+    {id:'h1',tag:'h1',text:'Mochi the Cat'},
+    {id:'p',tag:'p',text:'Mochi is … fluffy.',kids:[
+      {id:'strong',tag:'strong',text:'very'},
+      {id:'img',tag:'img',text:'Mochi',ptr:'img/mochi.png'},
+      {id:'a',tag:'a',text:'About me',ptr:'about/'},
+      {id:'script',tag:'script',text:'',ptr:'js/app.js'}]}]}]});
+const aboutTree=()=>({id:'html',tag:'html',kids:[
+  {id:'head',tag:'head',kids:[{id:'title',tag:'title',text:'About Maya'}]},
+  {id:'body',tag:'body',kids:[
+    {id:'h1',tag:'h1',text:'About Maya'},
+    {id:'p',tag:'p',text:'I like cats more…'},
+    {id:'a',tag:'a',text:'← Back',ptr:'../'}]}]});
+
+/* ---------- SVG tree view ---------- */
+class TreeView{
+  constructor(svg,opts={}){
+    this.svg=svg; this.opts=Object.assign({dir:'down',nodeW:84,nodeH:34,pad:10,subMode:'text',onHover:null},opts);
+    this.nodes=new Map(); this.tree=null;
+    svg.innerHTML='<g class="edges"></g><g class="nodes"></g>';
+    this.gEdges=svg.querySelector('.edges'); this.gNodes=svg.querySelector('.nodes');
+    new ResizeObserver(()=>this.relayout(false)).observe(svg);
+  }
+  setTree(tree,animate){
+    this.tree=tree; const seen=new Set();
+    const walk=(n,parent)=>{ seen.add(n.id); let rec=this.nodes.get(n.id); if(!rec){ rec=this.makeNode(n); this.nodes.set(n.id,rec); } rec.data=n; rec.parent=parent; this.setLabels(rec); (n.kids||[]).forEach(k=>walk(k,n)); };
+    walk(tree,null);
+    for(const [id,rec] of this.nodes){ if(!seen.has(id)){ rec.g.remove(); rec.edge.remove(); this.nodes.delete(id); } }
+    this.relayout(animate);
+  }
+  makeNode(n){
+    const g=document.createElementNS(NS,'g'); g.classList.add('node'); g.dataset.id=n.id;
+    const rect=document.createElementNS(NS,'rect'); rect.classList.add('box');
+    const lab=document.createElementNS(NS,'text'); lab.classList.add('lab');
+    const sub=document.createElementNS(NS,'text'); sub.classList.add('sub');
+    g.append(rect,lab,sub); this.gNodes.appendChild(g);
+    const edge=document.createElementNS(NS,'path'); edge.classList.add('edge'); edge.dataset.id=n.id; this.gEdges.appendChild(edge);
+    g.addEventListener('mouseenter',()=>this.opts.onHover&&this.opts.onHover(n.id));
+    g.addEventListener('mouseleave',()=>this.opts.onHover&&this.opts.onHover(null));
+    return {g,edge,rect,lab,sub,pos:null};
+  }
+  setLabels(rec){
+    const n=rec.data; rec.g.classList.toggle('ptr',!!n.ptr);
+    rec.lab.textContent=`<${n.tag}>`;
+    rec.subFull=this.opts.subMode==='ptr'?(n.ptr||n.text||''):(n.text||'');
+    rec.sub.textContent=rec.subFull;
+  }
+  computeLayout(){
+    const r=this.svg.getBoundingClientRect(); const w=r.width||600, h=r.height||400; const {dir,pad}=this.opts;
+    const pos=new Map(); let leafI=0, maxD=0;
+    const walk=(n,d)=>{ maxD=Math.max(maxD,d); let lx; if(!n.kids||!n.kids.length){ lx=leafI++; } else { const xs=n.kids.map(k=>walk(k,d+1)); lx=(xs[0]+xs[xs.length-1])/2; } pos.set(n.id,{d,lx}); return lx; };
+    walk(this.tree,0);
+    const leaves=Math.max(1,leafI), depth=maxD+1, out=new Map();
+    if(dir==='down'){ const slot=(w-2*pad)/leaves, row=(h-2*pad)/depth; const nw=Math.max(40,Math.min(this.opts.nodeW,slot-6)); const nh=Math.min(this.opts.nodeH,row-14);
+      for(const [id,p] of pos) out.set(id,{x:pad+(p.lx+.5)*slot,y:pad+(p.d+.5)*row,nw,nh}); }
+    else { const slot=(h-2*pad)/leaves, col=(w-2*pad)/depth; const nw=Math.max(40,Math.min(this.opts.nodeW,col-16)); const nh=Math.max(22,Math.min(this.opts.nodeH,slot-4));
+      for(const [id,p] of pos) out.set(id,{x:pad+(p.d+.5)*col,y:pad+(p.lx+.5)*slot,nw,nh}); }
+    return out;
+  }
+  relayout(animate){
+    if(!this.tree) return; const target=this.computeLayout(); const from=new Map();
+    for(const [id,rec] of this.nodes) from.set(id,rec.pos||target.get(id));
+    const apply=k=>{ for(const [id,rec] of this.nodes){ const a=from.get(id),b=target.get(id); if(!b) continue; const p={x:a.x+(b.x-a.x)*k,y:a.y+(b.y-a.y)*k,nw:b.nw,nh:b.nh}; rec.pos=p; this.place(rec,p); } for(const rec of this.nodes.values()) this.drawEdge(rec); };
+    if(animate) tween(480,apply); else apply(1);
+  }
+  place(rec,p){
+    rec.g.setAttribute('transform',`translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`);
+    rec.rect.setAttribute('x',-p.nw/2); rec.rect.setAttribute('y',-p.nh/2); rec.rect.setAttribute('width',p.nw); rec.rect.setAttribute('height',p.nh);
+    const maxCh=Math.max(4,Math.floor((p.nw-6)/5.3)); const full=rec.subFull||'';
+    rec.sub.textContent=full.length>maxCh?full.slice(0,maxCh-1)+'…':full;
+    const hasSub=!!full && p.nh>=28;
+    rec.sub.style.display=hasSub?'':'none';
+    rec.lab.setAttribute('y',hasSub?-5:1); rec.sub.setAttribute('y',8);
+  }
+  drawEdge(rec){
+    if(!rec.parent){ rec.edge.setAttribute('d',''); return; }
+    const P=this.nodes.get(rec.parent.id).pos, C=rec.pos; if(!P||!C) return;
+    let d;
+    if(this.opts.dir==='down'){ const y1=P.y+P.nh/2, y2=C.y-C.nh/2, my=(y1+y2)/2; d=`M${P.x} ${y1} C${P.x} ${my} ${C.x} ${my} ${C.x} ${y2}`; }
+    else { const x1=P.x+P.nw/2, x2=C.x-C.nw/2, mx=(x1+x2)/2; d=`M${x1} ${P.y} C${mx} ${P.y} ${mx} ${C.y} ${x2} ${C.y}`; }
+    rec.edge.setAttribute('d',d);
+  }
+  cls(id,c,on){ const r=this.nodes.get(id); if(r){ r.g.classList.toggle(c,on); r.edge.classList.toggle(c,on); } }
+  clsAll(c,on){ for(const id of this.nodes.keys()) this.cls(id,c,on); }
+  ancestors(id){ const out=[]; let r=this.nodes.get(id); while(r){ out.unshift(r.data.id); r=r.parent?this.nodes.get(r.parent.id):null; } return out; }
+}
+
+/* ---------- site folder + URL resolution ---------- */
+const FILES=new Set(['index.html','about/index.html','css/style.css','img/mochi.png','js/app.js']);
+const DIRS=new Set(['','about/','css/','img/','js/']);
+function resolvePath(input){
+  const p=(input||'').trim().replace(/^\/+/,''); const steps=[]; let cur='';
+  if(p==='') return {steps,file:'index.html',defaulted:true};
+  const segs=p.split('/');
+  for(let i=0;i<segs.length;i++){
+    const s=segs[i], last=i===segs.length-1;
+    if(s===''){ const f=cur+'index.html'; return FILES.has(f)?{steps,file:f,defaulted:true}:{steps,file:null}; }
+    const asDir=cur+s+'/', asFile=cur+s;
+    if(DIRS.has(asDir)&&(!last||!FILES.has(asFile))){ steps.push({seg:s,path:asDir,ok:true,parent:cur}); cur=asDir; if(last){ const f=asDir+'index.html'; return FILES.has(f)?{steps,file:f,defaulted:true,clean:true}:{steps,file:null}; } continue; }
+    if(last&&FILES.has(asFile)){ steps.push({seg:s,path:asFile,ok:true,parent:cur}); return {steps,file:asFile,defaulted:false}; }
+    steps.push({seg:s,path:asFile,ok:false,parent:cur}); return {steps,file:null};
+  }
+  return {steps,file:null};
+}
+const frow=(path,ico,name,badge='')=>`<span class="row"><span class="ico ${ico}"></span>${name}${badge}</span>`;
+function ftreeHTML(){
+  return `<ul class="ftree">
+  <li class="dir" data-path="">${frow('', 'fold','public/')}
+    <ul>
+      <li class="file" data-path="index.html">${frow('','html','index.html','<span class="badge top">top file</span><span class="badge def">default</span>')}</li>
+      <li class="dir" data-path="about/">${frow('','fold','about/')}<ul>
+        <li class="file" data-path="about/index.html">${frow('','html','index.html','<span class="badge def">default</span>')}</li></ul></li>
+      <li class="dir" data-path="css/">${frow('','fold','css/')}<ul>
+        <li class="file" data-path="css/style.css">${frow('','css','style.css')}</li></ul></li>
+      <li class="dir" data-path="img/">${frow('','fold','img/')}<ul>
+        <li class="file" data-path="img/mochi.png">${frow('','img','mochi.png')}</li></ul></li>
+      <li class="dir" data-path="js/">${frow('','fold','js/')}<ul>
+        <li class="file" data-path="js/app.js">${frow('','js','app.js')}</li></ul></li>
+    </ul></li></ul>`;
+}
+const CSS_SAMPLE=['h1   { color: #DA0016; }','body { font-family: "Source Sans 3", sans-serif;','       background: #fffaf0; }','a    { color: #DA0016; font-weight: 600; }'];
+const JS_SAMPLE=["const btn = document.createElement('button');","btn.textContent = 'Pet Mochi';","btn.onclick = () => alert('purr');","document.body.append(btn);"];
+const plainCode=lines=>lines.map(l=>`<span class="ln">${esc(l)}</span>`).join('');
+
+const TABS=[];
+/* ================= TAB 1: one file, two views ================= */
+function a1Reset(ctx){
+  ctx.q('#a1-browser').classList.add('dim'); ctx.q('#a1-url').textContent='New Tab';
+  ctx.qa('#a1-pagewrap .ael').forEach(e=>e.classList.remove('in','hl'));
+  ctx.q('#a1-friend').classList.remove('in');
+  const fl=ctx.q('#a1-flyer'); fl.classList.remove('go'); fl.style.transition='none'; fl.style.transform='none';
+  clearHl(ctx.q('#a1-code'));
+}
+function a1Shown(ctx){
+  ctx.q('#a1-browser').classList.remove('dim'); ctx.q('#a1-url').textContent='file:///Users/maya/site/index.html';
+  ctx.qa('#a1-pagewrap .ael').forEach(e=>e.classList.add('in'));
+}
+TABS.push({
+  id:'a1', label:'One file, two views', title:'One file, two views',
+  stage(){ return `
+    <div class="win editor" id="a1-editor">
+      <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="wtitle">index.html: Cursor</span></div>
+      <div class="wbody"><div class="code" id="a1-code">${codeHTML(SRC)}</div></div>
+    </div>
+    <div class="win browser dim" id="a1-browser">
+      <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="url" id="a1-url">New Tab</span></div>
+      <div class="wbody reveal" id="a1-pagewrap">${pageHTML('a1')}</div>
+    </div>
+    <div class="win friend" id="a1-friend">
+      <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="url">file:///Users/maya/site/index.html</span></div>
+      <div class="wbody"><div class="errpage"><span class="face">🙁</span><b>Your file couldn’t be accessed</b>It may have been moved, edited, or deleted.<code>ERR_FILE_NOT_FOUND</code><span class="who">Sam’s laptop</span></div></div>
+    </div>
+    <div class="flyer" id="a1-flyer">📄 index.html</div>`; },
+  toolbar(){ return `<span class="act" data-steps="0,1"><a class="btn" href="downloads/demo/public/index.html" download="index.html">⬇ Download index.html and double-click it yourself</a></span><span class="act" data-steps="1"><button class="btn" id="a1-again">Open it again</button></span>
+    <span class="act" data-steps="2"><label class="rename">Rename the cat<input id="a1-name" value="Mochi" maxlength="12" spellcheck="false"></label></span>
+    <span class="act" data-steps="2">Watch both sides change.</span>`; },
+  init(ctx){
+    const inp=ctx.q('#a1-name');
+    inp.addEventListener('input',()=>{ const n=(inp.value.trim()||'Mochi');
+      ctx.q('#a1-page .h1txt').textContent=`${n} the Cat`; ctx.q('#a1-page .ptxt').textContent=`${n} is `;
+      setLine(ctx.q('#a1-code'),7,`    <h1>${n} the Cat</h1>`); setLine(ctx.q('#a1-code'),8,`    <p>${n} is <strong>very</strong> fluffy.</p>`);
+      flashLines(ctx.q('#a1-code'),[7,8]); });
+    ctx.q('#a1-again').addEventListener('click',replay);
+  },
+  steps:[
+    { eli5:'A web page starts life as one text file. You could write it in Notes. It is letters, not magic, and the letters are called HTML.',
+      tech:['An HTML file is plain text, usually UTF-8, saved with a <code>.html</code> extension.','There is no compile or build step for a basic page. Save it, open it.','HTML stands for HyperText Markup Language. Markup means tags mixed into the text.','Any editor works: Cursor, VS Code, TextEdit in plain-text mode, even Notes.'],
+      enter(ctx){ a1Reset(ctx); } },
+    { eli5:'Double-click the file and the browser opens it. The browser is a reading machine. It reads the same letters and draws a picture of them.', dur:7500,
+      tech:['The address starts with <code>file://</code> because the browser read the file straight off your disk.','The rendering engine (Blink in Chrome, WebKit in Safari, Gecko in Firefox) parses the text, builds a tree, lays out boxes and paints pixels.','No network was involved. Nothing left your computer.','The browser never changes the file. It only reads it.'],
+      enter(ctx){ a1Reset(ctx);
+        const fl=ctx.q('#a1-flyer'), base=ctx.root.getBoundingClientRect(), a=ctx.q('#a1-editor .wtitle').getBoundingClientRect(), b=ctx.q('#a1-url').getBoundingClientRect();
+        fl.style.left=(a.left-base.left)+'px'; fl.style.top=(a.top-base.top-3)+'px';
+        ctx.seq.run([
+          [250,()=>fl.classList.add('go')],
+          [60,()=>{ fl.style.transition=''; fl.style.transform=`translate(${b.left-a.left}px,${b.top-a.top}px)`; }],
+          [980,()=>{ fl.classList.remove('go'); ctx.q('#a1-browser').classList.remove('dim'); ctx.q('#a1-url').textContent='file:///Users/maya/site/index.html'; }],
+          [380,()=>ctx.q('#a1-page [data-node=h1]').classList.add('in')],
+          [320,()=>{ ctx.q('#a1-page [data-node=p]').classList.add('in'); ctx.q('#a1-page [data-node=strong]').classList.add('in'); }],
+          [320,()=>ctx.q('#a1-page [data-node=img]').classList.add('in')],
+          [320,()=>ctx.q('#a1-page [data-node=a]').classList.add('in')]
+        ]); } },
+    { eli5:'Same file, two costumes. Letters on the left, picture on the right. Change the letters, save, and the picture changes to match. Try renaming the cat below.', dur:9000,
+      tech:['Edit, save, reload is the basic loop of web development.','Each visible thing on the page comes from one place in the text. The sweep shows which line draws which part.','Put <code>view-source:</code> in front of any URL to see exactly the text the browser received.','Cmd+S to save, Cmd+R to reload. Cursor can also preview the page for you.'],
+      enter(ctx){ a1Reset(ctx); a1Shown(ctx); const pairs=[[7,'h1'],[8,'p'],[9,'img'],[10,'a']]; let i=0;
+        ctx.seq.loop(1200,()=>{ const [ln,id]=pairs[i++%pairs.length]; clearHl(ctx.q('#a1-code')); ctx.qa('#a1-page .ael').forEach(e=>e.classList.remove('hl'));
+          ctx.q(`#a1-code .ln[data-line="${ln}"]`).classList.add('hl'); ctx.q(`#a1-page [data-node=${id}]`).classList.add('hl'); }); } },
+    { eli5:'Send that address to a friend and it fails. file:// means look on THIS computer. Their computer has no such file. It is a page, but it is not a website yet.',
+      tech:['A <code>file://</code> URL has no host part, only a path on the local disk.','Nobody else can reach your disk, and that is a good thing.','To make it a website, a copy of the file has to live on a computer that answers requests from anyone. That is hosting, the next widget.','Chrome reports a missing local file as <code>ERR_FILE_NOT_FOUND</code>.'],
+      enter(ctx){ a1Reset(ctx); a1Shown(ctx); ctx.seq.run([[350,()=>ctx.q('#a1-friend').classList.add('in')]]); } }
+  ]
+});
+
+/* ================= TAB 2: the file is a tree ================= */
+const BUILD=[[1,'html'],[2,'head'],[3,'title'],[4,'link'],[6,'body'],[7,'h1'],[8,'p'],[8,'strong'],[9,'img'],[10,'a'],[11,'script']];
+const BOXES=[[1,13,0],[2,5,1],[6,12,1],[3,3,2],[4,4,2],[7,7,2],[8,8,2],[9,9,2],[10,10,2],[11,11,2]];
+const DEPTHC=['#DA0016','#FA7300','#539ADC','#9CCA00'];
+function a2Crumb(ctx,ids,note){ ctx.q('#a2-crumb').innerHTML=(ids.length?ids.map(i=>`<b>${i}</b>`).join('<span class="sep">›</span>'):'<span class="eyebrow">Document tree</span>')+(note?`<span class="note">${note}</span>`:''); }
+function a2Note(ctx,text,ms){ const n=ctx.q('#a2-note'); n.textContent=text; n.classList.add('in'); clearTimeout(n._t); if(ms) n._t=setTimeout(()=>n.classList.remove('in'),ms); }
+function a2Path(ctx,id){ const tree=ctx.state.tree; tree.clsAll('hl',false); if(!id) return; const anc=tree.ancestors(id); anc.forEach(a=>tree.cls(a,'hl',true)); a2Crumb(ctx,anc,`depth ${anc.length-1}`); }
+function a2Squash(ctx,on){ ctx.state.squashed=on; ctx.q('#a2-code').hidden=on; ctx.q('#a2-squash').hidden=!on; ctx.q('#a2-nests').hidden=on;
+  ctx.q('#a2-squashbtn').textContent=on?'Pretty print it again':'Squash the whitespace'; if(on) a2Note(ctx,'Same tree. The whitespace changed nothing.',2800); }
+function a2Break(ctx,on,instant){ const tree=ctx.state.tree; ctx.state.broken=on;
+  setLine(ctx.q('#a2-code'),8,on?'    <p>Mochi is <strong>very</strong> fluffy.':'    <p>Mochi is <strong>very</strong> fluffy.</p>');
+  if(!instant) flashLines(ctx.q('#a2-code'),[8]);
+  tree.setTree(on?repairedTree():docTree(),!instant); ['img','a','script'].forEach(id=>tree.cls(id,'moved',on));
+  ctx.q('#a2-pbtn').innerHTML=on?'Put &lt;/p&gt; back':'Delete &lt;/p&gt; again';
+  if(instant) return;
+  if(on){ a2Note(ctx,'The browser closed <p> for you, at </body>.'); a2Crumb(ctx,['html','body','p','img'],'img is now inside p'); }
+  else { ctx.q('#a2-note').classList.remove('in'); a2Crumb(ctx,[],''); } }
+function a2Nests(ctx){ const wrap=ctx.q('#a2-nests'); wrap.innerHTML=''; const lines=ctx.qa('#a2-code .ln');
+  BOXES.forEach(([s,e,d],i)=>{ const a=lines[s], b=lines[e]; const top=a.offsetTop-2, bottom=b.offsetTop+b.offsetHeight+2;
+    const el=document.createElement('div'); el.className='nest'; el.style.cssText=`top:${top}px;height:${bottom-top}px;left:${3+d*8}px;right:${3+d*8}px;border-color:${DEPTHC[d]}`;
+    wrap.appendChild(el); setTimeout(()=>el.classList.add('in'),200+d*450+i*40); }); }
+function a2Reset(ctx){ const tree=ctx.state.tree; a2Squash(ctx,false); a2Break(ctx,false,true); tree.clsAll('hl',false); tree.clsAll('moved',false); tree.clsAll('shown',true);
+  ctx.q('#a2-nests').innerHTML=''; clearHl(ctx.q('#a2-code')); ctx.q('#a2-note').classList.remove('in'); a2Crumb(ctx,[],''); }
+TABS.push({
+  id:'a2', label:'The file is a tree', title:'The file is a tree',
+  stage(){ return `
+    <div class="win editor">
+      <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="wtitle">index.html</span></div>
+      <div class="wbody"><div class="code" id="a2-code">${codeHTML(SRC)}</div><div class="code squash" id="a2-squash" hidden>${hl(SRC.map(l=>l.trim()).join(''))}</div><div class="nests" id="a2-nests"></div></div>
+    </div>
+    <div class="treewrap">
+      <div class="crumb" id="a2-crumb"><span class="eyebrow">Document tree</span></div>
+      <div class="treebox"><svg class="tree" id="a2-tree"></svg><div class="tag-note" id="a2-note"></div></div>
+    </div>`; },
+  toolbar(){ return `<span class="act" data-steps="1"><button class="btn" id="a2-rebuild">Build it again</button></span>
+    <span class="act" data-steps="3"><button class="btn" id="a2-squashbtn">Squash the whitespace</button></span>
+    <span class="act" data-steps="4"><button class="btn" id="a2-pbtn">Put &lt;/p&gt; back</button></span>
+    <span class="act" data-steps="0,2,3,4">Hover any box in the tree to see its path.</span>`; },
+  init(ctx){
+    const tree=new TreeView(ctx.q('#a2-tree'),{dir:'down',subMode:'text',onHover:id=>{ ctx.state.hovering=!!id; a2Path(ctx,id); }});
+    ctx.state.tree=tree; tree.setTree(docTree(),false);
+    ctx.q('#a2-rebuild').addEventListener('click',replay);
+    ctx.q('#a2-squashbtn').addEventListener('click',()=>a2Squash(ctx,!ctx.state.squashed));
+    ctx.q('#a2-pbtn').addEventListener('click',()=>a2Break(ctx,!ctx.state.broken));
+  },
+  steps:[
+    { eli5:'Every tag opens a box and its closing tag shuts it. Boxes sit inside bigger boxes. The biggest box of all is html.',
+      tech:['<code>&lt;p&gt;</code> opens an element, <code>&lt;/p&gt;</code> closes it. Everything between is its content.','Some tags are void: <code>&lt;img&gt;</code>, <code>&lt;link&gt;</code>, <code>&lt;br&gt;</code> have no closing tag and no content.','Attributes like <code>src="..."</code> live inside the opening tag.','<code>&lt;!doctype html&gt;</code> is not a box. It tells the browser which rulebook to use.'],
+      enter(ctx){ a2Reset(ctx); a2Crumb(ctx,[],'10 boxes, nested'); requestAnimationFrame(()=>a2Nests(ctx)); } },
+    { eli5:'Read the file top to bottom. Each new tag hangs under whichever box is still open. Do that for every tag and you get a tree, with html at the top.', dur:8000,
+      tech:['The parser keeps a stack of open elements. An opening tag pushes, a closing tag pops.','A new element’s parent is whatever is on top of the stack at that moment.','The result is the DOM, the Document Object Model. “Document tree” is the same idea.','Text is also a node, a leaf under its element. DevTools shows it; this diagram folds it into the box.'],
+      enter(ctx){ a2Reset(ctx); const tree=ctx.state.tree; tree.clsAll('shown',false); const list=[];
+        BUILD.forEach(([ln,id],i)=>list.push([i?430:400,()=>{ ctx.qa('#a2-code .ln').forEach(l=>l.classList.remove('cur')); ctx.q(`#a2-code .ln[data-line="${ln}"]`).classList.add('cur'); tree.cls(id,'shown',true); a2Crumb(ctx,tree.ancestors(id),'open boxes'); }]));
+        list.push([700,()=>{ ctx.qa('#a2-code .ln').forEach(l=>l.classList.remove('cur')); a2Crumb(ctx,['html'],'11 elements, one tree'); }]);
+        ctx.seq.run(list); } },
+    { eli5:'Every box has exactly one box around it, except html, which is the top. Point at any box and follow the line up. You always arrive at html.', dur:8000,
+      tech:['Vocabulary: parent, child, sibling, ancestor, descendant, root, leaf.','Depth is the number of steps to the root. strong sits at depth 3: html, body, p, strong.','A path like <code>html &gt; body &gt; p &gt; strong</code> is exactly what a CSS selector describes. That is how CSS finds things.','A folder tree has the same shape: one parent folder per file. Part 5 uses that.'],
+      enter(ctx){ a2Reset(ctx); const demo=['strong','link','a','img','title']; let i=0; ctx.seq.loop(1400,()=>{ if(ctx.state.hovering) return; a2Path(ctx,demo[i++%demo.length]); }); } },
+    { eli5:'Spaces and new lines are for humans. The browser only counts the tags. Squash the whole file onto one line and the tree does not change.',
+      tech:['HTML collapses runs of whitespace into a single space when it renders text.','Indentation is a courtesy to the next person who reads the file, including you.','Minifiers strip whitespace to make files smaller. The tree is identical.','The shape of the tree depends only on which tags are open when each new tag appears.'],
+      enter(ctx){ a2Reset(ctx); ctx.seq.run([[600,()=>a2Squash(ctx,true)]]); } },
+    { eli5:'Forget to close a box and the browser guesses. Delete </p> and it guesses that the picture, the link and the script are inside the paragraph. The picture did not move. Your tree did.', dur:8000,
+      tech:['HTML parsing is error tolerant by design. The browser never shows an error for bad nesting.','A <code>&lt;p&gt;</code> is auto-closed by block tags like <code>&lt;div&gt;</code> or <code>&lt;h1&gt;</code>, but not by inline tags like <code>&lt;img&gt;</code> or <code>&lt;a&gt;</code>. So they become its children.','The missing <code>&lt;/p&gt;</code> is implied when <code>&lt;/body&gt;</code> arrives.','This is why the Elements panel can show a tree that differs from your file. validator.w3.org catches it.'],
+      enter(ctx){ a2Reset(ctx); ctx.seq.run([[700,()=>a2Break(ctx,true)]]); } }
+  ]
+});
+/* ================= TAB 3: see the tree ================= */
+const EL=[
+  {id:'doctype',d:0,h:'<span class="c">&lt;!doctype html&gt;</span>'},
+  {id:'html',d:0,h:'<span class="tg">&lt;html&gt;</span>'},
+  {id:'head',d:1,h:'<span class="caret">▸</span><span class="tg">&lt;head&gt;</span>…<span class="tg">&lt;/head&gt;</span>'},
+  {id:'body',d:1,h:'<span class="tg">&lt;body&gt;</span>'},
+  {id:'h1',d:2,h:'<span class="tg">&lt;h1&gt;</span><span class="tx" data-tx="h1">Mochi the Cat</span><span class="tg">&lt;/h1&gt;</span>'},
+  {id:'p',d:2,h:'<span class="tg">&lt;p&gt;</span>Mochi is <span class="tg">&lt;strong&gt;</span>very<span class="tg">&lt;/strong&gt;</span> fluffy.<span class="tg">&lt;/p&gt;</span>'},
+  {id:'img',d:2,h:'<span class="tg">&lt;img</span> <span class="at">src</span>=<span class="av">"img/mochi.png"</span> <span class="at">alt</span>=<span class="av">"Mochi"</span><span class="tg">&gt;</span>'},
+  {id:'a',d:2,h:'<span class="tg">&lt;a</span> <span class="at">href</span>=<span class="av">"about/"</span><span class="tg">&gt;</span>About me<span class="tg">&lt;/a&gt;</span>'},
+  {id:'script',d:2,h:'<span class="tg">&lt;script</span> <span class="at">src</span>=<span class="av">"js/app.js"</span><span class="tg">&gt;&lt;/script&gt;</span>'},
+  {id:'body-end',d:1,h:'<span class="tg">&lt;/body&gt;</span>'},
+  {id:'html-end',d:0,h:'<span class="tg">&lt;/html&gt;</span>'}];
+const PAGE_NODES=['h1','p','img','a'];
+const elementsHTML=()=>EL.map(e=>`<span class="el" data-node="${e.id}" style="padding-left:${.35+e.d*1.1}rem">${e.h}</span>`).join('');
+function rectIn(el,base){ const a=el.getBoundingClientRect(), b=base.getBoundingClientRect(); return {x:a.left-b.left,y:a.top-b.top,w:a.width,h:a.height}; }
+function a3Hover(ctx,id,select){
+  ctx.qa('#a3-el .el').forEach(l=>l.classList.remove('hov')); if(select) ctx.qa('#a3-el .el').forEach(l=>l.classList.remove('sel'));
+  ctx.qa('#a3-page .ael').forEach(e=>e.classList.remove('hl')); const tip=ctx.q('#a3-tip'); tip.classList.remove('in');
+  if(!id) return;
+  const line=ctx.q(`#a3-el .el[data-node="${id}"]`); if(line) line.classList.add(select?'sel':'hov');
+  if(!PAGE_NODES.includes(id)) return;
+  const el=ctx.q(`#a3-page [data-node="${id}"]`); el.classList.add('hl');
+  const r=rectIn(el,ctx.q('#a3-pagewrap')); tip.innerHTML=`<b>${id}</b> ${Math.round(r.w)} × ${Math.round(r.h)}`;
+  tip.style.left=r.x+'px'; tip.style.top=(r.y>24?r.y-22:r.y+r.h+4)+'px'; tip.classList.add('in');
+}
+function a3Pane(ctx,name){ ctx.qa('#a3-dt .dt-tab[data-pane]').forEach(t=>t.classList.toggle('on',t.dataset.pane===name)); ctx.qa('#a3-dt .dt-pane').forEach(p=>p.classList.toggle('on',p.dataset.pane===name)); }
+function a3SetText(ctx,text){ ctx.q('#a3-el .tx[data-tx=h1]').textContent=text; ctx.q('#a3-page .h1txt').textContent=text; }
+function a3Reset(ctx,open){
+  ctx.q('#a3-cursor').classList.remove('in'); ctx.q('#a3-ctx').classList.remove('in'); ctx.q('#a3-poof').classList.remove('in'); ctx.q('#a3-pagewrap').classList.remove('blank');
+  ctx.qa('#a3-el .el').forEach(l=>l.classList.remove('hov','sel','editing')); ctx.q('#a3-el .tx[data-tx=h1]').classList.remove('caret-blink');
+  ctx.qa('#a3-page .ael').forEach(e=>e.classList.remove('hl')); ctx.q('#a3-tip').classList.remove('in'); clearHl(ctx.q('#a3-src'));
+  ctx.q('#a3-browser').classList.toggle('dt',!!open); a3Pane(ctx,'el'); a3SetText(ctx,'Mochi the Cat'); ctx.state.edited=false; ctx.state.hovering=false;
+}
+function a3Type(ctx,text){
+  const tx=ctx.q('#a3-el .tx[data-tx=h1]'), ph=ctx.q('#a3-page .h1txt'), line=ctx.q('#a3-el .el[data-node=h1]');
+  const list=[[300,()=>{ a3Hover(ctx,'h1',true); line.classList.add('editing'); tx.classList.add('caret-blink'); }],[500,()=>{ tx.textContent=''; ph.textContent=''; }]];
+  [...text].forEach((ch,i)=>list.push([i?75:300,()=>{ tx.textContent+=ch; ph.textContent+=ch; }]));
+  list.push([500,()=>{ tx.classList.remove('caret-blink'); line.classList.remove('editing'); ctx.state.edited=true; }]);
+  ctx.seq.run(list);
+}
+function a3Refresh(ctx){
+  const pw=ctx.q('#a3-pagewrap'), rl=ctx.q('#a3-reload');
+  ctx.seq.run([
+    [200,()=>{ rl.classList.remove('spin'); void rl.offsetWidth; rl.classList.add('spin'); pw.classList.add('blank'); a3Hover(ctx,null,true); }],
+    [450,()=>{ a3SetText(ctx,'Mochi the Cat'); ctx.state.edited=false; pw.classList.remove('blank'); }],
+    [250,()=>ctx.q('#a3-poof').classList.add('in')],
+    [2400,()=>ctx.q('#a3-poof').classList.remove('in')]
+  ]);
+}
+TABS.push({
+  id:'a3', label:'See the tree', title:'See the tree, two ways',
+  stage(){ return `
+    <div class="win browser" id="a3-browser">
+      <div class="bar"><span class="lights"><i></i><i></i><i></i></span>
+        <svg class="reload" id="a3-reload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg>
+        <span class="url">file:///Users/maya/site/index.html</span></div>
+      <div class="wbody">
+        <div class="pagewrap" id="a3-pagewrap">${pageHTML('a3')}<div class="tip" id="a3-tip"></div><div class="poof" id="a3-poof">Edit gone. The page has no memory.</div></div>
+        <div class="devtools" id="a3-dt">
+          <div class="dt-tabs"><button class="dt-tab on" data-pane="el" type="button">Elements</button><button class="dt-tab" data-pane="src" type="button">View Source</button><button class="dt-tab off" type="button">Console</button><button class="dt-tab off" type="button">Network</button></div>
+          <div class="dt-pane on" data-pane="el" id="a3-el">${elementsHTML()}</div>
+          <div class="dt-pane" data-pane="src"><div class="code" id="a3-src">${codeHTML(SRC)}</div></div>
+        </div>
+      </div>
+      <svg class="cursor" id="a3-cursor" viewBox="0 0 18 24"><path d="M2 2 L2 20 L7 15 L10 22 L13 21 L10 14 L16 14 Z" fill="#111" stroke="#fff" stroke-width="1.2"/></svg>
+      <div class="ctxmenu" id="a3-ctx"><div>Back</div><div>Forward</div><div>Reload</div><hr><div>Save As…</div><div>Print…</div><hr><div>View Page Source</div><div class="insp">Inspect</div></div>
+    </div>`; },
+  toolbar(){ return `<span class="act" data-steps="0"><button class="btn" id="a3-again">Inspect again</button></span>
+    <span class="act" data-steps="1,3">Hover the lines in the Elements panel.</span>
+    <span class="act" data-steps="2"><button class="btn" id="a3-type">Type it again</button></span>
+    <span class="act" data-steps="3"><button class="btn" id="a3-showel">Show Elements</button><button class="btn" id="a3-showsrc">Show Source</button></span>
+    <span class="act" data-steps="4"><button class="btn" id="a3-refresh">Refresh</button></span>`; },
+  init(ctx){
+    ctx.qa('#a3-el .el').forEach(l=>{ l.addEventListener('mouseenter',()=>{ ctx.state.hovering=true; a3Hover(ctx,l.dataset.node); }); l.addEventListener('mouseleave',()=>{ ctx.state.hovering=false; a3Hover(ctx,null); }); });
+    ctx.qa('#a3-dt .dt-tab[data-pane]').forEach(t=>t.addEventListener('click',()=>a3Pane(ctx,t.dataset.pane)));
+    ctx.q('#a3-again').addEventListener('click',replay);
+    ctx.q('#a3-type').addEventListener('click',()=>a3Type(ctx,'Mochi the Dog'));
+    ctx.q('#a3-showel').addEventListener('click',()=>a3Pane(ctx,'el'));
+    ctx.q('#a3-showsrc').addEventListener('click',()=>a3Pane(ctx,'src'));
+    ctx.q('#a3-refresh').addEventListener('click',()=>{ if(!ctx.state.edited) a3SetText(ctx,'Mochi the Dog'); ctx.state.edited=true; a3Refresh(ctx); });
+  },
+  steps:[
+    { eli5:'Every page you have ever seen has this tree inside it. Right-click anything and choose Inspect. The browser shows you the exact box you clicked.', dur:7500,
+      tech:['Shortcuts: Cmd+Option+I on Mac, F12 or Ctrl+Shift+I elsewhere.','The Elements panel is the live tree, drawn as indented tags.','It works on every website, including ones you did not write. You are looking at your browser’s copy.','The Styles pane beside it shows which CSS rules hit the selected node.'],
+      enter(ctx){ a3Reset(ctx,false); const br=ctx.q('#a3-browser'), cur=ctx.q('#a3-cursor'), menu=ctx.q('#a3-ctx'); let pos;
+        ctx.seq.run([
+          [150,()=>{ const r=rectIn(ctx.q('#a3-pagewrap'),br); cur.style.transition='none'; cur.style.transform=`translate(${r.x+r.w*.62}px,${r.y+r.h*.72}px)`; cur.classList.add('in'); }],
+          [80,()=>{ const r=rectIn(ctx.q('#a3-page [data-node=h1]'),br); pos={x:r.x+r.w*.3,y:r.y+r.h*.55}; cur.style.transition=''; cur.style.transform=`translate(${pos.x}px,${pos.y}px)`; }],
+          [850,()=>{ menu.style.left=(pos.x+8)+'px'; menu.style.top=(pos.y+8)+'px'; menu.querySelector('.insp').classList.remove('hi'); menu.classList.add('in'); }],
+          [750,()=>menu.querySelector('.insp').classList.add('hi')],
+          [650,()=>{ menu.classList.remove('in'); cur.classList.remove('in'); br.classList.add('dt'); }],
+          [600,()=>a3Hover(ctx,'h1',true)]
+        ]); } },
+    { eli5:'Point at a branch in the tree and a box lights up on the page. The branch IS the box.', dur:8000,
+      tech:['Every element in body gets a layout box unless CSS hides it with <code>display: none</code>.','DevTools colors the overlay: blue is content, green is padding, orange is margin.','Nodes inside head, like title and link, have no box. They are instructions, not content.','Hover the lines on the right to drive it yourself.'],
+      enter(ctx){ a3Reset(ctx,true); let i=0; ctx.seq.loop(1300,()=>{ if(ctx.state.hovering) return; a3Hover(ctx,PAGE_NODES[i++%PAGE_NODES.length]); }); } },
+    { eli5:'You can change the tree right here and the page changes with it. You are editing the browser’s copy, not the file.', dur:7000,
+      tech:['Double-click text in the Elements panel to edit it. Enter commits the change.','That is a DOM mutation. JavaScript does exactly the same thing, which is Day 3.','The HTML file on disk and on the server is untouched.','Nobody else sees your edit. It lives in this one tab.'],
+      enter(ctx){ a3Reset(ctx,true); a3Type(ctx,'Mochi the Dog'); } },
+    { eli5:'Switch to View Source and the old words are still there. Source is the file the browser received. Elements is the tree it is holding right now. Two views, and they can disagree.',
+      tech:['<code>view-source:</code> shows the response body byte for byte, nothing more.','Elements shows the live DOM: your edits, repairs the parser made, and anything JavaScript added.','If a site builds its page with JavaScript, Source can be nearly empty while Elements is huge.','Debugging rule: what the server sent is in Source, what the user sees is in Elements.'],
+      enter(ctx){ a3Reset(ctx,true); a3SetText(ctx,'Mochi the Dog'); ctx.state.edited=true; ctx.seq.run([[500,()=>{ a3Pane(ctx,'src'); const ln=ctx.q('#a3-src .ln[data-line="7"]'); ln.classList.add('hl'); }]]); } },
+    { eli5:'Press refresh. The browser throws away its copy and reads the file again. Your change is gone. A page has no memory on its own. Fixing that is a later lesson.', dur:7000,
+      tech:['Reload re-fetches the file and rebuilds the DOM from scratch.','Anything that lived only in the page’s memory is lost: edits, variables, typed text.','Keeping data needs storage: cookies or localStorage for this browser, or a database for everyone.','That is Day 5 and Day 6 of this unit.'],
+      enter(ctx){ a3Reset(ctx,true); a3SetText(ctx,'Mochi the Dog'); ctx.state.edited=true; a3Hover(ctx,'h1',true); ctx.seq.run([[900,()=>a3Refresh(ctx)]]); } }
+  ]
+});
+/* ================= TAB 4: links to other files ================= */
+const NET={index:{s:0,e:200},css:{s:220,e:430},png:{s:220,e:660},js:{s:220,e:560}}; const NET_SCALE=800, NET_SPEED=2.4;
+function a4Waterfall(ctx,broken){
+  const rows={}; ['index','css','png','js'].forEach(k=>{ const r=ctx.q(`#a4-net .net-row[data-res=${k}]`); rows[k]=r; r.className='net-row'; r.querySelector('.st').textContent='·';
+    const bar=r.querySelector('.bar2'); bar.style.transition='none'; bar.style.width='0'; bar.style.left=(NET[k].s/NET_SCALE*100)+'%'; });
+  const pv=ctx.q('#a4-page'); pv.classList.remove('styled','img-loaded','js-loaded'); ctx.q('#a4-mis').classList.toggle('in',!!broken);
+  const dur=k=>(broken&&k==='css')?110:(NET[k].e-NET[k].s);
+  const start=k=>()=>{ const r=rows[k]; r.classList.add('on'); const bar=r.querySelector('.bar2'); bar.style.transition=`width ${dur(k)*NET_SPEED}ms linear`; requestAnimationFrame(()=>{ bar.style.width=(dur(k)/NET_SCALE*100)+'%'; }); };
+  const finish=k=>()=>{ const r=rows[k]; if(broken&&k==='css'){ r.classList.add('err'); r.querySelector('.st').textContent='404'; return; }
+    r.classList.add('ok'); r.querySelector('.st').textContent='200'; if(k==='css') pv.classList.add('styled'); if(k==='png') pv.classList.add('img-loaded'); if(k==='js') pv.classList.add('js-loaded'); };
+  const ev=[[NET.index.s,start('index')],[NET.index.e,finish('index')],[NET.css.s,start('css')],[NET.png.s,start('png')],[NET.js.s,start('js')],[NET.css.s+dur('css'),finish('css')],[NET.js.e,finish('js')],[NET.png.e,finish('png')]].sort((a,b)=>a[0]-b[0]);
+  let prev=0; ctx.seq.run(ev.map(([t,fn],i)=>{ const d=(t-prev)*NET_SPEED+(i===0?400:0); prev=t; return [d,fn]; }));
+}
+function a4Reset(ctx){ const tree=ctx.state.tree; ctx.q('#a4-tree').classList.remove('dim'); tree.setTree(docTree(),false); tree.clsAll('shown',true); tree.clsAll('hl',false);
+  ctx.q('#a4-url').textContent='https://maya.web.app/'; ctx.q('#a4-doc').textContent='index.html'; ctx.q('#a4-mis').classList.remove('in');
+  ctx.qa('#a4-rp > *').forEach(v=>v.classList.toggle('on',v.id==='a4-page')); ctx.qa('#a4-page .ael').forEach(e=>e.classList.remove('hl'));
+  ['index','css','png','js'].forEach(k=>{ const r=ctx.q(`#a4-net .net-row[data-res=${k}]`); r.className='net-row'; r.querySelector('.st').textContent='·'; const bar=r.querySelector('.bar2'); bar.style.transition='none'; bar.style.width='0'; });
+  ctx.q('#a4-page').classList.remove('styled','img-loaded','js-loaded'); ctx.state.broken=false; ctx.q('#a4-break').textContent='Rename style.css on disk'; }
+function a4Loaded(ctx){ ['index','css','png','js'].forEach(k=>{ const r=ctx.q(`#a4-net .net-row[data-res=${k}]`); r.classList.add('on','ok'); r.querySelector('.st').textContent='200'; const bar=r.querySelector('.bar2'); bar.style.left=(NET[k].s/NET_SCALE*100)+'%'; bar.style.width=((NET[k].e-NET[k].s)/NET_SCALE*100)+'%'; }); ctx.q('#a4-page').classList.add('styled','img-loaded','js-loaded'); }
+function a4Navigate(ctx,toAbout){ const tree=ctx.state.tree;
+  if(toAbout){ ctx.q('#a4-url').textContent='https://maya.web.app/about/'; ctx.q('#a4-doc').textContent='about/index.html'; tree.setTree(aboutTree(),false); tree.clsAll('shown',true); ctx.qa('#a4-rp > *').forEach(v=>v.classList.toggle('on',v.id==='a4-about')); }
+  else { ctx.q('#a4-url').textContent='https://maya.web.app/'; ctx.q('#a4-doc').textContent='index.html'; tree.setTree(docTree(),false); tree.clsAll('shown',true); ctx.qa('#a4-rp > *').forEach(v=>v.classList.toggle('on',v.id==='a4-page')); }
+  ctx.state.onAbout=toAbout; }
+TABS.push({
+  id:'a4', label:'Links to other files', title:'The tree points at other files',
+  stage(){ return `
+    <div class="left">
+      <div class="eyebrow">Document tree · <span id="a4-doc">index.html</span></div>
+      <div class="treebox"><svg class="tree" id="a4-tree"></svg></div>
+    </div>
+    <div class="right">
+      <div class="net" id="a4-net">
+        <div class="net-head"><span>Name</span><span>Status</span><span>Type</span><span>Waterfall</span></div>
+        <div class="net-row" data-res="index"><span class="name">index.html</span><span class="st">·</span><span class="ty">document</span><span class="wf"><i class="bar2"></i></span></div>
+        <div class="net-row" data-res="css"><span class="name">style.css</span><span class="st">·</span><span class="ty">stylesheet</span><span class="wf"><i class="bar2"></i></span></div>
+        <div class="net-row" data-res="png"><span class="name">mochi.png</span><span class="st">·</span><span class="ty">image</span><span class="wf"><i class="bar2"></i></span></div>
+        <div class="net-row" data-res="js"><span class="name">app.js</span><span class="st">·</span><span class="ty">script</span><span class="wf"><i class="bar2"></i></span></div>
+        <div class="timeline"><span>0 ms</span><span>200</span><span>400</span><span>600</span><span>800</span></div>
+      </div>
+      <div class="mismatch" id="a4-mis">⚠ The page asks for <code>css/style.css</code> but the disk has <code>css/styles.css</code></div>
+      <div class="win browser" style="flex:1">
+        <div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="url" id="a4-url">https://maya.web.app/</span></div>
+        <div class="wbody"><div class="rpanel" id="a4-rp">${pageHTML('a4','preview on')}<div class="page about" id="a4-about"><h1>About Maya</h1><p>I like cats more than most people.</p><a href="#" onclick="return false">← Back</a></div></div></div>
+      </div>
+    </div>`; },
+  toolbar(){ return `<span class="act" data-steps="1"><button class="btn" id="a4-reload">Load it again</button></span>
+    <span class="act" data-steps="2"><button class="btn" id="a4-break">Rename style.css on disk</button></span>
+    <span class="act" data-steps="3"><button class="btn" id="a4-nav">Click “About me”</button><button class="btn" id="a4-back">← Back</button></span>`; },
+  init(ctx){
+    const tree=new TreeView(ctx.q('#a4-tree'),{dir:'right',subMode:'ptr',nodeW:92,nodeH:34}); ctx.state.tree=tree; tree.setTree(docTree(),false); tree.clsAll('shown',true);
+    ctx.q('#a4-reload').addEventListener('click',()=>a4Waterfall(ctx,false));
+    ctx.q('#a4-break').addEventListener('click',()=>{ ctx.state.broken=!ctx.state.broken; ctx.q('#a4-break').textContent=ctx.state.broken?'Fix the file name':'Rename style.css on disk'; a4Waterfall(ctx,ctx.state.broken); });
+    ctx.q('#a4-nav').addEventListener('click',()=>a4Navigate(ctx,true));
+    ctx.q('#a4-back').addEventListener('click',()=>{ a4Navigate(ctx,false); a4Loaded(ctx); });
+  },
+  steps:[
+    { eli5:'Some tags do not hold words. They hold an address that says: go get this other file. The paint, the picture and the electricity each live in a file of their own.',
+      tech:['<code>href</code> and <code>src</code> attributes hold URLs. Relative ones like <code>css/style.css</code> are resolved against the page’s own address.','<code>&lt;link rel="stylesheet"&gt;</code> fetches CSS. <code>&lt;script src&gt;</code> fetches JavaScript. <code>&lt;img src&gt;</code> fetches an image.','<code>&lt;a href&gt;</code> is different: it is a door to another page, not a part of this one. Step 4 covers it.','Fonts, videos and icons work the same way: a tag with an address.'],
+      enter(ctx){ a4Reset(ctx); ctx.q('#a4-tree').classList.add('dim'); } },
+    { eli5:'The browser reads the shopping list first, then runs out to get each thing on it. Paint arrives and the page gets color. The picture arrives. The script arrives and a button appears.', dur:8500,
+      tech:['One HTTP GET per file. The Network tab in DevTools shows each one as a row.','The HTML must arrive first, because it is the list. Then the rest download in parallel.','Status 200 means found. The waterfall shows when each request started and ended.','CSS blocks painting until it arrives. Images do not. Scripts run in order unless marked <code>defer</code>.'],
+      enter(ctx){ a4Reset(ctx); a4Waterfall(ctx,false); } },
+    { eli5:'Rename one file on disk and that item is missing. You still get the page, just without paint. The HTML file is the only one you cannot live without.', dur:8500,
+      tech:['404 Not Found: the server looked and there is no file at that path.','The page still parses and renders. CSS, images and scripts are optional dependencies.','Mac and Windows ignore letter case in file names. Firebase does not: <code>Style.css</code> and <code>style.css</code> are different files. This is the number one Day 1 bug.','First debugging move: open Network, look for red rows, compare the path to your folder.'],
+      enter(ctx){ a4Reset(ctx); ctx.state.broken=true; ctx.q('#a4-break').textContent='Fix the file name'; a4Waterfall(ctx,true); } },
+    { eli5:'A link is different. It does not bring a file here. It takes YOU there, and the browser builds a brand new tree from a brand new file.', dur:8000,
+      tech:['Clicking <code>&lt;a href="about/"&gt;</code> navigates: the current document is thrown away and <code>about/index.html</code> is fetched and parsed.','Embedded resources (link, script, img) join this document. Links replace it.','A website is a set of HTML files joined by links, each with its own tree.','Back returns to the previous document, usually from the browser’s cache.'],
+      enter(ctx){ a4Reset(ctx); a4Loaded(ctx); const tree=ctx.state.tree;
+        ctx.seq.run([[600,()=>{ tree.cls('a','hl',true); ctx.q('#a4-page [data-node=a]').classList.add('hl'); }],[1500,()=>a4Navigate(ctx,true)]]); } }
+  ]
+});
+
+/* ================= TAB 5: two trees ================= */
+const CONNECT_INDEX={link:'css/style.css',img:'img/mochi.png',a:'about/',script:'js/app.js'};
+const CONNECT_ABOUT={a:''};
+function a5View(ctx,name){ ctx.qa('#a5-rp > *').forEach(v=>v.classList.toggle('on',v.dataset.view===name)); }
+function a5ClearConnectors(ctx){ ctx.q('#a5-ov').innerHTML=''; ctx.state.conn=null; }
+function a5Connectors(ctx,map){
+  const ov=ctx.q('#a5-ov'); ov.innerHTML=''; ctx.state.conn=map; const base=ctx.q('#a5-two').getBoundingClientRect(); const tree=ctx.state.tree; let i=0;
+  Object.entries(map).forEach(([id,path])=>{ const rec=tree.nodes.get(id); const row=ctx.q(`#a5-ftree [data-path="${path}"] > .row`); if(!rec||!row) return;
+    const a=rec.g.getBoundingClientRect(), b=row.getBoundingClientRect(); const x1=a.left-base.left, y1=a.top+a.height/2-base.top, x2=b.right-base.left, y2=b.top+b.height/2-base.top, mx=(x1+x2)/2;
+    const p=document.createElementNS(NS,'path'); p.setAttribute('d',`M${x1} ${y1} C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`); ov.appendChild(p);
+    const L=p.getTotalLength(); p.style.strokeDasharray=`${L}`; p.style.strokeDashoffset=`${L}`; p.style.transition='none';
+    const k=i++; requestAnimationFrame(()=>{ p.style.transition=`stroke-dashoffset .9s ease ${k*160}ms`; p.style.strokeDashoffset='0'; });
+    setTimeout(()=>{ p.style.transition='none'; p.style.strokeDasharray='5 4'; p.style.strokeDashoffset='0'; },1050+k*160); });
+}
+function a5Reset(ctx){ const ft=ctx.q('#a5-ftree'); ft.querySelectorAll('.row').forEach(r=>r.classList.remove('walk','found','fail')); ft.querySelectorAll('.ghost').forEach(g=>g.remove());
+  ft.classList.remove('show-top'); ctx.q('#a5-ftree .ftree').classList.remove('build'); ctx.q('#a5-strip').innerHTML=''; const st=ctx.q('#a5-status'); st.className='status'; st.textContent='·'; a5ClearConnectors(ctx); a5View(ctx,'empty'); }
+function a5ShowFile(ctx,file,opts){
+  if(!file){ a5View(ctx,'404'); return; }
+  if(file.endsWith('.css')) return a5View(ctx,'css'); if(file.endsWith('.png')) return a5View(ctx,'img'); if(file.endsWith('.js')) return a5View(ctx,'js');
+  const about=file.startsWith('about/'); ctx.q('#a5-doctitle').textContent=`${file} · document tree`; const tree=ctx.state.tree; tree.setTree(about?aboutTree():docTree(),false); tree.clsAll('shown',true); a5View(ctx,'doc');
+  if(opts.connect!==false) setTimeout(()=>a5Connectors(ctx,about?CONNECT_ABOUT:CONNECT_INDEX),450);
+}
+function a5Walk(ctx,path,opts={}){
+  const ft=ctx.q('#a5-ftree'); ft.querySelectorAll('.row').forEach(r=>r.classList.remove('walk','found','fail')); ft.querySelectorAll('.ghost').forEach(g=>g.remove());
+  const strip=ctx.q('#a5-strip'); strip.innerHTML=''; const status=ctx.q('#a5-status'); status.className='status'; status.textContent='…'; a5ClearConnectors(ctx); a5View(ctx,'empty');
+  ctx.q('#a5-path').value=path;
+  const res=resolvePath(path);
+  const chip=(txt,cls='')=>{ const c=document.createElement('span'); c.className='chip '+cls; c.textContent=txt; strip.appendChild(c); return c; };
+  const sep=()=>{ const s=document.createElement('span'); s.textContent='›'; strip.appendChild(s); };
+  const host=chip('maya.web.app'); const chips=[];
+  res.steps.forEach(s=>{ sep(); chips.push(chip(s.seg+(s.ok&&s.path.endsWith('/')?'/':''))); });
+  let defChip=null; if(res.file&&res.defaulted){ sep(); defChip=chip('index.html (default)','def'); }
+  const row=p=>ft.querySelector(`[data-path="${p}"] > .row`);
+  const list=[[60,()=>{ host.classList.add('on'); row('').classList.add('walk'); }]];
+  res.steps.forEach((s,i)=>list.push([460,()=>{ if(s.ok){ chips[i].classList.add('on'); row(s.path).classList.add('walk'); }
+    else { chips[i].classList.add('bad'); row(s.parent).classList.add('fail'); const parent=ft.querySelector(`[data-path="${s.parent}"]`); let ul=parent.querySelector(':scope > ul'); if(!ul){ ul=document.createElement('ul'); parent.appendChild(ul); }
+      const li=document.createElement('li'); li.className='ghost'; li.innerHTML=`<span class="row"><span class="ico" style="background:#fca5a5"></span>${esc(s.seg)} ?</span>`; ul.appendChild(li); } }]));
+  if(res.file){ list.push([460,()=>{ if(defChip) defChip.classList.add('on'); const r=row(res.file); r.classList.remove('walk'); r.classList.add('found'); status.className='status ok'; status.textContent='200 OK'; a5ShowFile(ctx,res.file,opts); }]); }
+  else list.push([360,()=>{ status.className='status err'; status.textContent='404'; a5View(ctx,'404'); }]);
+  if(opts.then) list.push(opts.then);
+  ctx.seq.run(list);
+}
+TABS.push({
+  id:'a5', label:'Two trees', title:'Two trees: the folder and the document',
+  stage(){ return `
+    <div class="urlbar"><span class="host">https://maya.web.app/</span><input id="a5-path" value="" placeholder="type a path, press Go" spellcheck="false" autocomplete="off"><button class="btn" id="a5-go" type="button">Go</button><span class="status" id="a5-status">·</span></div>
+    <div class="walkstrip" id="a5-strip"></div>
+    <div class="two" id="a5-two">
+      <div class="fwrap" id="a5-ftree">${ftreeHTML()}</div>
+      <div class="rpanel" id="a5-rp">
+        <div class="filecard" data-view="doc"><div class="bar"><span class="wtitle" id="a5-doctitle">index.html · document tree</span></div><div class="fill"><svg class="tree" id="a5-tree"></svg></div></div>
+        <div class="filecard" data-view="css"><div class="bar"><span class="wtitle">css/style.css · text/css</span></div><div class="code">${plainCode(CSS_SAMPLE)}</div></div>
+        <div class="filecard" data-view="js"><div class="bar"><span class="wtitle">js/app.js · text/javascript</span></div><div class="code">${plainCode(JS_SAMPLE)}</div></div>
+        <div class="filecard" data-view="img"><div class="bar"><span class="wtitle">img/mochi.png · image/png</span></div><div class="fill"><div class="imgview"><svg><use href="#cat"/></svg><span>48 × 48 px · 2.1 KB</span></div></div></div>
+        <div class="filecard" data-view="404"><div class="bar"><span class="wtitle">404 · Not Found</span></div><div class="page404"><b>404</b><span class="t">Page Not Found</span><small>The specified file was not found on this website. Please check the URL for mistakes and try again.</small></div></div>
+        <div class="filecard" data-view="empty"><div class="empty">A website is a folder.<br>Type a path above and press Go to walk it.</div></div>
+      </div>
+      <svg class="overlay" id="a5-ov"></svg>
+    </div>`; },
+  toolbar(){ return `<span class="act" data-steps="0,1,2,3,4"><a class="btn" href="downloads/demo.zip" download="demo.zip">⬇ demo.zip: this whole folder</a></span><span class="act" data-steps="0,1,2,3,4">Try your own paths: <button class="btn" data-try="css/style.css">css/style.css</button><button class="btn" data-try="about">about</button><button class="btn" data-try="img/Mochi.png">img/Mochi.png</button><button class="btn" data-try="js/app.js">js/app.js</button></span>`; },
+  init(ctx){
+    const tree=new TreeView(ctx.q('#a5-tree'),{dir:'right',subMode:'ptr',nodeW:92,nodeH:34}); ctx.state.tree=tree; tree.setTree(docTree(),false); tree.clsAll('shown',true);
+    const go=()=>a5Walk(ctx,ctx.q('#a5-path').value,{connect:true});
+    ctx.q('#a5-go').addEventListener('click',go); ctx.q('#a5-path').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); e.stopPropagation(); });
+    ctx.qa('[data-try]',ctx.panel).forEach(b=>b.addEventListener('click',()=>a5Walk(ctx,b.dataset.try,{connect:true})));
+    window.addEventListener('resize',()=>{ if(ctx.state.conn&&ctx.panel.classList.contains('active')) a5Connectors(ctx,ctx.state.conn); });
+  },
+  steps:[
+    { eli5:'A website is not one file after all. It is a folder of files with one special file at the top: index.html. Everything the pages need lives somewhere in this folder.', dur:7000,
+      tech:['In a Firebase project, <code>firebase.json</code> names the folder: <code>"public": "public"</code>.','Everything inside that folder gets served. Nothing outside it ever does.','Keep assets in subfolders: <code>css/</code>, <code>img/</code>, <code>js/</code>. The names are a convention, not a rule.','index.html at the top is the page people get when they ask for the site itself.'],
+      enter(ctx){ a5Reset(ctx); ctx.q('#a5-path').value=''; const ul=ctx.q('#a5-ftree .ftree'); ul.classList.add('build'); const lis=ctx.qa('#a5-ftree li'); lis.forEach(l=>l.classList.remove('in'));
+        ctx.seq.run(lis.map((l,i)=>[i?170:200,()=>{ l.classList.add('in'); if(i===lis.length-1) ctx.q('#a5-ftree').classList.add('show-top'); }])); } },
+    { eli5:'The slashes in a web address are just folders. Read a URL left to right and you are walking down the folder tree until you reach a file.', dur:6500,
+      tech:['A URL is scheme + host + path: <code>https://</code> + <code>maya.web.app</code> + <code>/css/style.css</code>.','The path maps onto the folder tree under public/. css is a folder, style.css is a file inside it.','The server never serves a path that does not exist in the folder.','The browser does this walk for every file the page asks for.'],
+      enter(ctx){ a5Reset(ctx); a5Walk(ctx,'css/style.css'); } },
+    { eli5:'If the address ends at a folder, the server hands you the file named index.html inside it. That is why the home page is called index.', dur:9000,
+      tech:['This is the directory index convention, used by nearly every web server.','<code>/</code> serves <code>public/index.html</code>. <code>/about/</code> serves <code>public/about/index.html</code>.','Firebase’s cleanUrls setting also lets <code>/about</code> serve <code>about/index.html</code> without the slash.','Any other name, like home.html, has to be typed into the address.'],
+      enter(ctx){ a5Reset(ctx); ctx.q('#a5-ftree').classList.add('show-def'); a5Walk(ctx,'',{connect:false,then:[3200,()=>a5Walk(ctx,'about/',{connect:false})]}); } },
+    { eli5:'Two trees. The folder tree says where files live. The document tree says what is inside one page. The addresses inside the page point from one tree into the other.', dur:8000,
+      tech:['A relative URL is resolved against the folder the page lives in. From index.html, <code>css/style.css</code> means <code>public/css/style.css</code>.','<code>../</code> goes up one folder. A leading <code>/</code> starts from the top of public/.','Move a file without updating the address and the pointer dangles: 404.','Pages in subfolders need different relative paths than the top page. A leading / avoids the headache.'],
+      enter(ctx){ a5Reset(ctx); ctx.q('#a5-ftree').classList.add('show-def'); a5Walk(ctx,'',{connect:true}); } },
+    { eli5:'Ask for a folder or file that is not there and the server says 404: I looked, and there is nothing here. Try a few addresses yourself.', dur:7000,
+      tech:['404 is a status code in the response, beside 200 for OK.','Firebase shows a default page, or <code>public/404.html</code> if you make one.','Letter case matters on the server: <code>Img/</code> is not <code>img/</code>.','When something 404s, walk the folder tree by hand and compare it to the address, segment by segment.'],
+      enter(ctx){ a5Reset(ctx); ctx.q('#a5-ftree').classList.add('show-def'); a5Walk(ctx,'images/mochi.png'); } }
+  ]
+});
+
+/* ================= app shell ================= */
+const lesson=$('#lesson'), tabsNav=$('#tabs');
+const state={tab:0,steps:TABS.map(()=>0),autoplay:false,timer:null};
+function replay(){ enterStep(state.tab,state.steps[state.tab]); }
+
+TABS.forEach((t,i)=>{
+  const b=document.createElement('button'); b.className='tab'; b.type='button'; b.setAttribute('role','tab'); b.innerHTML=`<span class="num">${i+1}</span>${t.label}`; b.addEventListener('click',()=>selectTab(i)); tabsNav.appendChild(b);
+  const panel=document.createElement('section'); panel.className='tabpanel'; panel.dataset.tab=t.id; panel.setAttribute('role','tabpanel');
+  panel.innerHTML=`
+    <aside class="explain">
+      <h2>${t.title}</h2>
+      <div class="eli5"><div class="eyebrow">ELI5 · <span class="stepno"></span></div><p class="eli5-text" aria-live="polite"></p></div>
+      <p class="hint">Press <span class="i">i</span> on the picture for the technical version.</p>
+      <div class="controls"><button class="btn prev" type="button">‹ Back</button><div class="dots"></div><button class="btn next primary" type="button">Next ›</button><button class="btn play" type="button">▶ Play</button></div>
+    </aside>
+    <div class="stage">
+      <button class="info-btn" type="button" aria-label="Technical details" title="Technical details">i</button>
+      <div class="info-pop"><h4>Technically</h4><ul></ul></div>
+      <div class="stage-body">${t.stage()}</div>
+      <div class="toolbar">${t.toolbar?t.toolbar():''}</div>
+    </div>`;
+  lesson.appendChild(panel);
+  const dots=panel.querySelector('.dots'); t.steps.forEach((s,si)=>{ const d=document.createElement('button'); d.className='dot'; d.type='button'; d.title=`Step ${si+1}`; d.addEventListener('click',()=>{ stopPlay(); enterStep(i,si); }); dots.appendChild(d); });
+  panel.querySelector('.prev').addEventListener('click',()=>{ stopPlay(); if(state.steps[i]>0) enterStep(i,state.steps[i]-1); });
+  panel.querySelector('.next').addEventListener('click',()=>{ stopPlay(); if(state.steps[i]<t.steps.length-1) enterStep(i,state.steps[i]+1); else if(i<TABS.length-1) selectTab(i+1); });
+  panel.querySelector('.play').addEventListener('click',()=>{ if(state.autoplay) stopPlay(); else startPlay(); });
+  const ib=panel.querySelector('.info-btn'), ip=panel.querySelector('.info-pop');
+  ib.addEventListener('click',e=>{ e.stopPropagation(); const open=!ip.classList.contains('open'); ip.classList.toggle('open',open); ib.classList.toggle('open',open); });
+  ip.addEventListener('click',e=>e.stopPropagation());
+  const root=panel.querySelector('.stage-body');
+  t.ctx={root,panel,q:s=>root.querySelector(s)||panel.querySelector(s),qa:(s,r=root)=>Array.from(r.querySelectorAll(s)),seq:makeSeq(),state:{},step:0};
+  if(t.init) t.init(t.ctx);
+});
+document.addEventListener('click',()=>$$('.info-pop.open').forEach(p=>{ p.classList.remove('open'); p.parentElement.querySelector('.info-btn').classList.remove('open'); }));
+
+function selectTab(i){
+  stopPlay(); TABS[state.tab].ctx.seq.cancel(); state.tab=i;
+  $$('.tab',tabsNav).forEach((b,k)=>{ b.classList.toggle('active',k===i); b.setAttribute('aria-selected',k===i); });
+  $$('.tabpanel',lesson).forEach((p,k)=>p.classList.toggle('active',k===i));
+  requestAnimationFrame(()=>enterStep(i,state.steps[i]));
+}
+function enterStep(ti,si){
+  const t=TABS[ti], st=t.steps[si]; state.steps[ti]=si; t.ctx.step=si; t.ctx.seq.cancel();
+  const panel=t.ctx.panel;
+  panel.querySelector('.stepno').textContent=`Step ${si+1} of ${t.steps.length}`;
+  panel.querySelector('.eli5-text').textContent=st.eli5;
+  panel.querySelector('.info-pop ul').innerHTML=st.tech.map(x=>`<li>${x}</li>`).join('');
+  $$('.dot',panel).forEach((d,k)=>{ d.classList.toggle('on',k===si); d.classList.toggle('done',k<si); });
+  panel.querySelector('.prev').disabled=si===0;
+  const next=panel.querySelector('.next'); next.textContent=si===t.steps.length-1?(ti<TABS.length-1?'Next part ›':'Done'):'Next ›'; next.disabled=si===t.steps.length-1&&ti===TABS.length-1;
+  $$('.toolbar .act',panel).forEach(a=>a.classList.toggle('show',a.dataset.steps.split(',').includes(String(si))));
+  st.enter(t.ctx);
+  try{ history.replaceState(null,'',`#${t.id}-${si+1}`); }catch(e){}
+  if(state.autoplay) scheduleNext();
+}
+function scheduleNext(){ clearTimeout(state.timer); const t=TABS[state.tab], si=state.steps[state.tab]; const dur=t.steps[si].dur||6500;
+  state.timer=setTimeout(()=>{ if(!state.autoplay) return; if(si<t.steps.length-1) enterStep(state.tab,si+1); else stopPlay(); },dur); }
+function startPlay(){ state.autoplay=true; const p=TABS[state.tab].ctx.panel.querySelector('.play'); p.textContent='❚❚ Pause'; p.classList.add('playing'); replay(); }
+function stopPlay(){ state.autoplay=false; clearTimeout(state.timer); $$('.play').forEach(p=>{ p.textContent='▶ Play'; p.classList.remove('playing'); }); }
+
+document.addEventListener('keydown',e=>{
+  if(e.target.matches('input,textarea')) return;
+  if(e.key==='ArrowRight'){ stopPlay(); const i=state.tab; if(state.steps[i]<TABS[i].steps.length-1) enterStep(i,state.steps[i]+1); else if(i<TABS.length-1) selectTab(i+1); }
+  if(e.key==='ArrowLeft'){ stopPlay(); const i=state.tab; if(state.steps[i]>0) enterStep(i,state.steps[i]-1); else if(i>0){ state.steps[i-1]=TABS[i-1].steps.length-1; selectTab(i-1); } }
+  if(e.key===' '&&!e.target.matches('button')){ e.preventDefault(); state.autoplay?stopPlay():startPlay(); }
+});
+
+(function boot(){
+  const m=/^#([a-z]\d)-(\d+)$/.exec(location.hash||''); let ti=0, si=0;
+  if(m){ const k=TABS.findIndex(t=>t.id===m[1]); if(k>=0){ ti=k; si=Math.min(TABS[k].steps.length-1,Math.max(0,parseInt(m[2],10)-1)); } }
+  state.steps[ti]=si; selectTab(ti);
+})();
+})();
+</script>
+</body>
+</html>

@@ -32,11 +32,13 @@ export const HTCS_LESSON_WIDGETS: Record<string, WidgetInfo> = {
 }
 
 export const CODE_WIDGETS: Record<string, WidgetInfo> = {
+  'website-anatomy': { title: 'Website Anatomy: One File, One Tree', src: '/static/code/widgets/website-anatomy/website-anatomy.html', blurb: "Open one HTML file as text and as a page, build its document tree tag by tag, inspect it in DevTools, follow its links to other files, and walk a URL down the site folder." },
+  'website-hosting': { title: 'Website Hosting: From Laptop to Link', src: '/static/code/widgets/website-hosting/website-hosting.html', blurb: "Watch a server walk the URL through its folder, see client and server talk, turn a name into a number, copy a file from laptop to GitHub to Firebase, and see why a static site gives everyone the same bytes." },
   'blob-creation': { title: 'Blob Creation (Git-style)', src: '/static/code/widgets/blob-creation/blob-creation.html', blurb: "Hash file contents into a Git blob and see how content, not the filename, determines the object ID." },
-  'objects-static': { title: 'Java Objects & Static Methods — Visual Memory', src: '/static/code/widgets/objects-static/objects-static.html', blurb: "Watch memory as objects are created and static methods run, separating instance state from class-level code." },
+  'objects-static': { title: 'Java Objects & Static Methods: Visual Memory', src: '/static/code/widgets/objects-static/objects-static.html', blurb: "Watch memory as objects are created and static methods run, separating instance state from class-level code." },
   'rsa-encryption': { title: 'RSA Encryption (Demo)', src: '/static/code/widgets/rsa-encrpytion/rsa-encryption.html', blurb: "Generate RSA keys from two primes, then encrypt and decrypt a message step by step." },
   'shamir': { title: "Shamir's Secret Sharing", src: '/static/code/widgets/shamir/shamir.html', blurb: "Split a secret into shares and see how many pieces it takes to rebuild it." },
-  'singly-linked-list': { title: 'Singly Linked List — Memory Visualizer', src: '/static/code/widgets/singly-linked-list/singly-linked-list.html', blurb: "Insert and remove nodes and follow the pointers as a singly linked list changes in memory." }
+  'singly-linked-list': { title: 'Singly Linked List: Memory Visualizer', src: '/static/code/widgets/singly-linked-list/singly-linked-list.html', blurb: "Insert and remove nodes and follow the pointers as a singly linked list changes in memory." }
 }
 
 export const STATS_WIDGETS: Record<string, WidgetInfo> = {
