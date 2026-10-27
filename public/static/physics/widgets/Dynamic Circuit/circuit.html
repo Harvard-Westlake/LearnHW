@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dynamic Resistor Circuit</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:," />
+  <meta name="robots" content="noindex" />
+  <meta name="description" content="Interactive two-resistor series/parallel circuit demo." />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+</head>
+<body>
+  <div class="app-wrap container page">
+    <h1 class="h1">Dynamic Resistor Circuit</h1>
+
+    <div class="controls">
+      <div class="field" style="grid-column: span 2;">
+        <label class="label">Select A Resistor</label>
+        <div class="inline">
+          <button class="btn btn--outline" id="addResistor" type="button">+ Basic Resistor</button>
+          <button class="btn btn--outline" id="addBulb" type="button">💡 Bulb</button>
+        </div>
+        <label class="label" style="margin-top:6px;">Configuration</label>
+        <div class="inline">
+          <button class="btn btn--outline btn--selected" id="addAsSeriesBtn" type="button">Series</button>
+          <button class="btn btn--outline" id="addAsParallelBtn" type="button">Parallel</button>
+          <input type="radio" name="addmode" value="series" checked style="display:none" />
+          <input type="radio" name="addmode" value="parallel" style="display:none" />
+        </div>
+        <label class="label" style="margin-top:6px;">Set Resistance</label>
+        <div class="inline">
+          <input class="input" id="newR" type="number" step="1" min="0" value="10" />
+        </div>
+        <div class="inline" style="margin-top:6px;">
+          <button class="btn" id="addComponentBtn" type="button" style="width:100%;">Add Resistor</button>
+        </div>
+        <div class="muted">Adds to the current configuration (series or parallel)</div>
+      </div>
+
+      <div class="field" style="grid-column: 5 / span 2; grid-row: 1 / span 2;">
+        <label class="label" for="voltage">Supply Voltage (V)</label>
+        <input class="range" id="voltage" type="range" min="0" max="120" step="0.1" value="12" />
+        <div class="muted"><span id="voltageVal">12.0</span> V</div>
+        <div class="field" style="margin-top:6px;">
+          <button class="btn btn--outline" id="removeSel" type="button" disabled>Remove Selected</button>
+          <div class="muted">removes all selected resistors in the circuit at once</div>
+        </div>
+        <div class="field" style="margin-top:6px;">
+          <button class="btn btn--outline" id="resetAll" type="button">Reset Circuit</button>
+        </div>
+      </div>
+
+      <div class="card user-guide" role="region" aria-labelledby="userGuideTitle">
+        <div id="userGuideTitle" class="h3">User Guide</div>
+        <ul>
+          <li>Use Add Component to add a resistor or bulb.</li>
+          <li>Click any resistor to see resistance, power, current, and voltage drop.</li>
+          <li>Right-click a resistor to set its resistance or remove it.</li>
+          <li>Select resistors to add new ones in series or parallel.</li>
+          <li>Lightbulb brightness reflects individual power output.</li>
+        </ul>
+      </div>
+
+      
+
+    </div>
+
+    <div class="readouts">
+      <div class="card">
+        <div><strong>Total Current</strong></div>
+        <div id="totalI">—</div>
+      </div>
+      <div class="card">
+        <div><strong>Total Resistance</strong></div>
+        <div id="totalR">—</div>
+      </div>
+      <div class="card">
+        <div><strong>Total Power</strong></div>
+        <div id="totalP">—</div>
+      </div>
+    </div>
+
+    <!-- Centralized selection details (separate from circuit) -->
+    <div id="selectionPanel" class="card selection-panel" role="region" aria-live="polite">
+      <div class="h3" style="margin:0 0 .25rem;">Selection</div>
+      <div class="muted">Click a resistor or bulb to see its values here.</div>
+    </div>
+
+    <!-- Removed R1/R2 info cards (no starting resistors) -->
+
+    <div class="svg-wrap">
+      <svg id="circuit" viewBox="0 0 900 478" width="100%" height="436" preserveAspectRatio="xMinYMin meet" aria-label="Circuit diagram"></svg>
+    </div>
+  
+  </div>
+
+  <script src="./circuit.js"></script>
+  </body>
+  </html>
+
+
