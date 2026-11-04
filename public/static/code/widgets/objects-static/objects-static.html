@@ -1,772 +1,824 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Java Objects & Statics — Memory Visualizer</title>
-  <!-- Shared styles (Math widgets baseline) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../../math/widgets/shared/styles.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Java Objects &amp; Static Methods: Visual Memory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#E60000; --red-dark:#cc0000;
+  --ink:#111827; --muted:#6b7280; --border:#e5e7eb; --bg:#f8f9fa;
+  --potato:#8bc34a; --potato-tint:#f1f8e9; --potato-border:#c5e1a5;
+  --carrot:#ff9800; --carrot-tint:#fff3e0; --carrot-border:#ffcc80;
+  --class-tint:#eef6ff; --class-border:#c7dbf2; --class-ink:#1d4ed8; --class-hover:#dbeafe;
+  --heap-tint:#fff5f5; --heap-border:#f3c7c7; --heap-ink:#b91c1c; --heap-hover:#fee2e2;
+  --flash:#fef3c7; --flash-edge:#f59e0b;
+  --code-bg:#1e1e1e; --code-ink:#d4d4d4;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+  --sans:'Source Sans 3',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.45;padding:.5rem}
+code{font-family:var(--mono);font-size:.92em}
+.container{max-width:1200px;margin:0 auto;background:#fff;border-radius:8px;padding:.6rem .75rem .75rem;box-shadow:0 2px 4px rgb(0 0 0/.1)}
 
-  <!-- Page-specific styles -->
-  <style>
-    :root{
-      --gap: 8px;
-      --potato: #8bc34a;     /* greenish */
-      --carrot: #ff9800;     /* orange */
-      --class-area: #eef6ff; /* light bluish for method area */
-      --heap-area: #fff5f5;  /* light reddish for heap */
-      --tile: #ffffff;
-      --tile-border: #d0d0d0;
-      --muted: #6b7280;
-    }
+/* ---- VS Code token colors: Dark+ for code blocks, Light+ for the class cards ---- */
+.dark .tok-kw{color:#569cd6}.dark .tok-ctrl{color:#c586c0}.dark .tok-type{color:#4ec9b0}.dark .tok-func{color:#dcdcaa}
+.dark .tok-var{color:#9cdcfe}.dark .tok-num{color:#b5cea8}.dark .tok-str{color:#ce9178}.dark .tok-comment{color:#6a9955}
+.light .tok-kw{color:#0000ff}.light .tok-ctrl{color:#af00db}.light .tok-type{color:#267f99}.light .tok-func{color:#795e26}
+.light .tok-var{color:#001080}.light .tok-num{color:#098658}.light .tok-str{color:#a31515}.light .tok-comment{color:#008000}
 
-    .sections {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 0.75rem;
-    }
+/* ---- top bar ---- */
+.topbar{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.6rem}
+.back-link{color:var(--red);text-decoration:none;font-weight:600;font-size:.9rem;white-space:nowrap}
+.back-link:hover{text-decoration:underline}
+h1{font-size:1.15rem;margin:0;flex:1;min-width:0}
 
-    .panel {
-      background: white;
-      border-radius: 8px;
-      padding: 0.5rem;
-      border: 1px solid #eee;
-    }
+/* ---- layout ---- */
+.layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:.75rem;align-items:start}
+.sidebar{display:flex;flex-direction:column;gap:.6rem;min-width:0}
+.stage{display:flex;flex-direction:column;gap:.6rem;min-width:0}
 
-    .area-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.4rem;
-    }
+/* ---- buttons & inputs ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.35rem;padding:.4rem .7rem;background:var(--red);color:#fff;border:1px solid transparent;border-radius:6px;cursor:pointer;font:inherit;font-weight:600;font-size:.85rem;transition:background .15s,transform .05s}
+.btn:hover{background:var(--red-dark)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{background:#d1d5db;color:#6b7280;cursor:not-allowed;transform:none}
+.btn.run{display:block;width:100%;margin-top:.4rem;text-align:left;font-family:var(--mono);font-weight:500;font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn.run::before{content:"▶ ";font-size:.65rem;opacity:.85}
+.btn-ghost{display:inline-flex;align-items:center;gap:.3rem;background:#fff;color:var(--ink);border:1px solid #d1d5db;padding:.2rem .55rem;font:inherit;font-size:.76rem;font-weight:600;border-radius:6px;cursor:pointer;white-space:nowrap}
+.btn-ghost:hover{background:#f3f4f6;border-color:#9ca3af}
+.btn-ghost:disabled{color:#9ca3af;cursor:not-allowed;background:#f9fafb}
+.btn-ghost code{font-size:.74rem}
+input[type=text],input[type=number],select{width:100%;min-width:0;padding:.3rem .45rem;border:1px solid #d1d5db;border-radius:6px;font:inherit;font-size:.85rem;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgb(230 0 0/.12)}
+input[type=checkbox]{margin:0;width:15px;height:15px;accent-color:var(--red)}
 
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.25rem 0.5rem;
-      border-radius: 999px;
-      border: 1px solid #ddd;
-      background: #fafafa;
-      font-size: 0.85rem;
-      cursor: default;
-      user-select: none;
-    }
+/* ---- sidebar steps ---- */
+.step{border:1px solid var(--border);border-radius:8px;background:#fff;padding:.6rem .7rem}
+.step-title{display:flex;align-items:center;gap:.45rem;font-weight:700;font-size:.92rem;margin:0 0 .5rem}
+.step-num{flex:none;width:1.3rem;height:1.3rem;border-radius:50%;background:var(--ink);color:#fff;font-size:.74rem;display:inline-grid;place-items:center}
+.ctor{border:1px solid var(--potato-border);border-left:4px solid var(--potato);background:var(--potato-tint);border-radius:6px;padding:.45rem .55rem .5rem;margin:0 0 .5rem}
+.ctor.carrot{border-color:var(--carrot-border);border-left-color:var(--carrot);background:var(--carrot-tint);margin-bottom:0}
+.ctor-head{display:flex;align-items:center;gap:.4rem;font-weight:700;font-size:.88rem;margin-bottom:.3rem}
+.fields{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.3rem .5rem;align-items:center;font-size:.82rem}
+.fields.two{grid-template-columns:auto minmax(0,1.25fr) auto minmax(0,1fr)}
+.fields label{color:#374151;white-space:nowrap;font-family:var(--mono);font-size:.78rem}
+.fields .check{display:flex;align-items:center;gap:.4rem;font-family:var(--mono);font-size:.8rem;color:var(--ink)}
+.preview{font-family:var(--mono);font-size:.72rem;line-height:1.45;background:var(--code-bg);color:var(--code-ink);border-radius:6px;padding:.4rem .55rem;margin:.5rem 0 0;white-space:pre;overflow-x:auto}
+.form-msg{font-size:.76rem;color:var(--muted);min-height:2.2rem;margin:.3rem 0 .35rem;line-height:1.35}
 
-    .class-row {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(260px, 1fr));
-      gap: 0.75rem;
-    }
+/* ---- memory panels ---- */
+.panel{border:1px solid var(--border);border-radius:8px;background:#fff;padding:.55rem .65rem}
+.panel.area-class{background:var(--class-tint);border-color:var(--class-border)}
+.panel.area-heap{background:var(--heap-tint);border-color:var(--heap-border)}
+.panel-head{display:flex;align-items:baseline;gap:.55rem;flex-wrap:wrap;margin-bottom:.45rem}
+.panel-head h2{font-size:.78rem;letter-spacing:.07em;text-transform:uppercase;margin:0;font-weight:700}
+.area-class .panel-head h2{color:var(--class-ink)}
+.area-heap .panel-head h2{color:var(--heap-ink)}
+.panel-head .sub{font-size:.78rem;color:var(--muted)}
+.sw{width:11px;height:11px;border-radius:3px;border:1px solid rgb(0 0 0/.25);display:inline-block;flex:none}
+.sw.potato{background:var(--potato)}
+.sw.carrot{background:var(--carrot)}
 
-    .class-box {
-      position: relative;
-      border: 1px solid #d9e3f0;
-      background: var(--class-area);
-      border-radius: 8px;
-      padding: 0.5rem;
-      transition: box-shadow 0.15s ease, transform 0.15s ease;
-      overflow: hidden;
-    }
+.classes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
+.class-card{border:1px solid var(--potato-border);border-top:4px solid var(--potato);background:var(--potato-tint);border-radius:8px;padding:.45rem .6rem .5rem;min-width:0}
+.class-card[data-class=Carrot]{border-color:var(--carrot-border);border-top-color:var(--carrot);background:var(--carrot-tint)}
+.class-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.3rem}
+.class-name{font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:.4rem;min-width:0}
+.class-name .kw{font-family:var(--mono);font-weight:400;color:var(--muted);font-size:.78rem}
+.members{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.15rem .55rem;align-items:baseline;margin:0;font-size:.76rem}
+.members dt{color:var(--muted);white-space:nowrap}
+.members dd{margin:0;font-family:var(--mono);color:#374151;overflow-wrap:anywhere;border-radius:3px;transition:background .6s}
+.members dd.new{background:var(--flash)}
+.statics{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;min-height:1.6rem}
+.empty{font-family:var(--sans);font-size:.76rem;color:var(--muted);font-style:italic}
 
-    .class-box:hover {
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    }
+.method-pill,.obj-call{font:inherit;font-family:var(--mono);font-size:.76rem;padding:.18rem .5rem;border-radius:999px;cursor:pointer;line-height:1.3;white-space:nowrap}
+.method-pill::before,.obj-call::before{content:"▶ ";font-size:.62rem}
+.method-pill{border:1px solid var(--class-border);background:#fff;color:var(--class-ink)}
+.method-pill:hover,.method-pill.open{background:var(--class-hover);border-color:#93c5fd}
+.obj-call{border:1px solid var(--heap-border);background:#fff;color:var(--heap-ink)}
+.obj-call:hover{background:var(--heap-hover);border-color:#fca5a5}
+.method-pill:active,.obj-call:active{transform:translateY(1px)}
+.demo{cursor:default}
+.demo:hover{background:#fff}
 
-    .class-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      margin-bottom: 0.4rem;
-    }
+/* argument picker for a static call */
+.argrow{margin-top:.45rem;padding:.35rem .5rem;border:1px dashed var(--class-border);border-radius:6px;background:#fff;display:flex;flex-wrap:wrap;align-items:center;gap:.35rem .5rem;font-family:var(--mono);font-size:.76rem}
+.argrow[hidden]{display:none}
+.argline{display:inline-flex;align-items:center;flex-wrap:nowrap;gap:.15rem}
+.argline select,.argline input{width:auto;min-width:3.2rem;max-width:5.5rem;padding:.1rem .3rem;font-family:var(--mono);font-size:.74rem;border-radius:4px}
+.argrow .empty{flex-basis:100%}
 
-    .class-name {
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
+.heap{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.5rem}
+.heap-empty{grid-column:1/-1;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:.82rem;font-style:italic;min-height:4rem;border:1px dashed var(--heap-border);border-radius:8px;padding:.5rem}
+.obj{background:var(--potato-tint);border:1px solid var(--potato-border);border-left:4px solid var(--potato);border-radius:8px;padding:.4rem .55rem .45rem;display:flex;flex-direction:column;gap:.2rem;min-width:0;animation:pop .25s ease}
+.obj[data-type=Carrot]{background:var(--carrot-tint);border-color:var(--carrot-border);border-left-color:var(--carrot)}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+.obj-head{display:flex;align-items:baseline;gap:.35rem;min-width:0}
+.obj-var{font-family:var(--mono);font-weight:700;font-size:.95rem}
+.obj-arrow{color:var(--muted);font-size:.85rem}
+.obj-type{font-size:.76rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.obj-fields{font-family:var(--mono);font-size:.74rem;color:#374151;line-height:1.35}
+.obj .obj-call{align-self:flex-start;margin-top:.15rem}
 
-    .swatch-box {
-      width: 12px; height: 12px; border-radius: 3px; border: 1px solid #999;
-    }
+/* ---- key idea strip ---- */
+.keyidea{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem 1.1rem;font-size:.78rem;color:#374151;padding:.4rem .65rem;border:1px solid var(--border);border-radius:8px;background:#fff}
+.keyidea .idea{display:inline-flex;align-items:center;gap:.4rem;white-space:nowrap}
+.keyidea b{color:var(--ink)}
 
-    .static-methods {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem;
-      min-height: 1.8rem;
-    }
+/* ---- editor + console ---- */
+.bottom{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:.6rem;align-items:stretch}
+.editor{border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;background:var(--code-bg);min-width:0}
+.tabs{display:flex;align-items:center;gap:.1rem;background:#f3f4f6;border-bottom:1px solid var(--border);padding:0 .35rem 0 .2rem;overflow-x:auto}
+.tab{font:inherit;font-family:var(--mono);font-size:.76rem;padding:.4rem .6rem;border:none;border-bottom:2px solid transparent;background:transparent;cursor:pointer;color:#4b5563;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected=true]{color:var(--ink);background:#fff;border-bottom-color:var(--red);font-weight:600}
+.tabs .spacer{flex:1}
+.code{margin:0;padding:.5rem .65rem;font-family:var(--mono);font-size:.78rem;line-height:1.5;color:var(--code-ink);overflow:auto;height:330px;white-space:pre;tab-size:4}
+.code .ln{display:block;margin:0 -.35rem;padding:0 .35rem;border-radius:3px;transition:background .6s}
+.code .ln.new{background:rgb(240 184 0/.28)}
+.console{border:1px solid var(--border);border-radius:8px;background:#fff;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.console-head{font-size:.74rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#374151;background:#f3f4f6;border-bottom:1px solid var(--border);padding:.45rem .6rem;flex:none}
+.console-body{font-family:var(--mono);font-size:.78rem;line-height:1.5;padding:.4rem .6rem;overflow:auto;flex:1;min-height:0;color:#111}
+.console-body .line{padding:0 .35rem;margin:0 -.35rem;border-left:2px solid transparent;border-radius:3px;transition:background .6s;white-space:pre-wrap;word-break:break-word}
+.console-body .line.new{background:var(--flash);border-left-color:var(--flash-edge)}
+.console-empty{font-family:var(--sans);color:var(--muted);font-style:italic;font-size:.8rem}
 
-    .method-pill {
-      padding: 0.25rem 0.5rem;
-      background: #ffffff;
-      border: 1px solid #d0d0d0;
-      border-radius: 999px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 0.82rem;
-      cursor: pointer;
-      transition: background 0.15s ease, transform 0.05s ease;
-    }
-
-    .method-pill:hover { background: #f3f4f6; }
-    .method-pill:active { transform: translateY(1px); }
-
-    .code-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(255,255,255,0.98);
-      border: 1px solid #d0d0d0;
-      border-radius: 8px;
-      padding: 0.5rem;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s ease;
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-
-    /* Overlay now controlled via JS and positioned to the side */
-    .code-overlay { position: fixed; width: 380px; max-height: 70vh; overflow: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 50; transform: translateY(6px); }
-    .code-overlay.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
-
-    .overlay-title { font-weight: 700; }
-    .overlay-close {
-      position: absolute; top: 6px; right: 8px; cursor: pointer; color: #333;
-      font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid #ddd; background: #fff;
-    }
-
-    .overlay-pre {
-      background: #0b1021;
-      color: #e6edf3;
-      border-radius: 6px;
-      padding: 0.5rem 0.6rem;
-      overflow: auto;
-      font-size: 0.85rem;
-      line-height: 1.45;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    }
-
-    /* VS Code Dark+ inspired token colors */
-    .overlay-pre .tok-comment { color: #6a9955; }
-    .overlay-pre .tok-string { color: #ce9178; }
-    .overlay-pre .tok-char { color: #ce9178; }
-    .overlay-pre .tok-keyword { color: #c586c0; }
-    .overlay-pre .tok-type { color: #4ec9b0; }
-    .overlay-pre .tok-annotation { color: #dcdcaa; }
-    .overlay-pre .tok-number { color: #b5cea8; }
-    .overlay-pre .tok-func { color: #dcdcaa; }
-
-    .heap-panel { background: var(--heap-area); }
-
-    .heap-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: var(--gap);
-    }
-
-    .obj {
-      background: var(--tile);
-      border: 2px solid var(--tile-border);
-      border-radius: 8px;
-      padding: 0.4rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-      transition: box-shadow 0.15s ease, transform 0.15s ease;
-    }
-
-    .obj:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-
-    .obj .id {
-      font-size: 0.8rem; color: var(--muted);
-    }
-
-    .obj .badge {
-      display: inline-flex; align-items: center; gap: 0.35rem;
-      font-weight: 700; font-size: 0.9rem;
-    }
-
-    .badge .swatch-box { width: 10px; height: 10px; }
-
-    .obj-fields { font-size: 0.85rem; }
-
-    .potato-color { background: var(--potato); border-color: #4b7b1f; }
-    .carrot-color { background: var(--carrot); border-color: #b36000; }
-
-    .legend .key { display:flex; align-items:center; gap:0.4rem; }
-
-    .output { margin-top: 0.5rem; }
-
-    .tester-title { display:flex; align-items:center; justify-content:space-between; }
-    .copy-btn { font-size: 0.8rem; }
-
-    /* Form alignment and section borders */
-    .control.form-section { border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.75rem; background: #fff; }
-    .form-section .inline-inputs { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 0.4rem 0.6rem; }
-    .form-section .inline-inputs label { margin: 0; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .form-section .inline-inputs input[type="text"],
-    .form-section .inline-inputs input[type="number"],
-    .form-section .inline-inputs select {
-      margin: 0;
-      min-width: 0;
-      width: 140px;
-      max-width: 140px;
-    }
-    .form-section .inline-inputs .widget-action-button { justify-self: start; grid-column: 2 / 3; }
-    .form-section .inline-inputs + .inline-inputs { margin-top: 0.5rem !important; }
-
-    /* Prevent sidebar/grid overflow from forcing wrap */
-    .sidebar { min-width: 0; }
-    .chartarea { min-width: 0; }
-
-    /* On mobile, let inputs expand for readability */
-    @media (max-width: 768px) {
-      .form-section .inline-inputs input[type="text"],
-      .form-section .inline-inputs input[type="number"],
-      .form-section .inline-inputs select {
-        width: 100%;
-        max-width: 100%;
-      }
-    }
-
-    /* Small helper for hide/show overlays on touch */
-    .no-overlay .code-overlay { display: none !important; }
-
-    @media (max-width: 768px) {
-      .class-row { grid-template-columns: 1fr; }
-    }
-  </style>
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .bottom{grid-template-columns:1fr}
+  .code{height:auto;max-height:320px;min-height:160px}
+  .console-body{min-height:120px;max-height:220px}
+}
+@media (max-width:600px){
+  body{padding:0}
+  .keyidea .idea{white-space:normal;flex-wrap:wrap}
+  .container{border-radius:0;padding:.6rem 1rem .9rem;box-shadow:none}
+  .classes{grid-template-columns:1fr}
+  h1{font-size:1.05rem;flex-basis:100%;order:3}
+  .topbar{justify-content:space-between}
+  .tab{padding:.4rem .45rem;font-size:.72rem}
+}
+</style>
 </head>
 <body>
-  <div class="container">
-    <a href="../../../index.html" class="back-link">← Back to Home</a>
-    <h1>Java Objects &amp; Static Methods — Visual Memory Demo</h1>
-
-    <div class="controls-container">
-      <!-- Left controls -->
-      <aside class="sidebar">
-        <div class="controls">
-          <div class="control form-section">
-            <div class="area-title">
-              <h3 style="margin:0;">Constructors</h3>
-              <button id="resetBtn" class="widget-action-button" style="min-width:auto;">Reset</button>
-            </div>
-            <div class="inline-inputs">
-              <label for="potatoName"><strong>Potato</strong> name</label>
-              <input id="potatoName" type="text" placeholder="e.g. Yukon" />
-              <label for="potatoWeight">weight (kg)</label>
-              <input id="potatoWeight" type="number" step="0.1" min="0" value="1.0" />
-              <button id="newPotatoBtn" class="widget-action-button">new Potato(...)</button>
-            </div>
-            <div class="inline-inputs" style="margin-top:0.35rem;">
-              <label for="carrotLength"><strong>Carrot</strong> length (cm)</label>
-              <input id="carrotLength" type="number" step="1" min="1" value="12" />
-              <label for="carrotPeeled">peeled?</label>
-              <input id="carrotPeeled" type="checkbox" />
-              <button id="newCarrotBtn" class="widget-action-button">new Carrot(...)</button>
-            </div>
-            <span class="thin-note">New objects are placed on the Heap; each square is an instance.</span>
-          </div>
-
-          <div class="control form-section">
-            <h3 style="margin-top:0;">Static methods</h3>
-            <div class="inline-inputs">
-              <label for="staticClass">Class</label>
-              <select id="staticClass">
-                <option value="Potato">Potato</option>
-                <option value="Carrot">Carrot</option>
-              </select>
-              <label for="presetStatic">preset</label>
-              <select id="presetStatic">
-                <option value="">Custom...</option>
-                <option value="getNutritionalFacts|String|\"Rich in vitamin C and potassium\"">getNutritionalFacts</option>
-                <option value="getCommonVarieties|String|\"Russet, Yukon Gold, Red\"">getCommonVarieties</option>
-                <option value="isRootVegetable|boolean|true">isRootVegetable</option>
-                <option value="averageLength|int|12">averageLength</option>
-                <option value="defaultWeightKg|double|0.2">defaultWeightKg</option>
-              </select>
-            </div>
-            <div class="inline-inputs" style="margin-top:0.35rem;">
-              <label for="staticName">name()</label>
-              <input id="staticName" type="text" placeholder="e.g. kind" />
-            </div>
-            <div class="inline-inputs" style="margin-top:0.35rem;">
-              <label for="staticReturn">returns</label>
-              <input id="staticReturn" type="text" placeholder="e.g. \"Potato\"" />
-            </div>
-            <div class="inline-inputs" style="margin-top:0.35rem;">
-              <label for="returnType">type</label>
-              <select id="returnType">
-                <option value="String" selected>String</option>
-                <option value="int">int</option>
-                <option value="boolean">boolean</option>
-                <option value="double">double</option>
-              </select>
-              <button id="addStaticBtn" class="widget-action-button">Add static</button>
-            </div>
-            <span class="thin-note">Static methods live with the <em>class</em> (Method Area), not with objects.</span>
-          </div>
-
-          <div class="legend info">
-            <h3>Legend</h3>
-            <div class="row">
-              <div class="key"><span class="swatch-box" style="background:var(--class-area);"></span> Class (Method Area)</div>
-            </div>
-            <div class="row">
-              <div class="key"><span class="swatch-box" style="background:var(--heap-area);"></span> Heap (Objects)</div>
-            </div>
-            <div class="row">
-              <div class="key"><span class="swatch-box potato-color"></span> Potato object</div>
-            </div>
-            <div class="row">
-              <div class="key"><span class="swatch-box carrot-color"></span> Carrot object</div>
-            </div>
-          </div>
-
-          <div class="info">
-            <h3>How to use</h3>
-            <p>1) Create some objects with the constructors. Notice they go to the <strong>Heap</strong>.</p>
-            <p>2) Add one or more <strong>static methods</strong> to the classes. They appear in the <strong>Method Area</strong>.</p>
-            <p>3) Click a static method pill to call it; the tester and output update.</p>
-          </div>
-        </div>
-      </aside>
-
-      <!-- Right area: class/method area + heap + tester/output -->
-      <main class="chartarea">
-        <div class="sections">
-          <section class="panel">
-            <div class="area-title">
-              <div class="pill">Method Area (class-level)</div>
-              <div class="thin-note">Hover a class to see its code</div>
-            </div>
-            <div class="class-row">
-              <div class="class-box" data-class="Potato">
-                <div class="class-header">
-                  <div class="class-name"><span class="swatch-box potato-color"></span> Potato <span class="pill">class</span></div>
-                </div>
-                <div class="static-methods" id="potatoMethods"></div>
-                <div class="code-overlay" data-overlay="Potato">
-                  <button class="overlay-close" aria-label="Close">×</button>
-                  <div class="overlay-title">Potato.java</div>
-                  <pre class="overlay-pre" id="potatoCode"></pre>
-                </div>
-              </div>
-              <div class="class-box" data-class="Carrot">
-                <div class="class-header">
-                  <div class="class-name"><span class="swatch-box carrot-color"></span> Carrot <span class="pill">class</span></div>
-                </div>
-                <div class="static-methods" id="carrotMethods"></div>
-                <div class="code-overlay" data-overlay="Carrot">
-                  <button class="overlay-close" aria-label="Close">×</button>
-                  <div class="overlay-title">Carrot.java</div>
-                  <pre class="overlay-pre" id="carrotCode"></pre>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel heap-panel">
-            <div class="area-title">
-              <div class="pill">Heap (object instances)</div>
-              <div class="thin-note">Each tile is a distinct object created with <code>new</code></div>
-            </div>
-            <div class="heap-grid" id="heapGrid"></div>
-          </section>
-
-          <section class="panel">
-            <div class="tester-title">
-              <div class="pill">VegetableTester.java</div>
-              <button id="copyTesterBtn" class="widget-action-button copy-btn">Copy</button>
-            </div>
-            <div class="output"><pre id="testerCode" class="overlay-pre"></pre></div>
-          </section>
-
-          <section class="panel">
-            <div class="area-title">
-              <div class="pill">Program output</div>
-            </div>
-            <div class="output" id="programOutput"></div>
-          </section>
-        </div>
-      </main>
-    </div>
+<div class="container">
+  <div class="topbar">
+    <a href="../../index.html" class="back-link">← Back to Code Widgets</a>
+    <h1>Java Objects &amp; Static Methods: Visual Memory</h1>
+    <button id="resetBtn" class="btn-ghost" type="button">Reset</button>
   </div>
 
-  <script>
-    (() => {
-      // ---------- STATE ----------
-      const state = {
-        instances: [], // { id, type: 'Potato'|'Carrot', fields: {...} }
-        nextId: 1,
-        nameCounters: { Potato: 1, Carrot: 1 },
-        staticMethods: {
-          Potato: [], // { name, returns }
-          Carrot: []
-        },
-        testerLines: []
-      };
+  <div class="layout">
+    <aside class="sidebar">
+      <section class="step">
+        <h2 class="step-title"><span class="step-num">1</span> Create objects with <code>new</code></h2>
+        <form class="ctor potato" id="potatoForm" autocomplete="off">
+          <div class="ctor-head"><span class="sw potato"></span> Potato</div>
+          <div class="fields two">
+            <label for="potatoName">name</label>
+            <input id="potatoName" type="text" value="Yukon" maxlength="24" spellcheck="false">
+            <label for="potatoWeight">weightKg</label>
+            <input id="potatoWeight" type="number" step="any" min="0" value="1.0">
+          </div>
+          <button class="btn run" id="newPotatoBtn" type="submit">new Potato("Yukon", 1.0)</button>
+        </form>
+        <form class="ctor carrot" id="carrotForm" autocomplete="off">
+          <div class="ctor-head"><span class="sw carrot"></span> Carrot</div>
+          <div class="fields two">
+            <label for="carrotLength">lengthCm</label>
+            <input id="carrotLength" type="number" step="1" min="0" value="12">
+            <label for="carrotPeeled">peeled</label>
+            <label class="check"><input id="carrotPeeled" type="checkbox"> <span id="peeledText">false</span></label>
+          </div>
+          <button class="btn run" id="newCarrotBtn" type="submit">new Carrot(12, false)</button>
+        </form>
+      </section>
 
-      // ---------- DOM ----------
-      const heapGrid = document.getElementById('heapGrid');
-      const potatoMethodsEl = document.getElementById('potatoMethods');
-      const carrotMethodsEl = document.getElementById('carrotMethods');
-      const testerCode = document.getElementById('testerCode');
-      const programOutput = document.getElementById('programOutput');
+      <section class="step">
+        <h2 class="step-title"><span class="step-num">2</span> Add a static method to a class</h2>
+        <form id="staticForm" autocomplete="off">
+          <div class="fields">
+            <label for="staticClass">class</label>
+            <select id="staticClass">
+              <option value="Potato">Potato</option>
+              <option value="Carrot">Carrot</option>
+            </select>
+            <label for="staticMethod">method</label>
+            <select id="staticMethod"></select>
+          </div>
+          <pre class="preview dark" id="staticPreview"></pre>
+          <p class="form-msg" id="staticMsg"></p>
+          <button class="btn" id="addStaticBtn" type="submit">Add to Potato class</button>
+        </form>
+      </section>
+    </aside>
 
-      const newPotatoBtn = document.getElementById('newPotatoBtn');
-      const newCarrotBtn = document.getElementById('newCarrotBtn');
-      const potatoName = document.getElementById('potatoName');
-      const potatoWeight = document.getElementById('potatoWeight');
-      const carrotLength = document.getElementById('carrotLength');
-      const carrotPeeled = document.getElementById('carrotPeeled');
-      const staticClass = document.getElementById('staticClass');
-      const staticName = document.getElementById('staticName');
-      const staticReturn = document.getElementById('staticReturn');
-      const addStaticBtn = document.getElementById('addStaticBtn');
-      const copyTesterBtn = document.getElementById('copyTesterBtn');
-      const resetBtn = document.getElementById('resetBtn');
-      const presetStatic = document.getElementById('presetStatic');
-      const returnType = document.getElementById('returnType');
+    <main class="stage">
+      <section class="panel area-class">
+        <div class="panel-head"><h2>Method Area</h2><span class="sub">class-level code and class-level variables, one copy per class. Click a static method to call it.</span></div>
+        <div class="classes">
+          <article class="class-card" data-class="Potato">
+            <div class="class-head">
+              <div class="class-name"><span class="sw potato"></span> Potato <span class="kw">class</span></div>
+              <button class="btn-ghost view-code" type="button" data-file="Potato">{ } <code>Potato.java</code></button>
+            </div>
+            <dl class="members light">
+              <dt>instance variables</dt><dd id="potatoFields"></dd>
+              <dt>constructor</dt><dd id="potatoCtor"></dd>
+              <dt>methods</dt><dd id="potatoMethods"></dd>
+              <dt>static variables</dt><dd id="potatoStaticVars"></dd>
+              <dt>static methods</dt><dd><div class="statics" id="potatoStatics"></div></dd>
+            </dl>
+            <div class="argrow" id="potatoArgs" hidden></div>
+          </article>
+          <article class="class-card" data-class="Carrot">
+            <div class="class-head">
+              <div class="class-name"><span class="sw carrot"></span> Carrot <span class="kw">class</span></div>
+              <button class="btn-ghost view-code" type="button" data-file="Carrot">{ } <code>Carrot.java</code></button>
+            </div>
+            <dl class="members light">
+              <dt>instance variables</dt><dd id="carrotFields"></dd>
+              <dt>constructor</dt><dd id="carrotCtor"></dd>
+              <dt>methods</dt><dd id="carrotMethods"></dd>
+              <dt>static variables</dt><dd id="carrotStaticVars"></dd>
+              <dt>static methods</dt><dd><div class="statics" id="carrotStatics"></div></dd>
+            </dl>
+            <div class="argrow" id="carrotArgs" hidden></div>
+          </article>
+        </div>
+      </section>
 
-      const potatoCode = document.getElementById('potatoCode');
-      const carrotCode = document.getElementById('carrotCode');
+      <section class="panel area-heap">
+        <div class="panel-head"><h2>Heap</h2><span class="sub">one object per <code>new</code>, each with its own instance variables. The variable (<code>p1</code>) is a reference to it. Click <code>toString()</code> to call it on that object.</span></div>
+        <div class="heap" id="heap"></div>
+      </section>
 
-      // ---------- UTIL ----------
-      function escapeJavaString(s) {
-        return s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/\"/g, '\\"');
-      }
+      <div class="bottom">
+        <section class="editor">
+          <div class="tabs" role="tablist">
+            <button class="tab" role="tab" type="button" data-file="VegetableTester" aria-selected="true">VegetableTester.java</button>
+            <button class="tab" role="tab" type="button" data-file="Potato" aria-selected="false">Potato.java</button>
+            <button class="tab" role="tab" type="button" data-file="Carrot" aria-selected="false">Carrot.java</button>
+            <span class="spacer"></span>
+            <button class="btn-ghost" id="copyBtn" type="button">Copy</button>
+          </div>
+          <pre class="code dark" id="code"></pre>
+        </section>
+        <section class="console">
+          <div class="console-head">Console</div>
+          <div class="console-body" id="console"></div>
+        </section>
+      </div>
 
-      function makeVarName(type) {
-        const index = state.nameCounters[type]++;
-        const prefix = type === 'Potato' ? 'p' : 'c';
-        return prefix + index;
-      }
+      <div class="keyidea">
+        <span class="step-num">3</span>
+        <span class="idea"><span class="method-pill demo">Potato.totalWeight(p1, p2)</span><span><b>static</b>: called on the class, objects come in as inputs</span></span>
+        <span class="idea"><span class="obj-call demo">p1.toString()</span><span><b>instance</b>: called on one object</span></span>
+      </div>
+    </main>
+  </div>
+</div>
 
-      function appendTester(line) {
-        state.testerLines.push(line);
-        renderTester();
-      }
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const fmtDouble = n => Number.isInteger(n) ? n.toFixed(1) : String(n);
+  const javaString = s => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
 
-      function renderTester() {
-        const lines = [
-          'public class VegetableTester {',
-          '  public static void main(String[] args) {'
-        ];
-        const body = state.testerLines.map(l => '    ' + l);
-        lines.push(...body);
-        lines.push('  }');
-        lines.push('}');
-        testerCode.innerHTML = syntaxHighlightJava(lines.join('\n'));
-      }
-
-      function renderOutputLine(line) {
-        const div = document.createElement('div');
-        div.textContent = line;
-        programOutput.appendChild(div);
-      }
-
-      function renderHeap() {
-        heapGrid.innerHTML = '';
-        state.instances.forEach(inst => {
-          const el = document.createElement('div');
-          el.className = 'obj';
-          const badge = document.createElement('div');
-          badge.className = 'badge';
-          const swatch = document.createElement('span');
-          swatch.className = 'swatch-box ' + (inst.type === 'Potato' ? 'potato-color' : 'carrot-color');
-          const title = document.createElement('span');
-          title.textContent = inst.type + ' instance';
-          badge.appendChild(swatch); badge.appendChild(title);
-
-          const id = document.createElement('div');
-          id.className = 'id';
-          id.textContent = '#' + inst.id;
-
-          const fields = document.createElement('div');
-          fields.className = 'obj-fields';
-          fields.innerHTML = Object.entries(inst.fields).map(([k, v]) => `<div><strong>${k}</strong>: ${v}</div>`).join('');
-
-          el.appendChild(badge);
-          el.appendChild(id);
-          el.appendChild(fields);
-          heapGrid.appendChild(el);
-        });
-      }
-
-      function renderMethods() {
-        function renderFor(clazz, container) {
-          container.innerHTML = '';
-          state.staticMethods[clazz].forEach(m => {
-            const pill = document.createElement('button');
-            pill.type = 'button';
-            pill.className = 'method-pill';
-            pill.textContent = `${clazz}.${m.name}()`;
-            pill.title = `Click to call ${clazz}.${m.name}()`;
-            pill.addEventListener('click', () => {
-              renderOutputLine(`${clazz}.${m.name}() -> ${m.returns}`);
-              appendTester(`System.out.println(${clazz}.${m.name}());`);
-            });
-            container.appendChild(pill);
-          });
+  // ---------- Java syntax highlighting, VS Code style (one HTML string per line) ----------
+  const KW = new Set(('abstract assert boolean break byte case catch char class const continue default do double else enum ' +
+    'extends final finally float for goto if implements import instanceof int interface long native new null package private protected ' +
+    'public return short static strictfp super switch synchronized this throw throws transient try void volatile while true false').split(' '));
+  const CTRL = new Set('return if else for while do switch case break continue try catch finally throw'.split(' '));
+  const span = (cls, text) => '<span class="' + cls + '">' + esc(text) + '</span>';
+  function highlightJava(lines) {
+    return lines.map(line => {
+      let out = '';
+      let i = 0;
+      const n = line.length;
+      while (i < n) {
+        const ch = line[i];
+        if (ch === '/' && line[i + 1] === '/') { out += span('tok-comment', line.slice(i)); break; }
+        if (ch === '"') {
+          let j = i + 1;
+          while (j < n && line[j] !== '"') { if (line[j] === '\\') j++; j++; }
+          j = Math.min(j + 1, n);
+          out += span('tok-str', line.slice(i, j)); i = j; continue;
         }
-        renderFor('Potato', potatoMethodsEl);
-        renderFor('Carrot', carrotMethodsEl);
-        updateClassCode();
-      }
-
-      function updateClassCode() {
-        const potatoStatic = state.staticMethods.Potato.map(m => `    public static ${m.type} ${m.name}() { return ${m.returns}; }`).join('\n');
-        const carrotStatic = state.staticMethods.Carrot.map(m => `    public static ${m.type} ${m.name}() { return ${m.returns}; }`).join('\n');
-
-        potatoCode.innerHTML = syntaxHighlightJava([
-          'public class Potato {',
-          '    private String name;',
-          '    private double weightKg;',
-          '',
-          '    public Potato(String name, double weightKg) {',
-          '        this.name = name;',
-          '        this.weightKg = weightKg;',
-          '    }',
-          '',
-          '    public String getName() { return name; }',
-          '    public double getWeightKg() { return weightKg; }',
-          '',
-          (potatoStatic ? potatoStatic + '\n' : ''),
-          '    public String toString() {',
-          '        return "Potato{" + name + ", " + weightKg + "kg}";',
-          '    }',
-          '}'
-        ].join('\n'));
-
-        carrotCode.innerHTML = syntaxHighlightJava([
-          'public class Carrot {',
-          '    private int lengthCm;',
-          '    private boolean peeled;',
-          '',
-          '    public Carrot(int lengthCm, boolean peeled) {',
-          '        this.lengthCm = lengthCm;',
-          '        this.peeled = peeled;',
-          '    }',
-          '',
-          '    public int getLengthCm() { return lengthCm; }',
-          '    public boolean isPeeled() { return peeled; }',
-          '',
-          (carrotStatic ? carrotStatic + '\n' : ''),
-          '    public String toString() {',
-          '        return "Carrot{" + lengthCm + "cm, peeled=" + peeled + "}";',
-          '    }',
-          '}'
-        ].join('\n'));
-      }
-
-      // Robust Java syntax highlighter (per-line with safe placeholders)
-      function syntaxHighlightJava(code) {
-        const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const lines = escapeHtml(code).split('\n');
-        const kwRe = /\b(abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|else|enum|extends|final|finally|float|for|goto|if|implements|import|instanceof|int|interface|long|native|new|null|package|private|protected|public|return|short|static|strictfp|super|switch|synchronized|this|throw|throws|transient|try|void|volatile|while)\b/g;
-        const typeRe = /\b([A-Z][A-Za-z0-9_]*)\b/g;
-        const numRe = /\b(\d+(?:\.\d+)?)\b/g;
-        const annRe = /(@[A-Za-z_][A-Za-z0-9_]*)/g;
-        const strOrCharRe = /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])'/g;
-
-        function alphaKey(n) {
-          let s = '';
-          n = n >>> 0;
-          do {
-            s = String.fromCharCode(97 + (n % 26)) + s;
-            n = Math.floor(n / 26) - 1;
-          } while (n >= 0);
-          return s;
+        if (ch >= '0' && ch <= '9') {
+          let j = i;
+          while (j < n && /[0-9.]/.test(line[j])) j++;
+          out += span('tok-num', line.slice(i, j)); i = j; continue;
         }
-
-        return lines.map((raw) => {
-          const placeholders = Object.create(null);
-          let i = 0;
-          const withHoles = raw.replace(strOrCharRe, (m) => {
-            const cls = m.startsWith('"') ? 'tok-string' : 'tok-char';
-            const key = alphaKey(i++);
-            placeholders[key] = '<span class="' + cls + '\">' + m + '</span>';
-            return '\u0001' + key + '\u0002';
-          });
-          const ci = withHoles.indexOf('//');
-          let codePart = ci >= 0 ? withHoles.slice(0, ci) : withHoles;
-          let commentPart = ci >= 0 ? withHoles.slice(ci) : '';
-          codePart = codePart
-            .replace(annRe, (_, a) => '<span class="tok-annotation">' + a + '</span>')
-            .replace(kwRe, '<span class="tok-keyword">$1</span>')
-            .replace(typeRe, '<span class="tok-type">$1</span>')
-            .replace(numRe, '<span class="tok-number">$1</span>');
-          const restore = (s) => s.replace(/\u0001([a-z]+)\u0002/g, (_, k) => (k in placeholders ? placeholders[k] : ''));
-          codePart = restore(codePart);
-          if (commentPart) {
-            commentPart = restore(commentPart);
-            return codePart + '<span class="tok-comment">' + commentPart + '</span>';
-          }
-          return codePart;
-        }).join('\n');
-      }
-
-      // ---------- ACTIONS ----------
-      function createPotato() {
-        const name = (potatoName.value || '').trim() || `Potato${state.nameCounters.Potato}`;
-        const weight = parseFloat(potatoWeight.value || '0') || 0;
-        const id = state.nextId++;
-        state.instances.push({ id, type: 'Potato', fields: { name, weightKg: weight.toFixed(1) } });
-        renderHeap();
-        const varName = makeVarName('Potato');
-        appendTester(`Potato ${varName} = new Potato("${escapeJavaString(name)}", ${weight.toFixed(1)});`);
-      }
-
-      function createCarrot() {
-        const length = parseInt(carrotLength.value || '0', 10) || 0;
-        const peeled = !!carrotPeeled.checked;
-        const id = state.nextId++;
-        state.instances.push({ id, type: 'Carrot', fields: { lengthCm: length, peeled } });
-        renderHeap();
-        const varName = makeVarName('Carrot');
-        appendTester(`Carrot ${varName} = new Carrot(${length}, ${peeled});`);
-      }
-
-      function addStatic() {
-        const clazz = staticClass.value;
-        const name = (staticName.value || '').trim();
-        const ret = (staticReturn.value || '').trim();
-        const type = returnType.value || 'String';
-        if (!name) return;
-        const returns = normalizeReturnLiteral(type, ret || (type === 'String' ? (clazz === 'Potato' ? 'Potato' : 'Carrot') : defaultValueForType(type)));
-        state.staticMethods[clazz].push({ name, type, returns });
-        renderMethods();
-        appendTester(`// Added static method: ${clazz}.${name}()`);
-        staticName.value = '';
-        staticReturn.value = '';
-        returnType.value = 'String';
-      }
-
-      function normalizeReturnLiteral(type, raw) {
-        // If type is String, ensure the value is quoted exactly once
-        if (type === 'String') {
-          const unquoted = raw.replace(/^"|"$/g, '');
-          return '"' + unquoted.replace(/\\"/g, '"').replace(/"/g, '\\"') + '"';
+        if (/[A-Za-z_$]/.test(ch)) {
+          let j = i;
+          while (j < n && /[A-Za-z0-9_$]/.test(line[j])) j++;
+          const word = line.slice(i, j);
+          let k = j;
+          while (k < n && line[k] === ' ') k++;
+          const cls = CTRL.has(word) ? 'tok-ctrl' : KW.has(word) ? 'tok-kw' : /^[A-Z]/.test(word) ? 'tok-type' : line[k] === '(' ? 'tok-func' : 'tok-var';
+          out += span(cls, word); i = j; continue;
         }
-        // For booleans and numbers, pass through
-        if (type === 'boolean') return (raw === 'true' ? 'true' : 'false');
-        if (type === 'int' || type === 'double') return raw;
-        return raw;
+        out += esc(ch); i++;
       }
+      return out;
+    });
+  }
 
-      function defaultValueForType(type) {
-        if (type === 'boolean') return 'false';
-        if (type === 'int') return '0';
-        if (type === 'double') return '0.0';
-        return '';
+  // ---------- the two classes ----------
+  const signature = m => `${m.type} ${m.name}(${m.params.map(([t, p]) => t + ' ' + p).join(', ')})`;
+  function staticBlock(cls, statics) {
+    if (!statics.length) return ['    // static methods you add in step 2 appear here'];
+    const out = [`    // static methods: called on the class, as ${cls}.name(...)`];
+    statics.forEach((m, i) => {
+      if (i) out.push('');
+      out.push(`    public static ${signature(m)} {`, ...m.body.map(b => '        ' + b), '    }');
+    });
+    return out;
+  }
+
+  const CLASSES = {
+    Potato: {
+      prefix: 'p',
+      fields: 'String name, double weightKg',
+      ctor: 'Potato(String name, double weightKg)',
+      methods: 'getName(), getWeightKg(), toString()',
+      read() {
+        const name = $('potatoName').value.trim() || 'Potato';
+        const w = parseFloat($('potatoWeight').value);
+        const weightKg = Number.isFinite(w) && w >= 0 ? w : 0;
+        return {
+          args: `${javaString(name)}, ${fmtDouble(weightKg)}`,
+          fields: [`name = ${javaString(name)}`, `weightKg = ${fmtDouble(weightKg)}`],
+          values: { name, weightKg },
+          toString: `Potato{${name}, ${fmtDouble(weightKg)}kg}`
+        };
+      },
+      source: statics => [
+        'public class Potato {',
+        '    private String name;',
+        '    private double weightKg;',
+        '    private static int count = 0;   // one shared counter for the whole class',
+        '',
+        '    public Potato(String name, double weightKg) {',
+        '        this.name = name;',
+        '        this.weightKg = weightKg;',
+        '        count++;',
+        '    }',
+        '',
+        '    public String getName() { return name; }',
+        '    public double getWeightKg() { return weightKg; }',
+        '',
+        '    public String toString() {',
+        '        return "Potato{" + name + ", " + weightKg + "kg}";',
+        '    }',
+        '',
+        ...staticBlock('Potato', statics),
+        '}'
+      ],
+      statics: [
+        { name: 'getCount', type: 'int', params: [], body: ['return count;'],
+          why: 'Counts every Potato ever made. One number for the whole class, not one per potato.',
+          run: () => state.counters.Potato },
+        { name: 'totalWeight', type: 'double', params: [['Potato', 'a'], ['Potato', 'b']], body: ['return a.weightKg + b.weightKg;'],
+          why: 'Needs two potatoes at once, so it cannot belong to just one of them.',
+          run: (a, b) => a.values.weightKg + b.values.weightKg },
+        { name: 'heavier', type: 'Potato', params: [['Potato', 'a'], ['Potato', 'b']], body: ['if (a.weightKg >= b.weightKg) return a;', 'return b;'],
+          why: 'Compares two potatoes and returns one of them. No single potato owns that job.',
+          run: (a, b) => (a.values.weightKg >= b.values.weightKg ? a : b) },
+        { name: 'kgToLb', type: 'double', params: [['double', 'kg']], body: ['return kg * 2.205;'],
+          why: 'Plain math on a number. No potato is needed, so it lives on the class.',
+          run: kg => kg * 2.205 }
+      ]
+    },
+    Carrot: {
+      prefix: 'c',
+      fields: 'int lengthCm, boolean peeled',
+      ctor: 'Carrot(int lengthCm, boolean peeled)',
+      methods: 'getLengthCm(), isPeeled(), toString()',
+      read() {
+        const n = parseInt($('carrotLength').value, 10);
+        const lengthCm = Number.isFinite(n) && n >= 0 ? n : 0;
+        const peeled = $('carrotPeeled').checked;
+        return {
+          args: `${lengthCm}, ${peeled}`,
+          fields: [`lengthCm = ${lengthCm}`, `peeled = ${peeled}`],
+          values: { lengthCm, peeled },
+          toString: `Carrot{${lengthCm}cm, peeled=${peeled}}`
+        };
+      },
+      source: statics => [
+        'public class Carrot {',
+        '    private int lengthCm;',
+        '    private boolean peeled;',
+        '    private static int count = 0;   // one shared counter for the whole class',
+        '',
+        '    public Carrot(int lengthCm, boolean peeled) {',
+        '        this.lengthCm = lengthCm;',
+        '        this.peeled = peeled;',
+        '        count++;',
+        '    }',
+        '',
+        '    public int getLengthCm() { return lengthCm; }',
+        '    public boolean isPeeled() { return peeled; }',
+        '',
+        '    public String toString() {',
+        '        return "Carrot{" + lengthCm + "cm, peeled=" + peeled + "}";',
+        '    }',
+        '',
+        ...staticBlock('Carrot', statics),
+        '}'
+      ],
+      statics: [
+        { name: 'getCount', type: 'int', params: [], body: ['return count;'],
+          why: 'Counts every Carrot ever made. One number for the whole class, not one per carrot.',
+          run: () => state.counters.Carrot },
+        { name: 'totalLength', type: 'int', params: [['Carrot', 'a'], ['Carrot', 'b']], body: ['return a.lengthCm + b.lengthCm;'],
+          why: 'Needs two carrots at once, so it cannot belong to just one of them.',
+          run: (a, b) => a.values.lengthCm + b.values.lengthCm },
+        { name: 'longer', type: 'Carrot', params: [['Carrot', 'a'], ['Carrot', 'b']], body: ['if (a.lengthCm >= b.lengthCm) return a;', 'return b;'],
+          why: 'Compares two carrots and returns one of them. No single carrot owns that job.',
+          run: (a, b) => (a.values.lengthCm >= b.values.lengthCm ? a : b) },
+        { name: 'isJumbo', type: 'boolean', params: [['int', 'lengthCm']], body: ['return lengthCm > 20;'],
+          why: 'Checks a number, not a carrot. No object is needed, so it lives on the class.',
+          run: n => n > 20 }
+      ]
+    }
+  };
+
+  // ---------- state ----------
+  const state = {
+    objects: [],                         // { id, varName, type, fields: [text], values, toString }
+    counters: { Potato: 0, Carrot: 0 },  // also the static `count` of each class
+    statics: { Potato: [], Carrot: [] }, // template objects from CLASSES[cls].statics
+    main: [],                            // statements inside main()
+    file: 'VegetableTester'
+  };
+  let flash = null;                      // { file, text } line to highlight after a change
+  let flashTimer = 0;
+
+  // ---------- DOM ----------
+  const codeEl = $('code');
+  const consoleEl = $('console');
+  const heapEl = $('heap');
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const staticsEls = { Potato: $('potatoStatics'), Carrot: $('carrotStatics') };
+  const argRows = { Potato: $('potatoArgs'), Carrot: $('carrotArgs') };
+  const countEls = { Potato: $('potatoStaticVars'), Carrot: $('carrotStaticVars') };
+  const previewEl = $('staticPreview');
+  const msgEl = $('staticMsg');
+  const addStaticBtn = $('addStaticBtn');
+  const copyBtn = $('copyBtn');
+  const EMPTY_CONSOLE = '<div class="console-empty">Nothing printed yet. Call a method to see its output.</div>';
+
+  // ---------- files ----------
+  function mainSource() {
+    const body = state.main.length
+      ? state.main.map(l => '        ' + l)
+      : ['        // nothing here yet: create an object or call a method'];
+    return ['public class VegetableTester {', '    public static void main(String[] args) {', ...body, '    }', '}'];
+  }
+  function fileLines(file) {
+    return file === 'VegetableTester' ? mainSource() : CLASSES[file].source(state.statics[file]);
+  }
+
+  function renderCode() {
+    const lines = fileLines(state.file);
+    let flashIndex = -1;
+    if (flash && flash.file === state.file) {
+      for (let i = lines.length - 1; i >= 0; i--) {
+        if (lines[i].trim() === flash.text.trim()) { flashIndex = i; break; }
       }
+    }
+    codeEl.innerHTML = highlightJava(lines)
+      .map((h, i) => `<span class="ln${i === flashIndex ? ' new' : ''}">${h || ' '}</span>`)
+      .join('');
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.file === state.file)));
+    const hot = codeEl.querySelector('.ln.new');
+    if (hot) hot.scrollIntoView({ block: 'nearest' });
+  }
 
-      function doReset() {
-        state.instances = [];
-        state.nextId = 1;
-        state.nameCounters = { Potato: 1, Carrot: 1 };
-        state.staticMethods = { Potato: [], Carrot: [] };
-        state.testerLines = [];
-        programOutput.innerHTML = '';
-        renderHeap();
-        renderMethods();
-        appendTester('// Reset — start by creating objects, then add static methods');
+  function showFile(file, changedLine) {
+    state.file = file;
+    flash = changedLine ? { file, text: changedLine } : null;
+    renderCode();
+    clearTimeout(flashTimer);
+    if (flash) {
+      flashTimer = setTimeout(() => {
+        flash = null;
+        codeEl.querySelectorAll('.ln.new').forEach(el => el.classList.remove('new'));
+      }, 1600);
+    }
+  }
+
+  // ---------- console ----------
+  function print(text) {
+    const empty = consoleEl.querySelector('.console-empty');
+    if (empty) empty.remove();
+    const line = document.createElement('div');
+    line.className = 'line new';
+    line.textContent = text;
+    consoleEl.appendChild(line);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+    setTimeout(() => line.classList.remove('new'), 1600);
+  }
+  function printable(type, v) {
+    if (type === 'double') return fmtDouble(v);
+    if (type === 'Potato' || type === 'Carrot') return v.toString;
+    return String(v);
+  }
+
+  // ---------- method area ----------
+  function renderCard(cls) {
+    const c = CLASSES[cls];
+    const low = cls.toLowerCase();
+    $(low + 'Fields').innerHTML = highlightJava([c.fields])[0];
+    $(low + 'Ctor').innerHTML = highlightJava([c.ctor])[0];
+    $(low + 'Methods').innerHTML = highlightJava([c.methods])[0];
+    renderCount(cls, false);
+  }
+  function renderCount(cls, bump) {
+    const el = countEls[cls];
+    el.innerHTML = highlightJava([`count = ${state.counters[cls]}`])[0];
+    if (bump) {
+      el.classList.add('new');
+      setTimeout(() => el.classList.remove('new'), 1600);
+    }
+  }
+  function renderStatics(cls) {
+    const el = staticsEls[cls];
+    el.innerHTML = '';
+    argRows[cls].hidden = true;
+    const list = state.statics[cls];
+    if (!list.length) {
+      el.innerHTML = '<span class="empty">none yet. Add one in step 2.</span>';
+      return;
+    }
+    list.forEach(m => {
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'method-pill';
+      pill.textContent = `${cls}.${m.name}(${m.params.map(p => p[1]).join(', ')})`;
+      pill.title = m.params.length ? `Choose the inputs, then call ${cls}.${m.name}()` : `Call ${cls}.${m.name}()`;
+      pill.addEventListener('click', () => {
+        if (m.params.length) openArgRow(cls, m, pill);
+        else callStatic(cls, m, [], []);
+      });
+      el.appendChild(pill);
+    });
+  }
+
+  function openArgRow(cls, m, pill) {
+    const row = argRows[cls];
+    staticsEls[cls].querySelectorAll('.method-pill').forEach(p => p.classList.toggle('open', p === pill));
+    row.hidden = false;
+    row.innerHTML = '';
+    const line = document.createElement('span');
+    line.className = 'argline';
+    const text = t => { const s = document.createElement('span'); s.textContent = t; return s; };
+    line.appendChild(text(`${cls}.${m.name}(`));
+    let missing = '';
+    m.params.forEach(([type, pname], i) => {
+      if (i) line.appendChild(text(', '));
+      let ctrl;
+      if (type === 'Potato' || type === 'Carrot') {
+        const objs = state.objects.filter(o => o.type === type);
+        ctrl = document.createElement('select');
+        objs.forEach(o => ctrl.appendChild(new Option(o.varName, o.varName)));
+        if (objs.length) ctrl.value = objs[Math.min(i, objs.length - 1)].varName;
+        else { ctrl.appendChild(new Option(pname, '')); ctrl.disabled = true; missing = type; }
+      } else {
+        ctrl = document.createElement('input');
+        ctrl.type = 'number';
+        ctrl.step = type === 'int' ? '1' : 'any';
+        ctrl.value = type === 'int' ? '25' : '1.5';
       }
+      ctrl.dataset.type = type;
+      ctrl.title = `${type} ${pname}`;
+      ctrl.setAttribute('aria-label', `${type} ${pname}`);
+      line.appendChild(ctrl);
+    });
+    line.appendChild(text(')'));
+    row.appendChild(line);
 
-      function positionOverlayFor(box) {
-        const overlay = box.querySelector('.code-overlay');
-        if (!overlay) return;
-        const rect = box.getBoundingClientRect();
-        const margin = 10;
-        const preferredLeft = rect.right + margin;
-        const preferredTop = rect.top;
-        const width = 380;
-        const height = Math.min(window.innerHeight - 2 * margin, 500);
-        let left = preferredLeft;
-        let top = preferredTop;
-        if (left + width > window.innerWidth - margin) {
-          left = rect.left - width - margin; // place on left side if no room
-        }
-        if (top + height > window.innerHeight - margin) {
-          top = window.innerHeight - height - margin;
-        }
-        if (top < margin) top = margin;
-        overlay.style.left = left + 'px';
-        overlay.style.top = top + 'px';
-        overlay.style.width = width + 'px';
-        overlay.style.maxHeight = height + 'px';
-      }
-
-      function copyTester() {
-        const text = testerCode.textContent;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(() => {
-            renderOutputLine('Tester code copied to clipboard.');
-          });
+    const call = document.createElement('button');
+    call.type = 'button';
+    call.className = 'btn-ghost call';
+    call.textContent = 'Call';
+    call.disabled = !!missing;
+    call.addEventListener('click', () => {
+      const args = [];
+      const argText = [];
+      line.querySelectorAll('select, input').forEach(c => {
+        const t = c.dataset.type;
+        if (t === 'Potato' || t === 'Carrot') {
+          const o = state.objects.find(x => x.varName === c.value);
+          args.push(o); argText.push(o.varName);
+        } else if (t === 'int') {
+          const v = parseInt(c.value, 10) || 0;
+          args.push(v); argText.push(String(v));
         } else {
-          // Fallback
-          const ta = document.createElement('textarea');
-          ta.value = text; document.body.appendChild(ta); ta.select();
-          try { document.execCommand('copy'); renderOutputLine('Tester code copied to clipboard.'); } catch(e) {}
-          document.body.removeChild(ta);
+          const v = parseFloat(c.value) || 0;
+          args.push(v); argText.push(fmtDouble(v));
         }
-      }
-
-      // ---------- EVENTS ----------
-      newPotatoBtn.addEventListener('click', createPotato);
-      newCarrotBtn.addEventListener('click', createCarrot);
-      addStaticBtn.addEventListener('click', addStatic);
-      copyTesterBtn.addEventListener('click', copyTester);
-      resetBtn.addEventListener('click', doReset);
-
-      // Show overlays at side on mouseenter and hide on mouseleave, but not blocking static method pills
-      document.querySelectorAll('.class-box').forEach(box => {
-        const overlay = box.querySelector('.code-overlay');
-        box.addEventListener('mouseenter', () => {
-          positionOverlayFor(box);
-          overlay.classList.add('visible');
-        });
-        box.addEventListener('mouseleave', (e) => {
-          overlay.classList.remove('visible');
-        });
       });
+      closeArgRow(cls);
+      callStatic(cls, m, args, argText);
+    });
+    row.appendChild(call);
 
-      presetStatic.addEventListener('change', () => {
-        const value = presetStatic.value; // format: name|Type|return
-        if (!value) return;
-        const [name, type, ret] = value.split('|');
-        staticName.value = name || '';
-        returnType.value = type || 'String';
-        const suggested = type === 'String' ? (ret || '""') : (ret || defaultValueForType(type));
-        staticReturn.value = suggested;
-        staticReturn.placeholder = suggested;
-      });
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'btn-ghost';
+    cancel.textContent = '×';
+    cancel.title = 'Cancel';
+    cancel.addEventListener('click', () => closeArgRow(cls));
+    row.appendChild(cancel);
 
-      // Allow closing overlay on click of × (good for touch devices)
-      document.querySelectorAll('.overlay-close').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const box = e.target.closest('.class-box');
-          if (!box) return;
-          box.classList.add('no-overlay');
-          setTimeout(() => box.classList.remove('no-overlay'), 50);
-        });
-      });
+    if (missing) {
+      const note = document.createElement('span');
+      note.className = 'empty';
+      note.textContent = `Create a ${missing} in step 1 first.`;
+      row.appendChild(note);
+    }
+  }
+  function closeArgRow(cls) {
+    argRows[cls].hidden = true;
+    argRows[cls].innerHTML = '';
+    staticsEls[cls].querySelectorAll('.method-pill').forEach(p => p.classList.remove('open'));
+  }
 
-      // ---------- INIT ----------
-      renderMethods();
-      renderHeap();
-      appendTester('// Start by creating objects, then try adding static methods');
-    })();
-  </script>
+  // ---------- heap ----------
+  function renderHeapEmpty() {
+    heapEl.innerHTML = '<div class="heap-empty"><span>No objects yet. Press one of the red <code>new</code> buttons in step 1.</span></div>';
+  }
+  function addTile(o) {
+    const empty = heapEl.querySelector('.heap-empty');
+    if (empty) empty.remove();
+    const tile = document.createElement('article');
+    tile.className = 'obj';
+    tile.dataset.type = o.type;
+    tile.innerHTML =
+      `<div class="obj-head"><span class="obj-var">${o.varName}</span><span class="obj-arrow">→</span><span class="obj-type">${o.type} object #${o.id}</span></div>` +
+      `<div class="obj-fields light">${highlightJava(o.fields).map(h => `<div>${h}</div>`).join('')}</div>` +
+      `<button type="button" class="obj-call" title="Call toString() on this object">${o.varName}.toString()</button>`;
+    tile.querySelector('.obj-call').addEventListener('click', () => callInstance(o));
+    heapEl.appendChild(tile);
+  }
+
+  // ---------- actions ----------
+  function addMainLine(line) {
+    state.main.push(line);
+    showFile('VegetableTester', line);
+  }
+  function createObject(cls) {
+    const spec = CLASSES[cls];
+    const r = spec.read();
+    const o = {
+      id: state.objects.length + 1,
+      varName: spec.prefix + (++state.counters[cls]),
+      type: cls,
+      fields: r.fields,
+      values: r.values,
+      toString: r.toString
+    };
+    state.objects.push(o);
+    addTile(o);
+    renderCount(cls, true);
+    if (!argRows[cls].hidden) closeArgRow(cls);
+    addMainLine(`${cls} ${o.varName} = new ${cls}(${r.args});`);
+  }
+  function callStatic(cls, m, args, argText) {
+    addMainLine(`System.out.println(${cls}.${m.name}(${argText.join(', ')}));`);
+    print(printable(m.type, m.run(...args)));
+  }
+  function callInstance(o) {
+    addMainLine(`System.out.println(${o.varName}.toString());`);
+    print(o.toString);
+  }
+
+  function renderCtorButtons() {
+    $('newPotatoBtn').textContent = `new Potato(${CLASSES.Potato.read().args})`;
+    $('newCarrotBtn').textContent = `new Carrot(${CLASSES.Carrot.read().args})`;
+    $('peeledText').textContent = $('carrotPeeled').checked ? 'true' : 'false';
+  }
+
+  // ---------- static method picker (step 2) ----------
+  function currentTemplate() {
+    const cls = $('staticClass').value;
+    return CLASSES[cls].statics.find(m => m.name === $('staticMethod').value) || null;
+  }
+  function fillMethodSelect() {
+    const cls = $('staticClass').value;
+    const sel = $('staticMethod');
+    const prev = sel.value;
+    sel.innerHTML = '';
+    CLASSES[cls].statics.forEach(m => {
+      const added = state.statics[cls].includes(m);
+      const label = `${m.name}(${m.params.map(p => p[1]).join(', ')})` + (added ? '  (added)' : '');
+      const opt = new Option(label, m.name);
+      opt.disabled = added;
+      sel.appendChild(opt);
+    });
+    const enabled = Array.from(sel.options).filter(o => !o.disabled);
+    const keep = enabled.find(o => o.value === prev);
+    sel.value = keep ? keep.value : enabled.length ? enabled[0].value : sel.options[0].value;
+    renderStaticPreview();
+  }
+  function previewLines(m) {
+    const sig = `public static ${signature(m)} {`;
+    const head = sig.length > 36
+      ? [`public static ${m.type} ${m.name}(`, `        ${m.params.map(([t, p]) => t + ' ' + p).join(', ')}) {`]
+      : [sig];
+    return [...head, ...m.body.map(b => '    ' + b), '}'];
+  }
+  function renderStaticPreview() {
+    const cls = $('staticClass').value;
+    const m = currentTemplate();
+    if (!m) return;
+    previewEl.innerHTML = highlightJava(previewLines(m)).join('\n');
+    const added = state.statics[cls].includes(m);
+    msgEl.textContent = added ? `${cls}.${m.name}() is already in the class.` : m.why;
+    addStaticBtn.disabled = added;
+    addStaticBtn.textContent = `Add to ${cls} class`;
+  }
+  function addStatic() {
+    const cls = $('staticClass').value;
+    const m = currentTemplate();
+    if (!m || state.statics[cls].includes(m)) return;
+    state.statics[cls].push(m);
+    renderStatics(cls);
+    showFile(cls, `public static ${signature(m)} {`);
+    fillMethodSelect();
+  }
+
+  // ---------- copy / reset ----------
+  function copyActiveFile() {
+    const text = fileLines(state.file).join('\n');
+    const done = () => { copyBtn.textContent = 'Copied!'; setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1200); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+  function fallbackCopy(text, done) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) { /* ignore */ }
+    document.body.removeChild(ta);
+  }
+
+  function reset() {
+    state.objects = [];
+    state.counters = { Potato: 0, Carrot: 0 };
+    state.statics = { Potato: [], Carrot: [] };
+    state.main = [];
+    renderHeapEmpty();
+    renderStatics('Potato');
+    renderStatics('Carrot');
+    renderCount('Potato', false);
+    renderCount('Carrot', false);
+    consoleEl.innerHTML = EMPTY_CONSOLE;
+    showFile('VegetableTester');
+    fillMethodSelect();
+  }
+
+  // ---------- events ----------
+  $('potatoForm').addEventListener('submit', e => { e.preventDefault(); createObject('Potato'); });
+  $('carrotForm').addEventListener('submit', e => { e.preventDefault(); createObject('Carrot'); });
+  $('staticForm').addEventListener('submit', e => { e.preventDefault(); addStatic(); });
+  ['potatoName', 'potatoWeight', 'carrotLength'].forEach(id => $(id).addEventListener('input', renderCtorButtons));
+  $('carrotPeeled').addEventListener('change', renderCtorButtons);
+  $('staticClass').addEventListener('change', fillMethodSelect);
+  $('staticMethod').addEventListener('change', renderStaticPreview);
+  tabs.forEach(t => t.addEventListener('click', () => showFile(t.dataset.file)));
+  document.querySelectorAll('.view-code').forEach(b => b.addEventListener('click', () => {
+    showFile(b.dataset.file);
+    codeEl.closest('.editor').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }));
+  copyBtn.addEventListener('click', copyActiveFile);
+  $('resetBtn').addEventListener('click', reset);
+
+  // ---------- init ----------
+  renderCard('Potato');
+  renderCard('Carrot');
+  renderCtorButtons();
+  reset();
+})();
+</script>
 </body>
 </html>
-
-
