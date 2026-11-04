@@ -41,7 +41,7 @@ export default function Code() {
             <span className="button">Open</span>
           </Link>
 
-          {['singly-linked-list', 'objects-static'].map(slug => {
+          {['singly-linked-list'].map(slug => {
             const w = CODE_WIDGETS[slug as keyof typeof CODE_WIDGETS]
             return (
               <Link key={slug} className="widget-card" to={`/code/${slug}`}>
@@ -53,6 +53,14 @@ export default function Code() {
               </Link>
             )
           })}
+
+          <Link className="widget-card" to="/code/objects-static">
+            <div className="title-row">
+              <h3>Java Objects &amp; Static Methods: Visual Memory</h3>
+            </div>
+            <p>Create objects on the Heap, add static methods to the classes in the Method Area, then call both kinds of method and watch the Java and the console update.</p>
+            <span className="button">Open</span>
+          </Link>
         </div>
 
         <h2 className="h5 eyebrow" style={{ marginTop: '2rem' }}>Cryptography</h2>
