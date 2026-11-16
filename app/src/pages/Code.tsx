@@ -61,6 +61,14 @@ export default function Code() {
             <p>Create objects on the Heap, add static methods to the classes in the Method Area, then call both kinds of method and watch the Java and the console update.</p>
             <span className="button">Open</span>
           </Link>
+
+          <Link className="widget-card" to="/code/file-system-tree">
+            <div className="title-row">
+              <h3>File System Tree: Commands and Objects</h3>
+            </div>
+            <p>Run mkdir, touch, cd, ls and the other Navigator commands in a terminal and watch them build and walk a tree of FolderNode and FileNode objects, one layer at a time.</p>
+            <span className="button">Open</span>
+          </Link>
         </div>
 
         <h2 className="h5 eyebrow" style={{ marginTop: '2rem' }}>Cryptography</h2>

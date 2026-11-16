@@ -24,6 +24,7 @@
      - RSA cracker explorer            (.rc-*)
      - Index → Tree visualizer         (.it-*)
      - Objects & static methods        (.os-*)
+     - File system tree                (.fs-*)
    ============================================================================ */
 
 /* ================================================================
@@ -4318,4 +4319,229 @@ code:not(pre code) {
   .os-keyidea__item { white-space: normal; flex-wrap: wrap; }
   .os-code { height: auto; max-height: 320px; min-height: 160px; }
   .os-console__body { min-height: 120px; max-height: 220px; }
+}
+
+/* ================================================================
+   FILE SYSTEM TREE  (widgets/code/file-system-tree)
+   Two-column WidgetShell, flipped: the picture on the left, a fake
+   terminal on the right (on top once the columns stack).
+   The picture and the terminal use the dark palette of the Topics
+   lesson diagrams. FileSystemNode = blue core, FolderNode = orange
+   ring, FileNode = green ring, program objects = purple,
+   currentDirectory = yellow, a node being looked at = light blue.
+   ================================================================ */
+
+.fs-page {
+  padding-block: 1rem 1.5rem;
+  background: var(--hw-wolverine), #f2f0ec;
+  --fs-bg: #0d1117; --fs-panel: #161b22; --fs-well: #010409; --fs-line: #30363d; --fs-edge: #6e7681;
+  --fs-ink: #e6edf3; --fs-muted: #8b949e;
+  --fs-base: #388bfd; --fs-folder: #f0883e; --fs-file: #3fb950; --fs-object: #a371f7;
+  --fs-base-ink: #79c0ff; --fs-folder-ink: #ffa657; --fs-file-ink: #7ee787;
+  --fs-here: #e3b341; --fs-visit: #79c0ff; --fs-error: #f85149;
+  --fs-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Like the explorer family, this page takes a wide, bare container so the
+   picture and the terminal fill a projector. */
+.fs-page .container { background: transparent; box-shadow: none; }
+.fs-page .container--wide { width: min(1720px, 100% - 2rem); max-width: none; }
+
+/* Compact hero, as in the explorer family: hero, picture, caption and step
+   controls should fit a 1920x1080 window without scrolling. */
+.fs-hero { background: transparent; padding: .35rem .75rem .25rem; }
+.fs-hero .eyebrow { margin-bottom: 0; }
+.fs-hero__title { margin-bottom: .15rem; text-align: left; font-size: clamp(1.35rem, 1.9vw, 1.9rem); }
+.fs-hero__lead { margin-bottom: 0; font-size: var(--step-0); font-weight: var(--hw-font-weight-reg); color: var(--hw-secondary-black); }
+
+.fs-shell.widget-shell--two-col {
+  grid-template-columns: minmax(0, 1fr) clamp(340px, 32%, 560px);
+  grid-template-areas: "main controls";
+  margin-top: .6rem;
+}
+.fs-main { display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
+
+/* --- The picture --- */
+.fs-stage {
+  margin: 0; background: var(--fs-bg); color: var(--fs-ink); border-radius: 10px; overflow: hidden;
+  font-family: var(--fs-mono);
+}
+.fs-stage__scroll { overflow-x: auto; }
+.fs-svg { display: block; width: 100%; min-width: 640px; height: auto; font-family: var(--fs-mono); font-size: 13px; }
+.fs-ground { fill: var(--fs-bg); }
+.fs-title { fill: var(--fs-ink); font-size: 15px; font-weight: 700; }
+.fs-sub { fill: var(--fs-muted); font-size: 11px; }
+.fs-panel { fill: var(--fs-panel); stroke: var(--fs-line); stroke-width: 1.5; }
+.fs-axis { fill: var(--fs-edge); font-size: 10px; }
+.fs-axis--here { fill: var(--fs-here); font-weight: 700; }
+.fs-empty { fill: var(--fs-ink); font-size: 15px; font-weight: 700; }
+
+.fs-fill--base { fill: var(--fs-base); }
+.fs-fill--folder { fill: var(--fs-folder); }
+.fs-fill--object { fill: var(--fs-object); }
+.fs-text--base { fill: var(--fs-base-ink); }
+.fs-text--folder { fill: var(--fs-folder-ink); }
+.fs-text--file { fill: var(--fs-file-ink); }
+
+/* Program objects: FileSystemTree and Navigator */
+.fs-obj__box { fill: var(--fs-panel); stroke: var(--fs-object); stroke-width: 2; }
+.fs-obj__name { fill: var(--fs-object); font-size: 12.5px; font-weight: 700; }
+.fs-obj__note { fill: var(--fs-muted); font-size: 10px; }
+.fs-obj__field { fill: var(--fs-ink); font-size: 11.5px; }
+.fs-obj__here { fill: var(--fs-here); font-size: 12px; font-weight: 700; animation: fs-appear .35s ease 1; }
+.fs-obj__dot { fill: var(--fs-object); stroke: var(--fs-object); stroke-width: 1.5; }
+.fs-obj__dot--empty { fill: var(--fs-panel); }
+.fs-obj--ghost .fs-obj__box { fill: none; stroke: var(--fs-line); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.fs-obj--ghost .fs-obj__name { fill: var(--fs-edge); font-weight: 400; }
+.fs-link { fill: none; stroke: var(--fs-object); stroke-width: 2; }
+
+/* A node is two concentric outlines: the inherited core inside the subclass ring */
+.fs-ghost { fill: none; stroke: var(--fs-edge); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.fs-ring { stroke-width: 2; }
+.fs-ring--folder { stroke: var(--fs-folder); fill: color-mix(in srgb, var(--fs-folder) 20%, var(--fs-panel)); }
+.fs-ring--file { stroke: var(--fs-file); fill: color-mix(in srgb, var(--fs-file) 18%, var(--fs-panel)); }
+.fs-core { stroke: var(--fs-base); stroke-width: 1.5; fill: color-mix(in srgb, var(--fs-base) 18%, var(--fs-bg)); }
+
+.fs-inspect__class { font-size: 11.5px; font-weight: 700; }
+.fs-inspect__field { fill: var(--fs-ink); font-size: 12px; }
+.fs-inspect__field--small { fill: var(--fs-muted); font-size: 10.5px; }
+.fs-inspect__key { fill: var(--fs-muted); }
+.fs-inspect__hint { fill: var(--fs-muted); font-size: 10.5px; }
+
+.fs-node { cursor: pointer; outline: none; }
+.fs-node__name { fill: var(--fs-ink); font-size: 11.5px; font-weight: 700; }
+.fs-node__extra { font-size: 10.5px; font-weight: 700; }
+.fs-node:hover .fs-ring, .fs-node--selected .fs-ring { stroke-width: 3.5; }
+.fs-node:focus-visible .fs-ring, .fs-node:focus-visible .fs-ghost { stroke: #fff; stroke-width: 3; }
+
+.fs-glow { stroke-width: 1.5; animation: fs-appear .25s ease 1; }
+.fs-glow--visit { fill: var(--fs-visit); fill-opacity: .3; stroke: var(--fs-visit); }
+.fs-glow--match { fill: var(--fs-file); fill-opacity: .4; stroke: var(--fs-file); }
+.fs-glow--error { fill: var(--fs-error); fill-opacity: .4; stroke: var(--fs-error); animation: fs-shake .45s ease 1; }
+
+/* Links: grey at rest, blue while a parent link is followed, orange for children */
+.fs-edge { fill: none; stroke: var(--fs-edge); stroke-width: 1.5; stroke-linejoin: round; }
+.fs-edge--parent { stroke: var(--fs-base); stroke-width: 2.5; }
+.fs-edge--children { stroke: var(--fs-folder); stroke-width: 2.5; }
+.fs-edge--pending { stroke-dasharray: 4 4; }
+
+.fs-cursor { transition: transform .4s ease; pointer-events: none; }
+.fs-cursor__ring { fill: var(--fs-here); fill-opacity: .1; stroke: var(--fs-here); stroke-width: 2; }
+.fs-cursor__tab { fill: var(--fs-here); }
+.fs-cursor__label { fill: var(--fs-bg); font-size: 9px; font-weight: 700; }
+
+.fs-badge rect { fill: var(--fs-visit); }
+.fs-badge text { fill: var(--fs-bg); font-size: 10.5px; font-weight: 700; }
+
+.fs-appear { animation: fs-appear .35s ease 1; }
+
+.fs-caption { padding: .7rem 1.1rem .35rem; }
+.fs-caption__say { margin: 0; min-height: 2.9em; font-size: .95rem; line-height: 1.45; color: var(--fs-ink); }
+.fs-caption__java { margin: .3rem 0 0; min-height: 1.6em; font-size: .8rem; line-height: 1.6; color: var(--fs-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.fs-tag {
+  display: inline-block; margin-right: .5rem; padding: 0 .35rem; border: 1px solid var(--fs-line); border-radius: 4px;
+  font-size: .66rem; line-height: 1.5; letter-spacing: .06em; text-transform: uppercase; color: var(--fs-muted); white-space: nowrap;
+}
+.fs-legend {
+  list-style: none; display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; margin: 0; padding: .55rem 1.1rem .8rem;
+  border-top: 1px solid var(--fs-line); font-size: .74rem; color: var(--fs-muted);
+}
+.fs-legend li { display: inline-flex; align-items: center; gap: .4rem; margin: 0; }
+.fs-swatch { position: relative; flex: none; display: inline-block; width: 22px; height: 14px; border: 2px solid var(--fs-base); border-radius: 4px; }
+.fs-swatch--folder { border-color: var(--fs-folder); }
+.fs-swatch--file { border-color: var(--fs-file); }
+.fs-swatch--folder::after, .fs-swatch--file::after {
+  content: ""; position: absolute; inset: 1px 7px 1px 1px; border: 1.5px solid var(--fs-base); border-radius: 2px;
+}
+.fs-swatch--here { border-color: var(--fs-here); }
+.fs-swatch--up, .fs-swatch--down { height: 0; border: 0; border-top: 3px solid var(--fs-base); border-radius: 0; }
+.fs-swatch--down { border-top-color: var(--fs-folder); }
+
+/* --- The terminal --- */
+.fs-term {
+  display: flex; flex-direction: column; background: var(--fs-bg); color: var(--fs-ink);
+  border-radius: var(--hw-radius); overflow: hidden; font-family: var(--fs-mono);
+}
+.fs-term__bar {
+  display: flex; align-items: center; gap: .6rem; padding: .5rem .8rem; background: var(--fs-panel);
+  border-bottom: 1px solid var(--fs-line); font-size: .76rem;
+}
+.fs-term__dots { display: inline-flex; gap: 5px; }
+.fs-term__dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--fs-line); }
+.fs-term__title { font-weight: 700; }
+.fs-term__status { margin-left: auto; display: inline-flex; align-items: center; gap: .4rem; color: var(--fs-muted); }
+.fs-term__status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--fs-edge); }
+.fs-term__status--on { color: var(--fs-file); }
+.fs-term__status--on::before { background: var(--fs-file); }
+
+.fs-keys { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .35rem; padding: .7rem .8rem 0; }
+.fs-key {
+  min-height: 34px; padding: .45rem 0; font: 600 .8rem/1 var(--fs-mono); color: var(--fs-ink); background: var(--fs-panel);
+  border: 1px solid var(--fs-line); border-radius: 6px; cursor: pointer; transition: border-color .15s ease, background .15s ease;
+}
+.fs-key:hover:not(:disabled) { border-color: var(--fs-visit); }
+.fs-key[aria-pressed="true"] { border-color: var(--fs-visit); background: color-mix(in srgb, var(--fs-visit) 24%, var(--fs-panel)); color: #fff; }
+.fs-key:disabled { color: var(--fs-edge); cursor: not-allowed; }
+.fs-key:focus-visible, .fs-idea:focus-visible, .fs-out:focus-visible { outline: 2px solid var(--fs-visit); outline-offset: 1px; }
+
+/* One prompt line: its inputs change with the chosen command */
+.fs-prompt {
+  display: flex; align-items: center; flex-wrap: wrap; gap: .45rem; min-height: 54px; margin: .55rem .8rem 0;
+  padding: .4rem .4rem .4rem .7rem; background: var(--fs-well); border: 1px solid var(--fs-line); border-radius: 6px; font-size: .9rem;
+}
+.fs-prompt:focus-within { border-color: var(--fs-visit); }
+.fs-prompt__path { color: var(--fs-here); overflow-wrap: anywhere; }
+.fs-prompt__cmd { color: #fff; font-weight: 700; white-space: nowrap; }
+.fs-prompt .fs-prompt__arg {
+  flex: 0 1 auto; width: auto; max-width: 100%; min-height: 0; padding: .2rem .4rem; font: inherit; color: var(--fs-ink);
+  background: var(--fs-panel); border: 0; border-bottom: 2px solid var(--fs-edge); border-radius: 4px 4px 0 0; box-shadow: none;
+}
+.fs-prompt .fs-prompt__arg::placeholder { color: var(--fs-edge); }
+.fs-prompt .fs-prompt__arg:focus { border-color: var(--fs-visit); box-shadow: none; }
+.fs-prompt__run { flex: none; width: 48px; min-height: 40px; margin-left: auto; padding: 0; }
+
+.fs-help { min-height: 7.4rem; padding: .6rem .8rem .7rem; border-bottom: 1px solid var(--fs-line); }
+.fs-help__say { margin: 0; font-size: .82rem; line-height: 1.45; color: var(--fs-ink); }
+.fs-help__java { margin: .35rem 0 0; font-size: .76rem; line-height: 1.6; color: var(--fs-muted); overflow-wrap: anywhere; }
+.fs-ideas { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; margin-top: .45rem; }
+.fs-ideas__label { margin-right: .15rem; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; color: var(--fs-muted); }
+.fs-idea {
+  padding: .2rem .55rem; font: 500 .76rem/1.3 var(--fs-mono); color: var(--fs-visit); background: transparent;
+  border: 1px solid var(--fs-line); border-radius: 999px; cursor: pointer;
+}
+.fs-idea:hover { border-color: var(--fs-visit); }
+
+.fs-out { height: clamp(190px, 38vh, 440px); overflow-y: auto; padding: .6rem .8rem .8rem; font-size: .82rem; line-height: 1.5; }
+.fs-out__entry + .fs-out__entry { margin-top: .2rem; }
+.fs-out__cmd { color: #fff; font-weight: 600; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fs-out__prompt { color: var(--fs-here); font-weight: 400; }
+.fs-out__line { white-space: pre-wrap; overflow-wrap: anywhere; animation: fs-appear .25s ease 1; }
+.fs-out__line--err { color: color-mix(in srgb, var(--fs-error) 75%, white); }
+.fs-out__line--note, .fs-out__empty { color: var(--fs-muted); font-style: italic; }
+
+/* --- Light strips around the dark surfaces --- */
+.fs-extras, .fs-steps { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.fs-steps__count {
+  min-width: 6.5rem; text-align: center; font-size: var(--step--1); color: var(--hw-secondary-black);
+  font-variant-numeric: tabular-nums;
+}
+.fs-steps__spacer { flex: 1; }
+.fs-steps__label {
+  font-size: var(--step--1); font-weight: var(--hw-font-weight-bold); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--hw-secondary-black);
+}
+
+@keyframes fs-appear { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fs-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fs-cursor { transition: none; }
+  .fs-appear, .fs-glow, .fs-glow--error, .fs-obj__here, .fs-out__line { animation: none; }
+}
+@media (max-width: 1100px) {
+  .fs-shell.widget-shell--two-col { grid-template-columns: 1fr; grid-template-areas: "controls" "main"; }
+  .fs-out { height: 170px; }
 }
