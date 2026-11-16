@@ -147,6 +147,14 @@
       {
         "source": "/stats/**",
         "destination": "/index.html"
+      },
+      {
+        "source": "/teaching-resources",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/teaching-resources/**",
+        "destination": "/index.html"
       }
     ]
   }
