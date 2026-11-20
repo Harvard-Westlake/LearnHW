@@ -25,6 +25,7 @@
      - Index → Tree visualizer         (.it-*)
      - Objects & static methods        (.os-*)
      - File system tree                (.fs-*)
+     - Binary search tree              (.bst-*)
    ============================================================================ */
 
 /* ================================================================
@@ -4544,4 +4545,222 @@ code:not(pre code) {
 @media (max-width: 1100px) {
   .fs-shell.widget-shell--two-col { grid-template-columns: 1fr; grid-template-areas: "controls" "main"; }
   .fs-out { height: 170px; }
+}
+
+/* ================================================================
+   BINARY SEARCH TREE  (widgets/code/binary-search-tree)
+   Sits on the File System Tree page chrome: its <main> also carries
+   .fs-page, and the hero, shell, terminal, caption, legend and step
+   bar are the .fs-* rules above. This section only adds the tree
+   picture, the rebalancing switch, the checks, the fix table and
+   the rotations-only view the table opens.
+   Light blue = looking here, green = new / found / fixed, red = leans
+   too far or about to go, yellow = moving, orange link = going down,
+   blue link = going back up, purple = the tree object and its root.
+   ================================================================ */
+
+.bst-page { --bst-good: var(--fs-file); --bst-bad: var(--fs-error); --bst-move: var(--fs-here); }
+
+/* --- The picture: tree object, root pointer, sorted strip --- */
+.bst-rootlink { fill: none; stroke: var(--fs-object); stroke-width: 2; stroke-linejoin: round; }
+.bst-rootlink--stale { stroke: var(--bst-bad); stroke-width: 2.5; stroke-dasharray: 5 4; }
+.bst-rootlink--lit { stroke: var(--bst-good); stroke-width: 3.5; }
+.bst-rootlink__tip { fill: var(--fs-object); stroke: none; }
+.bst-rootlink__tip.bst-rootlink--stale { fill: var(--bst-bad); stroke: none; }
+.bst-rootlink__tip.bst-rootlink--lit { fill: var(--bst-good); stroke: none; }
+.bst-null { fill: var(--fs-muted); font-size: 11.5px; font-style: italic; }
+.bst-could { fill: var(--bst-move); }
+
+.bst-drop { stroke: var(--fs-line); stroke-width: 1; stroke-dasharray: 2 5; }
+.bst-slot { fill: var(--fs-panel); stroke: var(--fs-line); stroke-width: 1.5; }
+.bst-slot--read { fill: color-mix(in srgb, var(--bst-good) 24%, var(--fs-panel)); stroke: var(--bst-good); }
+.bst-slot__value { fill: var(--fs-muted); font-size: 12px; font-weight: 700; }
+.bst-slot__value--read { fill: var(--fs-ink); }
+.bst-bracket { fill: var(--fs-edge); font-size: 17px; }
+
+/* --- The two sides of a node being checked, and the subtree a rotation hands over --- */
+.bst-side rect { fill: rgb(255 255 255 / .04); stroke: var(--fs-muted); stroke-width: 1.25; stroke-dasharray: 5 4; }
+.bst-side text, .bst-carried text { font-size: 10px; font-weight: 700; }
+.bst-side text { fill: var(--fs-ink); }
+.bst-none line { stroke: var(--fs-muted); stroke-width: 1.25; stroke-dasharray: 3 3; }
+.bst-none circle { fill: var(--fs-bg); stroke: var(--fs-muted); stroke-width: 1.25; stroke-dasharray: 3 3; }
+.bst-none text { fill: var(--fs-ink); font-size: 10px; font-weight: 700; }
+.bst-carried rect { fill: color-mix(in srgb, var(--bst-move) 10%, transparent); stroke: var(--bst-move); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.bst-carried text { fill: var(--bst-move); }
+
+/* --- Links: grey at rest, orange going down, blue going back up --- */
+.bst-link { fill: none; stroke: var(--fs-edge); stroke-width: 1.75; stroke-linecap: round; }
+.bst-link--down { stroke: var(--fs-folder); stroke-width: 3; }
+.bst-link--up { stroke: var(--fs-base); stroke-width: 3; }
+.bst-link--fresh { stroke: var(--bst-good); stroke-width: 3.5; }
+.bst-link--moved { stroke: var(--bst-move); stroke-width: 3.5; }
+.bst-link--cut, .bst-link--stale { stroke: var(--bst-bad); stroke-width: 2.5; stroke-dasharray: 5 4; }
+
+.bst-ghost { animation: fs-appear .3s ease 1; }
+.bst-ghost line { stroke-width: 1.5; stroke-dasharray: 4 4; }
+.bst-ghost circle { fill: var(--fs-bg); stroke-width: 2; stroke-dasharray: 4 4; }
+.bst-ghost text { font-size: 14px; font-weight: 700; }
+.bst-ghost--spot line, .bst-ghost--spot circle { stroke: var(--bst-good); }
+.bst-ghost--spot text { fill: var(--fs-file-ink); }
+.bst-ghost--missing line, .bst-ghost--missing circle { stroke: var(--bst-bad); }
+.bst-ghost--missing text { fill: color-mix(in srgb, var(--bst-bad) 70%, white); }
+
+/* --- Nodes: a disc, a halo saying why it is lit, and two small tabs --- */
+.bst-node { cursor: pointer; outline: none; }
+.bst-node--visit { --bst-role: var(--fs-visit); }
+.bst-node--new, .bst-node--found, .bst-node--fixed { --bst-role: var(--bst-good); }
+.bst-node--target, .bst-node--heavy { --bst-role: var(--bst-bad); }
+.bst-node--up, .bst-node--down, .bst-node--next { --bst-role: var(--bst-move); }
+.bst-node--new { animation: fs-appear .4s ease 1; }
+.bst-halo { fill: var(--bst-role); fill-opacity: .28; stroke: var(--bst-role); stroke-width: 2; animation: fs-appear .25s ease 1; }
+.bst-disc {
+  fill: color-mix(in srgb, var(--bst-role, var(--fs-base)) 18%, var(--fs-panel));
+  stroke: var(--bst-role, var(--fs-base)); stroke-width: 2;
+}
+.bst-value { fill: var(--fs-ink); font-size: 14px; font-weight: 700; }
+.bst-node:hover .bst-disc, .bst-node--picked .bst-disc { stroke-width: 3.5; }
+.bst-node:focus-visible .bst-disc { stroke: #fff; stroke-width: 3; }
+.bst-tab rect { fill: var(--fs-bg); stroke: var(--fs-line); stroke-width: 1; }
+.bst-tab text { fill: var(--fs-muted); font-size: 9.5px; font-weight: 700; }
+.bst-tab--lean text { fill: var(--fs-ink); }
+.bst-tab--lit rect { fill: var(--fs-visit); stroke: var(--fs-visit); }
+.bst-tab--lit text { fill: var(--fs-bg); }
+.bst-tab--bad rect { fill: var(--bst-bad); stroke: var(--bst-bad); }
+.bst-tab--bad text { fill: #fff; }
+.bst-tag { fill: var(--bst-move); font-size: 10.5px; font-weight: 700; }
+
+.bst-note { animation: fs-appear .25s ease 1; }
+.bst-note rect { fill: var(--fs-ink); }
+.bst-note text { fill: var(--fs-bg); font-size: 11px; font-weight: 700; }
+.bst-note--good rect { fill: var(--bst-good); }
+.bst-note--bad rect { fill: var(--bst-bad); }
+.bst-note--bad text { fill: #fff; }
+
+.bst-swatch {
+  flex: none; display: inline-block; width: 14px; height: 14px; border: 2px solid var(--fs-visit); border-radius: 50%;
+  background: color-mix(in srgb, var(--fs-visit) 30%, transparent);
+}
+.bst-swatch--good { border-color: var(--bst-good); background: color-mix(in srgb, var(--bst-good) 30%, transparent); }
+.bst-swatch--bad { border-color: var(--bst-bad); background: color-mix(in srgb, var(--bst-bad) 30%, transparent); }
+.bst-swatch--move { border-color: var(--bst-move); background: color-mix(in srgb, var(--bst-move) 30%, transparent); }
+.bst-swatch--down, .bst-swatch--up { width: 22px; height: 0; border: 0; border-top: 3px solid var(--fs-folder); border-radius: 0; background: none; }
+.bst-swatch--up { border-top-color: var(--fs-base); }
+.bst-swatch--h, .bst-swatch--lean {
+  width: auto; height: auto; padding: 0 .3rem; border: 1px solid var(--fs-line); border-radius: 4px; background: var(--fs-bg);
+  font-size: .62rem; font-weight: 700; line-height: 1.5; color: var(--fs-muted);
+}
+.bst-swatch--h::before { content: "h2"; }
+.bst-swatch--lean::before { content: "+1"; color: var(--fs-ink); }
+
+/* --- The rebalancing switch --- */
+.bst-mode { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; padding: .7rem .8rem 0; }
+.bst-mode__btn {
+  display: flex; flex-direction: column; gap: .15rem; min-width: 0; padding: .5rem .65rem; text-align: left; font-family: var(--fs-mono);
+  color: var(--fs-muted); background: var(--fs-panel); border: 1.5px solid var(--fs-line); border-radius: 8px; cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+.bst-mode__btn:hover { border-color: var(--fs-visit); }
+.bst-mode__btn:focus-visible { outline: 2px solid var(--fs-visit); outline-offset: 1px; }
+.bst-mode__name { font-size: .86rem; font-weight: 700; color: var(--fs-ink); }
+.bst-mode__note { font-size: .7rem; line-height: 1.3; }
+.bst-mode__btn[aria-pressed="true"] {
+  border-color: var(--fs-visit); background: color-mix(in srgb, var(--fs-visit) 22%, var(--fs-panel)); color: var(--fs-ink);
+}
+.bst-mode__btn[aria-pressed="true"] .bst-mode__name { color: #fff; }
+.bst-mode__btn[aria-pressed="true"] .bst-mode__name::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: .45rem; border-radius: 50%; background: var(--bst-good); }
+
+/* --- One call line, its help, the rule card and the log --- */
+.bst-page .fs-keys { grid-template-columns: 1fr 1.3fr 1.5fr .85fr .85fr 1.5fr; }
+.bst-page .fs-key { font-size: .76rem; }
+.bst-page .fs-prompt { gap: .15rem; }
+.bst-page .fs-prompt .fs-prompt__arg { margin-inline: .15rem; text-align: center; }
+.bst-help.fs-help { min-height: 5.2rem; }
+.bst-rules { padding: .6rem .8rem .7rem; border-bottom: 1px solid var(--fs-line); font-size: .76rem; line-height: 1.45; color: var(--fs-muted); }
+.bst-rules__say { margin: 0; max-width: none; font-size: .76rem; line-height: 1.45; color: var(--fs-muted); }
+.bst-rules__say strong { color: var(--fs-ink); }
+.bst-fix { width: 100%; margin: .45rem 0 0; border-collapse: collapse; font-size: .74rem; background: transparent; }
+.bst-fix th {
+  padding: .15rem .4rem; text-align: left; font-size: .64rem; font-weight: 400; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--fs-muted); background: transparent; border: 0; border-bottom: 1px solid var(--fs-line);
+}
+.bst-fix td { padding: .22rem .4rem; vertical-align: top; color: var(--fs-ink); background: transparent; border: 0; border-bottom: 1px solid var(--fs-line); }
+.bst-fix td:first-child { font-weight: 700; }
+.bst-fix td:first-child, .bst-fix td:nth-child(2) { white-space: nowrap; }
+.bst-fix tr:last-child td { border-bottom: 0; }
+.bst-fix .bst-fix__row--on td { background: color-mix(in srgb, var(--bst-move) 28%, transparent); color: #fff; }
+.bst-out.fs-out { height: clamp(78px, 9vh, 150px); }
+
+/* --- The checks: the assignment's lists, one chip each --- */
+.bst-checks { padding: .55rem .8rem .65rem; border-bottom: 1px solid var(--fs-line); }
+.bst-checks .fs-ideas { margin-top: 0; }
+.bst-check[aria-pressed="true"] { border-color: var(--fs-visit); background: color-mix(in srgb, var(--fs-visit) 24%, var(--fs-panel)); color: #fff; }
+.bst-check--reset { margin-left: auto; color: var(--fs-muted); }
+.bst-check--reset:disabled { opacity: .45; cursor: not-allowed; }
+.bst-checks__say { margin: .4rem 0 0; max-width: none; font-size: .76rem; line-height: 1.45; color: var(--fs-muted); }
+.bst-checks__say strong { color: var(--fs-ink); }
+
+/* --- Rotations only: a row of the fix table swaps the picture to that fix on its own --- */
+/* The rotation notes lie over the tester, which keeps its room, so the table under them stays put. */
+.bst-deck { position: relative; }
+.bst-deck__tester--off { visibility: hidden; }
+
+.bst-only {
+  float: right; margin: -.15rem 0 .2rem .5rem; padding: .12rem .55rem; font: 600 .7rem/1.3 var(--fs-mono); letter-spacing: 0;
+  text-transform: none; color: var(--fs-visit); background: transparent; border: 1px solid var(--fs-line); border-radius: 999px; cursor: pointer;
+}
+.bst-only:hover { border-color: var(--fs-visit); }
+.bst-only[aria-pressed="true"] { border-color: var(--bst-move); background: color-mix(in srgb, var(--bst-move) 24%, var(--fs-panel)); color: #fff; }
+.bst-only:focus-visible, .bst-fix__play:focus-visible { outline: 2px solid var(--fs-visit); outline-offset: 1px; }
+.bst-fix tbody tr { cursor: pointer; }
+.bst-fix tbody tr:not(.bst-fix__row--on):hover td { background: rgb(255 255 255 / .06); }
+.bst-fix td.bst-fix__go { width: 1%; padding-left: 0; padding-right: .2rem; vertical-align: middle; white-space: nowrap; }
+.bst-fix__play {
+  display: grid; place-items: center; width: 20px; height: 20px; padding: 0 0 0 1px; color: var(--fs-visit); background: transparent;
+  border: 1px solid var(--fs-line); border-radius: 50%; cursor: pointer;
+}
+.bst-fix tbody tr:hover .bst-fix__play { border-color: var(--fs-visit); }
+.bst-fix .bst-fix__row--picked td:first-child { box-shadow: inset 3px 0 0 var(--bst-move); }
+.bst-fix .bst-fix__row--picked .bst-fix__play { color: var(--fs-bg); background: var(--bst-move); border-color: var(--bst-move); }
+
+.bst-rot {
+  position: absolute; inset: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .55rem; padding: .7rem .8rem;
+  border-bottom: 1px solid var(--fs-line); animation: fs-appear .2s ease 1;
+}
+.bst-rot__bar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.bst-rot__eyebrow { font-size: .66rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--bst-move); }
+.bst-rot__back { color: var(--fs-ink); }
+.bst-rot__head { display: flex; align-items: center; gap: .7rem; }
+.bst-lean { flex: none; background: var(--fs-panel); border: 1px solid var(--fs-line); border-radius: 8px; }
+.bst-lean polyline { fill: none; stroke: var(--fs-edge); stroke-width: 2; stroke-linejoin: round; }
+.bst-lean circle { fill: var(--fs-panel); stroke: var(--fs-base); stroke-width: 2; }
+.bst-lean .bst-lean__top { fill: color-mix(in srgb, var(--bst-bad) 30%, var(--fs-panel)); stroke: var(--bst-bad); }
+.bst-rot__title, .bst-rot__when, .bst-rot__say { margin: 0; max-width: none; font-size: .78rem; line-height: 1.45; }
+.bst-rot__title { font-size: .95rem; font-weight: 700; line-height: 1.3; color: #fff; }
+.bst-rot__when { color: var(--fs-muted); }
+.bst-rot__say { color: var(--fs-ink); }
+.bst-rot .fs-ideas { margin-top: 0; }
+.bst-recipe ol { margin: .25rem 0 0; padding: 0; list-style: none; counter-reset: bst-step; }
+.bst-recipe li {
+  counter-increment: bst-step; display: flex; align-items: baseline; gap: .5rem; margin: 0; padding: .14rem .4rem; border-radius: 5px;
+  font-size: .76rem; line-height: 1.4; color: var(--fs-ink);
+}
+.bst-recipe li::before { content: counter(bst-step); flex: none; font-weight: 700; color: var(--fs-muted); }
+.bst-recipe .bst-recipe__on { background: color-mix(in srgb, var(--bst-move) 28%, transparent); color: #fff; }
+.bst-recipe .bst-recipe__on::before { color: var(--bst-move); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bst-halo, .bst-ghost, .bst-note, .bst-node--new, .bst-rot { animation: none; }
+}
+/* A little more room for the fix table than the terminal of the file system page needs. */
+@media (min-width: 1101px) {
+  .bst-page .fs-shell.widget-shell--two-col { grid-template-columns: minmax(0, 1fr) clamp(360px, 35%, 560px); }
+}
+@media (max-width: 1100px) {
+  .bst-out.fs-out { height: 110px; }
+}
+/* On a phone the rotation notes keep to the room the tester leaves them. */
+@media (max-width: 480px) {
+  .bst-rot { gap: .45rem; }
+  .bst-rot__say { display: none; }
+  .bst-fix td:nth-child(2) { white-space: normal; }
 }

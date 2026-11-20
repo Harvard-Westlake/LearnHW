@@ -69,6 +69,14 @@ export default function Code() {
             <p>Run mkdir, touch, cd, ls and the other Navigator commands in a terminal and watch them build and walk a tree of FolderNode and FileNode objects, one layer at a time.</p>
             <span className="button">Open</span>
           </Link>
+
+          <Link className="widget-card" to="/code/binary-search-tree">
+            <div className="title-row">
+              <h3>Binary Search Tree: Leaning and Rebalancing</h3>
+            </div>
+            <p>Add and remove values and watch the tree grow and lean. Switch rebalancing on to see each AVL rotation one link at a time, or off to see the same values make a stick.</p>
+            <span className="button">Open</span>
+          </Link>
         </div>
 
         <h2 className="h5 eyebrow" style={{ marginTop: '2rem' }}>Cryptography</h2>
