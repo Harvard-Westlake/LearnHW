@@ -1,0 +1,53 @@
+Assignment — Forks and Collaboration
+Lesson: Forks and CollaborationLinks to an external site.
+
+Due: Next class
+
+Part 1 — Fork and Clone
+Go to GitHub and find a public repository to contribute to. You can use a repository shared by your teacher, a classmate's project, or any public repo you find interesting.
+Fork it — click Fork in the top-right corner of the repository page.
+Clone your fork to your local machine:
+git clone https://github.com/YOUR-USERNAME/repo-name.git
+cd repo-name
+Add the original repository as upstream:
+git remote add upstream https://github.com/ORIGINAL-OWNER/repo-name.git
+git remote -v
+Confirm that both origin (your fork) and upstream (the original) are listed.
+
+Part 2 — Branch, Change, and Push
+Create a feature branch:
+git checkout -b feature-contribution
+Make a meaningful change — add a file, improve a README, or add a comment. The change should be something that could genuinely improve the project.
+Stage, commit, and push to your fork:
+git add .
+git commit -m "Describe the change you made"
+git push origin feature-contribution
+Part 3 — Open a Pull Request
+On GitHub, go to your fork and open a pull request targeting the original repository's main branch.
+Write a title that describes the change in under ten words.
+In the description, write a full paragraph covering:
+What you changed
+Why this change is useful
+How the maintainer can verify it
+Warning: The description must be written in complete sentences. A vague or empty description will not receive full credit.
+
+Click Create pull request and copy the URL.
+Part 4 — Sync Your Fork
+Fetch and merge any changes from the original repository into your local main:
+git checkout main
+git fetch upstream
+git merge upstream/main
+git push origin main
+Run git log --oneline on your local main and record the last three commit messages.
+Success Criteria
+Before submitting, confirm each of the following:
+
+Repository forked — appears under your GitHub account with "forked from" shown
+Fork cloned locally — origin points to your fork, confirmed with git remote -v
+Upstream remote added — upstream points to the original repo
+Feature branch created and pushed — visible in your fork's branch list
+Pull request opened — targets the original repo's main with a full description
+Fork synced — ran the fetch/merge/push sequence from upstream
+Submission
+Submit nothing on Canva for today you have no assignment due. You get an extra ten percent on the text and this assignment completely off
+.
